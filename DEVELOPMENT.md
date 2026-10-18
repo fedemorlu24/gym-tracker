@@ -4,7 +4,7 @@ A free, offline-first workout diary for the gym, built as a Progressive Web App.
 
 **Live app:** https://fedemorlu24.github.io/gym-tracker/
 
-The v71 security revision is implemented and the listed local checks are complete. `SECURITY_REMEDIATION.md` documents its local evidence; this document does not attest publication. Release and live verification receipts are stored separately when available in `artifacts/release-v71/`. Historical v69/v70 publication receipts remain in `artifacts/release-v69/` and `artifacts/release-v70/`.
+The v72 revision fixes password-sheet focus and mobile scrolling. `SECURITY_REMEDIATION.md` retains the v71 security evidence. This document does not attest publication; release and live verification receipts are stored separately when available in `artifacts/release-v72/`. Earlier release receipts remain in their respective artifact folders.
 
 Open it on your phone and use *Add to Home Screen*. There is no Gym Tracker account, subscription or advertising. Workout data is stored on your device; optional chat, sharing and external links use the services described below.
 
@@ -107,7 +107,7 @@ UI verification uses Playwright with console/pageerror and network capture:
 
 ```sh
 npm ci
-npx playwright install chromium
+npx playwright install chromium webkit
 # With the local server on 8765:
 npm run test:donation
 npm run test:guides
@@ -119,9 +119,14 @@ npm run test:framing     # fresh/controlled frames, startup and offline navigati
 npm run test:archive-vault # whole archive protection, recovery, ordering and lifecycle
 npm run test:outbound     # isolated donation navigation, attributes, referrer/opener and network
 npm run test:chat-queue   # bounded receives, replay deduplication and relay acknowledgements
+npm run test:modal        # mobile focus, viewport changes and touch scrolling in Chromium/WebKit
 ```
 
-The update fixture pins the released v70 commit and verifies v70 → v71 → two simulated future releases (v72/v73) with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
+The update fixture pins the released v71 commit and verifies v71 → v72 → two simulated future releases (v73/v74) with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
+
+In v72, sheets with an autofocus field open at their final position before synchronous `focus({preventScroll: true})`. They use the visual viewport's height and offset, and reveal the active field by scrolling the pane. Keep the opening transition disabled through paint: restoring it in the same turn can leave WebKit painting the old offscreen layer. Content scrolling never arms dismissal; a downward drag must start on the handle, while cancelled or horizontal gestures leave the sheet open. Closing restores the normal transition. References: [MDN focus](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/focus), [MDN VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport).
+
+V72 local checks: nine modal groups across Chromium/WebKit, five languages and three mobile sizes; chat vault 12, whole archive 14 and backup/key use 14 groups PASS. Update 71 → 72 → 73 → 74 preserves data/photos, the unsaved draft and offline reopening. Donation/layout/tutorial/sharing checks pass against port 8872. Modal checks capture console errors, page errors, failed requests and relevant HTTP responses; all are empty. They check focus geometry before automation can scroll a field into view, exercise simulated visual-viewport changes and Chromium touch gestures, and include inspected screenshots. Native keyboard behaviour on a physical iPhone remains untested.
 
 v69 pre-release checks: security 10 groups, backup/key use 13 groups, vault 12 groups, framing 6 groups and update 68 → 69 → 70 → 71 PASS. Donation/layout in five languages, tutorial/sharing regressions, `check:vendor` and `check:vendor-inventory` also PASS. Vault/security/backup suites report zero console/pageerror, HTTP failures, failed requests, external traffic and real WebSockets; framing records expected browser policy denials separately. Setup/chat screenshots were inspected. Publication and live verification have separate receipts.
 

@@ -14,7 +14,8 @@
     "check:vendor-inventory": "node tools/vendor-build.mjs --inventory",
     "test:archive-vault": "node tests/archive-vault.cjs",
     "test:outbound": "node tests/outbound.cjs",
-    "test:chat-queue": "node tests/chat-queue.cjs"
+    "test:chat-queue": "node tests/chat-queue.cjs",
+    "test:modal": "node tests/modal.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

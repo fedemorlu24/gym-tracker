@@ -156,14 +156,14 @@ header .t p{color:var(--sub);font-size:14px}
 .sumgrid em{font-style:normal;font-weight:700}
 .sumgrid em.up{color:var(--up)} .sumgrid em.dn{color:var(--danger)}
 .pane .entry .field input{text-align:left}
-#sheet{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end}
+#sheet{position:fixed;inset:0;top:var(--sheet-top,0px);bottom:auto;height:var(--sheet-height,100%);z-index:20;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;overflow:clip}
 #sheet[hidden]{display:none}
 .scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity .25s}
-.pane{position:relative;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:88vh;overflow:auto;
+.pane{position:relative;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:88%;overflow:auto;overscroll-behavior:contain;
 transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.9,.25,1)}
 #sheet.on .scrim{opacity:1}
 #sheet.on .pane{transform:none}
-.grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px;position:relative}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px;position:relative;touch-action:none}
 .grab::after{content:"";position:absolute;inset:-12px -40px}
 .sheetx{position:sticky;top:0;float:right;z-index:3;width:36px;height:36px;margin:-8px -6px 0 0;border:0;border-radius:50%;background:var(--card);color:var(--sub);font-size:16px;line-height:36px;padding:0;cursor:pointer}
 .pane h2{font-size:20px;font-weight:700;margin-bottom:12px}

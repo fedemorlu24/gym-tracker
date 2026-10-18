@@ -1557,44 +1557,97 @@ function saveProfile(f) {
 }
 
 // ---------- fogli (bottom sheet) e avvisi ----------
-let sheetCloseT;
+let sheetCloseT, sheetOpenFrame, sheetFocusFrame;
+function revealSheetFocus(pane) {
+  const field = document.activeElement;
+  if (!field || !pane.contains(field) || !field.matches('input, textarea, select, [contenteditable="true"]')) return;
+  const bounds = pane.getBoundingClientRect(), rect = field.getBoundingClientRect();
+  const top = bounds.top + 16, bottom = bounds.bottom - 16;
+  if (rect.top < top) pane.scrollTop += rect.top - top;
+  else if (rect.bottom > bottom) pane.scrollTop += Math.min(rect.bottom - bottom, rect.top - top);
+}
+function syncSheetViewport() {
+  const el = document.getElementById('sheet'), viewport = window.visualViewport;
+  if (!el || el.hidden) return;
+  if (viewport) {
+    el.style.setProperty('--sheet-top', viewport.offsetTop + 'px');
+    el.style.setProperty('--sheet-height', viewport.height + 'px');
+  }
+  cancelAnimationFrame(sheetFocusFrame);
+  const pane = el.querySelector('.pane');
+  sheetFocusFrame = requestAnimationFrame(() => {
+    if (!el.hidden && el.classList.contains('on') && pane && pane.parentElement === el) revealSheetFocus(pane);
+  });
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncSheetViewport);
+  window.visualViewport.addEventListener('scroll', syncSheetViewport);
+}
 function sheet(html) {
   if (archiveLocked || archiveResumePending) return;
   disposeBackupDialog();
   clearTimeout(sheetCloseT);
+  cancelAnimationFrame(sheetOpenFrame);
+  cancelAnimationFrame(sheetFocusFrame);
   if (typeof guideStop === 'function') guideStop();
   const el = document.getElementById('sheet');
   el.innerHTML = `<div class="scrim" data-act="close"></div><div class="pane" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheetx" data-act="close" aria-label="${t('close')}">✕</button>${html}</div>`;
   el.hidden = false;
-  dragDismiss(el.querySelector('.pane'));
-  const f = el.querySelector('[data-focus]'); if (f) f.focus();
-  requestAnimationFrame(() => el.classList.add('on'));
+  const pane = el.querySelector('.pane'), f = el.querySelector('[data-focus]');
+  el.scrollTop = 0; pane.scrollTop = 0;
+  dragDismiss(pane);
+  pane.addEventListener('focusin', syncSheetViewport);
+  syncSheetViewport();
+  if (f) {
+    // iOS needs synchronous focus to open its keyboard. Focus at the final
+    // position, so the browser never tries to reveal a translated-offscreen field.
+    pane.style.transition = 'none'; el.classList.add('on');
+    // Keep the opening transition disabled through paint: restoring it in the
+    // same turn can leave WebKit displaying the old offscreen compositing layer.
+    pane.getBoundingClientRect();
+    f.focus({preventScroll: true});
+    el.scrollTop = 0; revealSheetFocus(pane);
+  } else sheetOpenFrame = requestAnimationFrame(() => {
+    if (!el.hidden && pane.parentElement === el) el.classList.add('on');
+  });
 }
-// trascinare la tendina verso il basso la chiude (dalla maniglia, o da ovunque se è scorsa fino in cima)
+// Solo la maniglia trascina il foglio: lo scorrimento dei contenuti non lo chiude.
 function dragDismiss(pane) {
-  let y0 = null, dy = 0, fromGrab = false;
+  let start = null, dy = 0, dragging = false;
+  const reset = () => {
+    pane.style.transition = ''; pane.style.transform = '';
+    start = null; dy = 0; dragging = false;
+  };
   pane.addEventListener('touchstart', e => {
-    if (e.target.closest('.gf')) { y0 = null; return; }
-    fromGrab = !!e.target.closest('.grab') || e.touches[0].clientY - pane.getBoundingClientRect().top < 44;
-    y0 = (fromGrab || pane.scrollTop <= 0) ? e.touches[0].clientY : null; dy = 0;
+    reset();
+    if (e.touches.length !== 1 || !e.target.closest('.grab')) return;
+    start = {x: e.touches[0].clientX, y: e.touches[0].clientY};
   }, {passive: true});
   pane.addEventListener('touchmove', e => {
-    if (y0 == null) return;
-    dy = e.touches[0].clientY - y0;
-    if (dy > 0 && (fromGrab || pane.scrollTop <= 0)) { pane.style.transition = 'none'; pane.style.transform = `translateY(${dy}px)`; }
-  }, {passive: true});
+    if (!start) return;
+    if (e.touches.length !== 1) { reset(); return; }
+    const dx = Math.abs(e.touches[0].clientX - start.x);
+    dy = e.touches[0].clientY - start.y;
+    if (!dragging && dx > 8 && dx > Math.abs(dy)) { reset(); return; }
+    if (dy > 8 && dy > dx) dragging = true;
+    if (dragging) {
+      e.preventDefault(); pane.style.transition = 'none'; pane.style.transform = `translateY(${Math.max(0, dy)}px)`;
+    }
+  }, {passive: false});
   pane.addEventListener('touchend', () => {
-    if (y0 == null) return;
-    pane.style.transition = ''; pane.style.transform = '';
-    if (dy > 80) closeSheet();
-    y0 = null; dy = 0;
+    const dismiss = dragging && dy > 80;
+    reset(); if (dismiss) closeSheet();
   });
+  pane.addEventListener('touchcancel', reset);
 }
 function closeSheet() {
   disposeBackupDialog();
+  cancelAnimationFrame(sheetOpenFrame);
+  cancelAnimationFrame(sheetFocusFrame);
   const el = document.getElementById('sheet');
   if (el.hidden) return;
   if (typeof guideStop === 'function') guideStop();
+  const pane = el.querySelector('.pane'); if (pane) pane.style.transition = '';
   el.classList.remove('on');
   sheetCloseT = setTimeout(() => { el.hidden = true; el.innerHTML = ''; }, 260);
 }
