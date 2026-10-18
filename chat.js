@@ -3,7 +3,7 @@
 const CHAT_RELAYS = ['wss://nos.lol', 'wss://relay.damus.io', 'wss://relay.primal.net', 'wss://offchain.pub'];
 const CHAT_EMOJI = ['💪', '🔥', '🏆', '👏', '🏋️', '❤️', '😂', '👍', '🥵', '💯', '🎉', '🙌', '😮', '🤝', '🥇', '⚡'];
 const CHAT_REACT = ['❤️', '💪', '🔥', '🏆', '👏', '😂'];
-const CHAT_IMG_MAX = 45000;       // byte per foto (un messaggio deve stare nel limite dei relay)
+const CHAT_IMG_MAX = 29000;       // byte per foto: cifrata due volte (sigillo e busta NIP-59) deve restare sotto i 64 KB di NIP-44
 const CHAT_BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 const CHAT_KEEP = 400;            // messaggi tenuti per conversazione
 
@@ -19,7 +19,7 @@ function nostrLoad() {
   }));
 }
 const chat = () => db.chat || (db.chat = {friends: {}, msgs: {}, relays: CHAT_RELAYS.slice(), sync: 0, seen: [], blocked: []});
-const chatFriends = () => Object.values(chat().friends).sort((a, b) => (lastMsg(b.pk) ? lastMsg(b.pk).t : b.added || 0) - (lastMsg(a.pk) ? lastMsg(a.pk).t : a.added || 0));
+const chatFriends = () => Object.values(chat().friends).filter(f => !f.hid).sort((a, b) => (lastMsg(b.pk) ? lastMsg(b.pk).t : b.added || 0) - (lastMsg(a.pk) ? lastMsg(a.pk).t : a.added || 0));
 const lastMsg = pk => { const l = (chat().msgs[pk] || []).filter(m => m.k !== 'rx'); return l[l.length - 1]; };
 const chatUnreadTotal = () => Object.values(chat().friends).reduce((a, f) => a + (f.unread || 0), 0);
 async function chatInit() {
@@ -132,10 +132,11 @@ async function chatReceive(wrap) {
   if (b.k === 'pf') { f.av = AV_OK(b.av) ? b.av : ''; save(); chatRefresh(); return; }
   const m = {id: r.id, from: 'them', t: Math.min(r.created_at, nowSec()), k: String(b.k || 't').slice(0, 3), x: typeof b.x === 'string' ? b.x.slice(0, b.k === 'sf' || b.k === 'sc' ? 120000 : 2000) : '', to: String(b.to || '').slice(0, 64),
     e: String(b.e || '').slice(0, 8), ex: String(b.ex || '').slice(0, 60), kg: +b.kg || 0, rp: +b.rp || 0, w: +b.w || 0, h: +b.h || 0};
-  if (m.k === 'img') { if (typeof b.d !== 'string' || !/^data:image\/jpeg;base64,/.test(b.d) || b.d.length > CHAT_IMG_MAX * 1.5) return; await imgPut(r.id, b.d); m.d = 1; }
+  if (m.k === 'img') { if (typeof b.d !== 'string' || !/^data:image\/jpeg;base64,/.test(b.d) || b.d.length > 66000) return; await imgPut(r.id, b.d); m.d = 1; }
   if (!['t', 'img', 'rx', 'pr', 'em', 'sf', 'sc'].includes(m.k)) return;
   if ((m.k === 'sf' && !parseChallenge(m.x)) || (m.k === 'sc' && !parsePlan(m.x))) return;
   if (!chatStore(from, m)) return;
+  if (f.hid && m.k !== 'rx') f.hid = 0;
   if (m.k !== 'rx' && !(view.name === 'chat' && view.id === from && !document.hidden)) f.unread = (f.unread || 0) + 1;
   save(); chatRefresh();
   if (view.name === 'chat' && view.id === from && !document.hidden && (m.k === 'rx' || m.k === 'em')) setTimeout(() => chatBurst(m.k === 'rx' ? m.e : [...m.x][0], document.querySelector(`.cm[data-mid="${m.k === 'rx' ? m.to : m.id}"]`)), 60);
@@ -152,22 +153,23 @@ async function imgGet(id) {
 }
 // riduce la foto finché sta nel limite
 function chatShrink(file) {
+  const fit = (src, W, H) => {
+    let side = 720, q = .72;
+    for (let i = 0; i < 14; i++) {
+      const k = Math.min(1, side / Math.max(W, H)), c = document.createElement('canvas');
+      c.width = Math.round(W * k); c.height = Math.round(H * k);
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      const d = c.toDataURL('image/jpeg', q);
+      if (d.length * .75 <= CHAT_IMG_MAX) return {d, w: c.width, h: c.height};
+      if (q > .42) q -= .08; else side = Math.round(side * .82);
+    }
+    throw new Error('big');
+  };
   return new Promise((res, rej) => {
     const img = new Image(), u = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(u);
-      let side = 720, q = .72;
-      for (let i = 0; i < 12; i++) {
-        const k = Math.min(1, side / Math.max(img.width, img.height)), c = document.createElement('canvas');
-        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        const d = c.toDataURL('image/jpeg', q);
-        if (d.length * .75 <= CHAT_IMG_MAX) return res({d, w: c.width, h: c.height});
-        if (q > .42) q -= .08; else { side = Math.round(side * .82); }
-      }
-      rej(new Error('big'));
-    };
-    img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('img')); };
+    img.onload = () => { URL.revokeObjectURL(u); try { res(fit(img, img.naturalWidth, img.naturalHeight)); } catch (e) { rej(e); } };
+    // se il browser non legge il formato come immagine (es. HEIC), prova a decodificarlo direttamente
+    img.onerror = () => { URL.revokeObjectURL(u); (window.createImageBitmap ? createImageBitmap(file) : Promise.reject(new Error('img'))).then(bm => res(fit(bm, bm.width, bm.height))).catch(rej); };
     img.src = u;
   });
 }
@@ -203,7 +205,7 @@ async function chatAccept(o) {
   await chatInit(); const c = chat();
   if (o.pk === c.pk) { toast(t('ownChallenge')); return; }
   const had = !!c.friends[o.pk];
-  c.friends[o.pk] = {...(c.friends[o.pk] || {}), pk: o.pk, n: o.n, added: nowSec(), unread: 0};
+  c.friends[o.pk] = {...(c.friends[o.pk] || {}), pk: o.pk, n: o.n, added: nowSec(), unread: 0, hid: 0};
   c.blocked = c.blocked.filter(x => x !== o.pk); save();
   await chatSend(o.pk, {k: 'hi', n: nick() || '🙂', tok: o.tok, av: c.av || ''});
   closeSheet(); go({name: 'chat', id: o.pk, from: 'chat'});
@@ -214,7 +216,8 @@ function chatLinkSheet(o, raw) {
   const accept = () => needNick(() => chatAccept(o));
   if (standalone() || !isIOS) { accept(); return true; }
   shareText = INVITE_URL + '#chat=' + raw;
-  sheet(`<h2>${esc(t('chatLinkFrom', o.n))}</h2><p class="sub" style="margin-bottom:14px">${t('inBrowserChallenge')}</p><button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`);
+  needNick(async () => { await chatAccept(o);
+    setTimeout(() => sheet(`<h2>${esc(t('chatAdded', o.n))}</h2><p class="sub" style="margin-bottom:14px">${t('chatInBrowserNote')}</p><button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`), 700); });
   return true;
 }
 function sheetChatInvite() {
@@ -224,8 +227,8 @@ function sheetChatInvite() {
     shareText = msg;
     sheet(`<h2>${t('chatInviteBtn')}</h2><p class="sub" style="margin-bottom:12px">${t('chatInviteText')}</p>
       <button class="btn p wide" data-act="sharetext">${icon('share')} ${t('shareWord')}</button><div class="gap"></div>
-      ${friendsToSend(msg, sheetChatInvite)}<div class="gap"></div>
-      <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>
+      <button class="btn s wide" data-act="copytext">${t('copyLink')}</button><div class="gap"></div>
+      <button class="btn s wide" data-act="chatpaste" style="background:var(--fill)">${t('chatPasteBtn')}</button>
       <p class="note" style="padding:12px 2px 0">${t('chatPrivacy')}</p>`);
   });
 }
@@ -238,7 +241,8 @@ const chatTime = ts => { const d = new Date(ts * 1000), n = new Date();
 const prevText = m => !m ? t('chatNoMsg') : m.k === 'img' ? t('chatPhotoMsg') : m.k === 'sf' ? '🏁 ' + t('chatChallengeMsg') : m.k === 'sc' ? '📋 ' + t('chatPlanMsg') : m.k === 'pr' ? `🏆 ${m.ex}` : m.k === 'em' ? m.x : (m.from === 'me' ? t('chatYou') + ': ' : '') + m.x;
 function chatInbox() {
   const fr = chatFriends();
-  let html = `<button class="btn p wide" data-act="chatinvite" style="margin-bottom:12px">${icon('plus')} ${t('chatInviteBtn')}</button>`;
+  let html = `<button class="btn p wide" data-act="chatinvite" style="margin-bottom:8px">${icon('plus')} ${t('chatInviteBtn')}</button>
+    <button class="btn s wide" data-act="chatpaste" style="margin-bottom:12px;background:var(--fill)">${t('chatPasteBtn')}</button>`;
   if (!fr.length) return html + `<div class="empty" style="padding:30px 14px">${t('chatEmpty')}</div><p class="note" style="padding:0 6px">${t('chatPrivacy')}</p>`;
   html += `<div class="list">${fr.map(f => { const m = lastMsg(f.pk);
     return `<button class="row chatrow" data-act="chatopen" data-pk="${f.pk}">${ava(f.n, 46, f.av)}<div class="grow"><h3>${esc(f.n)}</h3><div class="sub${f.unread ? ' unread' : ''}">${esc(prevText(m))}</div></div>
@@ -363,6 +367,7 @@ function sheetChatMenu(pk) {
     <label class="field">${t('friendTel')}<input name="p" value="${tel}" inputmode="tel" placeholder="+39 333 1234567"></label>
     <p class="sub" style="margin-bottom:12px">${t('chatTelHint')}</p><button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
     <button class="btn s wide" data-act="chatclear" data-pk="${pk}" style="background:var(--fill)">${t('chatDelete')}</button><div class="gap"></div>
+    <button class="btn s wide" data-act="chatremove" data-pk="${pk}" style="background:var(--fill)">${t('chatRemove')}</button><div class="gap"></div>
     <button class="btn d wide" data-act="chatblock" data-pk="${pk}">${t('chatBlock')}</button>`);
 }
 function sheetChatSettings() {
@@ -432,7 +437,15 @@ Object.assign(acts, {
   },
   chatpick: () => document.getElementById('cfile').click(),
   chatimg: b => { const d = imgCache[b.dataset.imgid]; if (d) sheet(`<img class="big-img" src="${d}" alt="">`); },
-  chatclear: b => { const pk = b.dataset.pk; closeSheet(); undoable(t('chatDeleted'), () => { (chat().msgs[pk] || []).forEach(m => m.d && imgDel(m.id)); chat().msgs[pk] = []; }); },
+  // elimina la conversazione e la toglie dall'elenco (ricompare se l'amico riscrive); le foto si cancellano dopo il tempo per annullare
+  chatclear: b => { const pk = b.dataset.pk, old = (chat().msgs[pk] || []).slice(); closeSheet(); go({name: 'home', tab: 'chat'});
+    undoable(t('chatDeleted'), () => { chat().msgs[pk] = []; if (chat().friends[pk]) chat().friends[pk].hid = 1; });
+    setTimeout(() => { if (!(chat().msgs[pk] || []).length) old.forEach(m => m.d && imgDel(m.id)); }, 9000); },
+  // elimina l'amico: sparisce dalla chat (senza bloccarlo: con un nuovo invito si ritrovano)
+  chatremove: b => { const pk = b.dataset.pk, old = (chat().msgs[pk] || []).slice(); closeSheet(); go({name: 'home', tab: 'chat'});
+    undoable(t('chatRemoved'), () => { delete chat().friends[pk]; delete chat().msgs[pk]; });
+    setTimeout(() => { if (!chat().friends[pk]) old.forEach(m => m.d && imgDel(m.id)); }, 9000); },
+  chatpaste: () => sheetPasteAny(t('chatPasteTitle')),
   chatblock: b => { const pk = b.dataset.pk, c = chat(); closeSheet(); c.blocked.push(pk); delete c.friends[pk]; delete c.msgs[pk]; save(); go({name: 'home', tab: 'chat'}); toast(t('chatBlockedDone')); },
   chatrdel: b => { chat().relays = chat().relays.filter(u => u !== b.dataset.u); save(); chatConnect(); sheetChatSettings(); },
   chatreset: () => { chat().relays = CHAT_RELAYS.slice(); save(); chatConnect(); sheetChatSettings(); },
@@ -463,23 +476,23 @@ if (db.chat && db.chat.sk) nostrLoad().then(() => chatConnect()).catch(() => {})
 // testi
 const CHAT_TXT = {
   it: {tabChat: 'Chat', chatAvatar: 'Foto profilo', chatAvatarDone: 'Foto profilo aggiornata 📸', chatInviteBtn: 'Invita in chat', chatInviteText: 'Manda il tuo link a un amico: quando lo apre vi ritrovate qui, con messaggi, foto ed emoji.', chatEmpty: 'Nessuna chat. Invita un amico: scrivetevi qui, con foto ed emoji, senza dare il numero.', chatPrivacy: 'Messaggi cifrati da un capo all’altro. Passano da server pubblici che non possono leggerli ma vedono chi scrive a chi e quando. Il messaggio arriva quando apri l’app: puoi avvisare l’amico su WhatsApp.',
-    chatInApp: 'Nella chat dell\'app', chatChallengeMsg: 'Sfida', chatPlanMsg: 'Scheda', chatAddChallenge: 'Aggiungi la sfida', chatSavePlan: 'Salva la scheda', chatLifts: n => `${n} esercizi`, chatDays: n => `${n} giorni`, chatSendFail: 'Non riesco a inviarla in chat: manda il link.', chatStart: 'Scrivi il primo messaggio 💪', chatPh: 'Scrivi un messaggio…', chatSend: 'Invia', chatPhoto: 'Foto', chatYou: 'Tu', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Nessun messaggio', chatToday: 'Oggi', chatSettings: 'Chat', chatRelays: 'Server di appoggio', chatRelaysText: 'Relay pubblici dove passano i messaggi cifrati. Più sono, meglio arriva.', chatRelayAdd: 'Aggiungi un server', chatRelayBtn: 'Aggiungi', chatRelayBad: 'Scrivi l’indirizzo con wss://', chatRelayReset: 'Ripristina i server consigliati', chatRotate: 'Nuovo link d’invito', chatRotated: 'Nuovo link: i vecchi inviti non funzionano più', chatUp: 'connesso', chatDown: 'non raggiungibile',
+    chatInApp: 'Nella chat dell\'app', chatChallengeMsg: 'Sfida', chatPlanMsg: 'Scheda', chatAddChallenge: 'Aggiungi la sfida', chatSavePlan: 'Salva la scheda', chatLifts: n => `${n} esercizi`, chatDays: n => `${n} giorni`, chatSendFail: 'Non riesco a inviarla in chat: manda il link.', chatRemove: 'Elimina amico', chatRemoved: 'Amico eliminato', chatPasteBtn: 'Ho ricevuto un link', chatPasteTitle: 'Incolla il link ricevuto', chatInBrowserNote: 'Lo trovi già in Chat qui nel browser. Se usi Gym dall’icona sulla schermata Home, copia il link, apri l’app e tocca Chat → «Ho ricevuto un link».', chatStart: 'Scrivi il primo messaggio 💪', chatPh: 'Scrivi un messaggio…', chatSend: 'Invia', chatPhoto: 'Foto', chatYou: 'Tu', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Nessun messaggio', chatToday: 'Oggi', chatSettings: 'Chat', chatRelays: 'Server di appoggio', chatRelaysText: 'Relay pubblici dove passano i messaggi cifrati. Più sono, meglio arriva.', chatRelayAdd: 'Aggiungi un server', chatRelayBtn: 'Aggiungi', chatRelayBad: 'Scrivi l’indirizzo con wss://', chatRelayReset: 'Ripristina i server consigliati', chatRotate: 'Nuovo link d’invito', chatRotated: 'Nuovo link: i vecchi inviti non funzionano più', chatUp: 'connesso', chatDown: 'non raggiungibile',
     chatConnected: (n, m) => `${n} di ${m} server connessi`, chatWaNudge: 'Avvisa su WhatsApp', chatWaMsg: n => `${n} ti ha scritto su Gym Tracker 💪 Apri l’app per leggere:`, chatTelHint: 'Il numero serve solo per avvisarlo su WhatsApp. Resta sul tuo telefono.', chatDelete: 'Elimina la conversazione', chatDeleted: 'Conversazione eliminata', chatBlock: 'Blocca', chatBlockedDone: 'Amico bloccato',
     chatAdded: n => `${n} aggiunto alla chat`, chatReopened: n => `Chat con ${n}`, chatLinkFrom: n => `${n} ti invita in chat`, chatInviteMsg: n => `${n} ti invita a chattare su Gym Tracker 💪 Tocca il link e aggiungilo alla Home:`, chatShareHere: 'Invia in chat', chatPhotoFail: 'Non riesco a inviare la foto.', delete: 'Elimina'},
   en: {tabChat: 'Chat', chatAvatar: 'Profile photo', chatAvatarDone: 'Profile photo updated 📸', chatInviteBtn: 'Invite to chat', chatInviteText: 'Send your link to a friend: when they open it you’ll meet here, with messages, photos and emoji.', chatEmpty: 'No chats yet. Invite a friend: write here, with photos and emoji, without sharing your number.', chatPrivacy: 'End-to-end encrypted messages. They pass through public servers that can’t read them but see who writes to whom and when. A message arrives when you open the app: you can nudge your friend on WhatsApp.',
-    chatInApp: 'In the app chat', chatChallengeMsg: 'Challenge', chatPlanMsg: 'Workout plan', chatAddChallenge: 'Add the challenge', chatSavePlan: 'Save the plan', chatLifts: n => `${n} exercises`, chatDays: n => `${n} days`, chatSendFail: 'Couldn\'t send it in chat: send the link instead.', chatStart: 'Write the first message 💪', chatPh: 'Write a message…', chatSend: 'Send', chatPhoto: 'Photo', chatYou: 'You', chatPhotoMsg: '📷 Photo', chatNoMsg: 'No messages', chatToday: 'Today', chatSettings: 'Chat', chatRelays: 'Relay servers', chatRelaysText: 'Public relays that carry the encrypted messages. The more, the better they arrive.', chatRelayAdd: 'Add a server', chatRelayBtn: 'Add', chatRelayBad: 'Write the address starting with wss://', chatRelayReset: 'Restore recommended servers', chatRotate: 'New invite link', chatRotated: 'New link: old invites no longer work', chatUp: 'connected', chatDown: 'unreachable',
+    chatInApp: 'In the app chat', chatChallengeMsg: 'Challenge', chatPlanMsg: 'Workout plan', chatAddChallenge: 'Add the challenge', chatSavePlan: 'Save the plan', chatLifts: n => `${n} exercises`, chatDays: n => `${n} days`, chatSendFail: 'Couldn\'t send it in chat: send the link instead.', chatRemove: 'Remove friend', chatRemoved: 'Friend removed', chatPasteBtn: 'I received a link', chatPasteTitle: 'Paste the link you received', chatInBrowserNote: 'You’ll find them in Chat here in the browser. If you use Gym from the Home Screen icon, copy the link, open the app and tap Chat → “I received a link”.', chatStart: 'Write the first message 💪', chatPh: 'Write a message…', chatSend: 'Send', chatPhoto: 'Photo', chatYou: 'You', chatPhotoMsg: '📷 Photo', chatNoMsg: 'No messages', chatToday: 'Today', chatSettings: 'Chat', chatRelays: 'Relay servers', chatRelaysText: 'Public relays that carry the encrypted messages. The more, the better they arrive.', chatRelayAdd: 'Add a server', chatRelayBtn: 'Add', chatRelayBad: 'Write the address starting with wss://', chatRelayReset: 'Restore recommended servers', chatRotate: 'New invite link', chatRotated: 'New link: old invites no longer work', chatUp: 'connected', chatDown: 'unreachable',
     chatConnected: (n, m) => `${n} of ${m} servers connected`, chatWaNudge: 'Nudge on WhatsApp', chatWaMsg: n => `${n} wrote to you on Gym Tracker 💪 Open the app to read:`, chatTelHint: 'The number is only used to nudge them on WhatsApp. It stays on your phone.', chatDelete: 'Delete conversation', chatDeleted: 'Conversation deleted', chatBlock: 'Block', chatBlockedDone: 'Friend blocked',
     chatAdded: n => `${n} added to chat`, chatReopened: n => `Chat with ${n}`, chatLinkFrom: n => `${n} invites you to chat`, chatInviteMsg: n => `${n} invites you to chat on Gym Tracker 💪 Tap the link and add it to your Home Screen:`, chatShareHere: 'Send in chat', chatPhotoFail: 'I can’t send the photo.', delete: 'Delete'},
   es: {tabChat: 'Chat', chatAvatar: 'Foto de perfil', chatAvatarDone: 'Foto de perfil actualizada 📸', chatInviteBtn: 'Invitar al chat', chatInviteText: 'Envía tu enlace a un amigo: cuando lo abra os encontraréis aquí, con mensajes, fotos y emoji.', chatEmpty: 'Aún no hay chats. Invita a un amigo: escribid aquí, con fotos y emoji, sin dar el número.', chatPrivacy: 'Mensajes cifrados de extremo a extremo. Pasan por servidores públicos que no pueden leerlos, pero ven quién escribe a quién y cuándo. El mensaje llega al abrir la app: puedes avisar al amigo por WhatsApp.',
-    chatInApp: 'En el chat de la app', chatChallengeMsg: 'Desafío', chatPlanMsg: 'Rutina', chatAddChallenge: 'Añadir el desafío', chatSavePlan: 'Guardar la rutina', chatLifts: n => `${n} ejercicios`, chatDays: n => `${n} días`, chatSendFail: 'No se pudo enviar en el chat: envía el enlace.', chatStart: 'Escribe el primer mensaje 💪', chatPh: 'Escribe un mensaje…', chatSend: 'Enviar', chatPhoto: 'Foto', chatYou: 'Tú', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Sin mensajes', chatToday: 'Hoy', chatSettings: 'Chat', chatRelays: 'Servidores de apoyo', chatRelaysText: 'Relays públicos por donde pasan los mensajes cifrados. Cuantos más, mejor llegan.', chatRelayAdd: 'Añadir un servidor', chatRelayBtn: 'Añadir', chatRelayBad: 'Escribe la dirección con wss://', chatRelayReset: 'Restaurar los servidores recomendados', chatRotate: 'Nuevo enlace de invitación', chatRotated: 'Nuevo enlace: las invitaciones antiguas ya no funcionan', chatUp: 'conectado', chatDown: 'no disponible',
+    chatInApp: 'En el chat de la app', chatChallengeMsg: 'Desafío', chatPlanMsg: 'Rutina', chatAddChallenge: 'Añadir el desafío', chatSavePlan: 'Guardar la rutina', chatLifts: n => `${n} ejercicios`, chatDays: n => `${n} días`, chatSendFail: 'No se pudo enviar en el chat: envía el enlace.', chatRemove: 'Eliminar amigo', chatRemoved: 'Amigo eliminado', chatPasteBtn: 'He recibido un enlace', chatPasteTitle: 'Pega el enlace recibido', chatInBrowserNote: 'Ya está en el Chat aquí en el navegador. Si usas Gym desde el icono de inicio, copia el enlace, abre la app y toca Chat → «He recibido un enlace».', chatStart: 'Escribe el primer mensaje 💪', chatPh: 'Escribe un mensaje…', chatSend: 'Enviar', chatPhoto: 'Foto', chatYou: 'Tú', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Sin mensajes', chatToday: 'Hoy', chatSettings: 'Chat', chatRelays: 'Servidores de apoyo', chatRelaysText: 'Relays públicos por donde pasan los mensajes cifrados. Cuantos más, mejor llegan.', chatRelayAdd: 'Añadir un servidor', chatRelayBtn: 'Añadir', chatRelayBad: 'Escribe la dirección con wss://', chatRelayReset: 'Restaurar los servidores recomendados', chatRotate: 'Nuevo enlace de invitación', chatRotated: 'Nuevo enlace: las invitaciones antiguas ya no funcionan', chatUp: 'conectado', chatDown: 'no disponible',
     chatConnected: (n, m) => `${n} de ${m} servidores conectados`, chatWaNudge: 'Avisar por WhatsApp', chatWaMsg: n => `${n} te ha escrito en Gym Tracker 💪 Abre la app para leer:`, chatTelHint: 'El número solo sirve para avisarle por WhatsApp. Se queda en tu teléfono.', chatDelete: 'Eliminar la conversación', chatDeleted: 'Conversación eliminada', chatBlock: 'Bloquear', chatBlockedDone: 'Amigo bloqueado',
     chatAdded: n => `${n} añadido al chat`, chatReopened: n => `Chat con ${n}`, chatLinkFrom: n => `${n} te invita al chat`, chatInviteMsg: n => `${n} te invita a chatear en Gym Tracker 💪 Toca el enlace y añádelo a inicio:`, chatShareHere: 'Enviar al chat', chatPhotoFail: 'No puedo enviar la foto.', delete: 'Eliminar'},
   fr: {tabChat: 'Chat', chatAvatar: 'Photo de profil', chatAvatarDone: 'Photo de profil mise à jour 📸', chatInviteBtn: 'Inviter au chat', chatInviteText: 'Envoyez votre lien à un ami : quand il l’ouvre, vous vous retrouvez ici, avec messages, photos et emoji.', chatEmpty: 'Pas encore de chat. Invitez un ami : écrivez-vous ici, avec photos et emoji, sans donner votre numéro.', chatPrivacy: 'Messages chiffrés de bout en bout. Ils passent par des serveurs publics qui ne peuvent pas les lire mais voient qui écrit à qui et quand. Le message arrive à l’ouverture de l’app : vous pouvez prévenir l’ami sur WhatsApp.',
-    chatInApp: 'Dans le chat de l’app', chatChallengeMsg: 'Défi', chatPlanMsg: 'Programme', chatAddChallenge: 'Ajouter le défi', chatSavePlan: 'Enregistrer le programme', chatLifts: n => `${n} exercices`, chatDays: n => `${n} jours`, chatSendFail: 'Impossible de l’envoyer dans le chat : envoyez le lien.', chatStart: 'Écrivez le premier message 💪', chatPh: 'Écrire un message…', chatSend: 'Envoyer', chatPhoto: 'Photo', chatYou: 'Vous', chatPhotoMsg: '📷 Photo', chatNoMsg: 'Aucun message', chatToday: 'Aujourd’hui', chatSettings: 'Chat', chatRelays: 'Serveurs relais', chatRelaysText: 'Relais publics par où passent les messages chiffrés. Plus il y en a, mieux ils arrivent.', chatRelayAdd: 'Ajouter un serveur', chatRelayBtn: 'Ajouter', chatRelayBad: 'Écrivez l’adresse avec wss://', chatRelayReset: 'Rétablir les serveurs conseillés', chatRotate: 'Nouveau lien d’invitation', chatRotated: 'Nouveau lien : les anciennes invitations ne marchent plus', chatUp: 'connecté', chatDown: 'injoignable',
+    chatInApp: 'Dans le chat de l’app', chatChallengeMsg: 'Défi', chatPlanMsg: 'Programme', chatAddChallenge: 'Ajouter le défi', chatSavePlan: 'Enregistrer le programme', chatLifts: n => `${n} exercices`, chatDays: n => `${n} jours`, chatSendFail: 'Impossible de l’envoyer dans le chat : envoyez le lien.', chatRemove: 'Supprimer l’ami', chatRemoved: 'Ami supprimé', chatPasteBtn: 'J’ai reçu un lien', chatPasteTitle: 'Collez le lien reçu', chatInBrowserNote: 'Vous le trouvez déjà dans le Chat ici, dans le navigateur. Si vous utilisez Gym depuis l’icône d’accueil, copiez le lien, ouvrez l’app et touchez Chat → « J’ai reçu un lien ».', chatStart: 'Écrivez le premier message 💪', chatPh: 'Écrire un message…', chatSend: 'Envoyer', chatPhoto: 'Photo', chatYou: 'Vous', chatPhotoMsg: '📷 Photo', chatNoMsg: 'Aucun message', chatToday: 'Aujourd’hui', chatSettings: 'Chat', chatRelays: 'Serveurs relais', chatRelaysText: 'Relais publics par où passent les messages chiffrés. Plus il y en a, mieux ils arrivent.', chatRelayAdd: 'Ajouter un serveur', chatRelayBtn: 'Ajouter', chatRelayBad: 'Écrivez l’adresse avec wss://', chatRelayReset: 'Rétablir les serveurs conseillés', chatRotate: 'Nouveau lien d’invitation', chatRotated: 'Nouveau lien : les anciennes invitations ne marchent plus', chatUp: 'connecté', chatDown: 'injoignable',
     chatConnected: (n, m) => `${n} serveurs sur ${m} connectés`, chatWaNudge: 'Prévenir sur WhatsApp', chatWaMsg: n => `${n} vous a écrit sur Gym Tracker 💪 Ouvrez l’app pour lire :`, chatTelHint: 'Le numéro sert seulement à le prévenir sur WhatsApp. Il reste sur votre téléphone.', chatDelete: 'Supprimer la conversation', chatDeleted: 'Conversation supprimée', chatBlock: 'Bloquer', chatBlockedDone: 'Ami bloqué',
     chatAdded: n => `${n} ajouté au chat`, chatReopened: n => `Chat avec ${n}`, chatLinkFrom: n => `${n} vous invite au chat`, chatInviteMsg: n => `${n} vous invite à discuter sur Gym Tracker 💪 Touchez le lien et ajoutez-le à l’accueil :`, chatShareHere: 'Envoyer dans le chat', chatPhotoFail: 'Je ne peux pas envoyer la photo.', delete: 'Supprimer'},
   de: {tabChat: 'Chat', chatAvatar: 'Profilfoto', chatAvatarDone: 'Profilfoto aktualisiert 📸', chatInviteBtn: 'Zum Chat einladen', chatInviteText: 'Sende deinen Link an einen Freund: Sobald er ihn öffnet, trefft ihr euch hier, mit Nachrichten, Fotos und Emoji.', chatEmpty: 'Noch keine Chats. Lade einen Freund ein: Schreibt euch hier, mit Fotos und Emoji, ohne Nummer.', chatPrivacy: 'Ende-zu-Ende-verschlüsselte Nachrichten. Sie laufen über öffentliche Server, die sie nicht lesen können, aber sehen, wer wem wann schreibt. Die Nachricht kommt an, wenn du die App öffnest: Du kannst den Freund über WhatsApp anstupsen.',
-    chatInApp: 'Im Chat der App', chatChallengeMsg: 'Herausforderung', chatPlanMsg: 'Trainingsplan', chatAddChallenge: 'Herausforderung hinzufügen', chatSavePlan: 'Plan speichern', chatLifts: n => `${n} Übungen`, chatDays: n => `${n} Tage`, chatSendFail: 'Senden im Chat fehlgeschlagen: schick den Link.', chatStart: 'Schreibe die erste Nachricht 💪', chatPh: 'Nachricht schreiben…', chatSend: 'Senden', chatPhoto: 'Foto', chatYou: 'Du', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Keine Nachrichten', chatToday: 'Heute', chatSettings: 'Chat', chatRelays: 'Relay-Server', chatRelaysText: 'Öffentliche Relays, über die die verschlüsselten Nachrichten laufen. Je mehr, desto besser kommen sie an.', chatRelayAdd: 'Server hinzufügen', chatRelayBtn: 'Hinzufügen', chatRelayBad: 'Adresse mit wss:// eingeben', chatRelayReset: 'Empfohlene Server wiederherstellen', chatRotate: 'Neuer Einladungslink', chatRotated: 'Neuer Link: alte Einladungen funktionieren nicht mehr', chatUp: 'verbunden', chatDown: 'nicht erreichbar',
+    chatInApp: 'Im Chat der App', chatChallengeMsg: 'Herausforderung', chatPlanMsg: 'Trainingsplan', chatAddChallenge: 'Herausforderung hinzufügen', chatSavePlan: 'Plan speichern', chatLifts: n => `${n} Übungen`, chatDays: n => `${n} Tage`, chatSendFail: 'Senden im Chat fehlgeschlagen: schick den Link.', chatRemove: 'Freund entfernen', chatRemoved: 'Freund entfernt', chatPasteBtn: 'Ich habe einen Link erhalten', chatPasteTitle: 'Erhaltenen Link einfügen', chatInBrowserNote: 'Du findest ihn schon im Chat hier im Browser. Nutzt du Gym über das Symbol auf dem Home-Bildschirm, kopiere den Link, öffne die App und tippe auf Chat → „Ich habe einen Link erhalten“.', chatStart: 'Schreibe die erste Nachricht 💪', chatPh: 'Nachricht schreiben…', chatSend: 'Senden', chatPhoto: 'Foto', chatYou: 'Du', chatPhotoMsg: '📷 Foto', chatNoMsg: 'Keine Nachrichten', chatToday: 'Heute', chatSettings: 'Chat', chatRelays: 'Relay-Server', chatRelaysText: 'Öffentliche Relays, über die die verschlüsselten Nachrichten laufen. Je mehr, desto besser kommen sie an.', chatRelayAdd: 'Server hinzufügen', chatRelayBtn: 'Hinzufügen', chatRelayBad: 'Adresse mit wss:// eingeben', chatRelayReset: 'Empfohlene Server wiederherstellen', chatRotate: 'Neuer Einladungslink', chatRotated: 'Neuer Link: alte Einladungen funktionieren nicht mehr', chatUp: 'verbunden', chatDown: 'nicht erreichbar',
     chatConnected: (n, m) => `${n} von ${m} Servern verbunden`, chatWaNudge: 'Per WhatsApp anstupsen', chatWaMsg: n => `${n} hat dir auf Gym Tracker geschrieben 💪 Öffne die App zum Lesen:`, chatTelHint: 'Die Nummer dient nur zum Anstupsen über WhatsApp. Sie bleibt auf deinem Handy.', chatDelete: 'Unterhaltung löschen', chatDeleted: 'Unterhaltung gelöscht', chatBlock: 'Blockieren', chatBlockedDone: 'Freund blockiert',
     chatAdded: n => `${n} zum Chat hinzugefügt`, chatReopened: n => `Chat mit ${n}`, chatLinkFrom: n => `${n} lädt dich zum Chat ein`, chatInviteMsg: n => `${n} lädt dich zum Chat auf Gym Tracker ein 💪 Tippe auf den Link und füge ihn zum Home-Bildschirm hinzu:`, chatShareHere: 'Im Chat senden', chatPhotoFail: 'Ich kann das Foto nicht senden.', delete: 'Löschen'},
 };

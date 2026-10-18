@@ -60,7 +60,7 @@ window.G3D = (() => {
     fig.traverse(o => {
       if (o.isMesh) {
         o.frustumCulled = false;
-        o.material = new T.MeshStandardMaterial({color: {hair: 0x2d2723, eyed: 0x1d1916, eyew: 0xe9e6e1}[o.name] || 0xffffff, roughness: o.name === 'hair' ? .85 : o.name === 'skin' ? .58 : .3, metalness: 0, vertexColors: o.name === 'skin', envMapIntensity: .8});
+        o.material = new T.MeshStandardMaterial({color: {hair: 0x2d2723, eyed: 0x1d1916, eyew: 0xe9e6e1, shorts: 0x2b2e34}[o.name] || 0xffffff, roughness: o.name === 'hair' || o.name === 'shorts' ? .85 : o.name === 'skin' ? .58 : .3, metalness: 0, vertexColors: o.name === 'skin', envMapIntensity: .8, side: o.name === 'skin' || o.name === 'shorts' ? T.DoubleSide : T.FrontSide});
         if (o.name === 'skin') { const c = o.geometry.attributes.color, code = new Float32Array(c.count * 3); for (let i = 0; i < c.count; i++) { code[i * 3] = c.getX(i); code[i * 3 + 1] = c.getY(i); code[i * 3 + 2] = c.getZ(i); } o.userData.code = code; }
         meshes.push(o);
       }

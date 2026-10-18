@@ -78,7 +78,7 @@ RR = [
  ('leg', r'region of leg'),
  ('knee', r'region of knee|popliteal'),
  ('thigh', r'region of thigh|femoral triangle'),
- ('pelvis', r'gluteal|sacral|anal region|urogenital|hip region|inguinal|hypogastric'),
+ ('pelvis', r'gluteal|sacral|anal region|urogenital|hip region|inguinal|hypogastric|pubic'),
  ('abdomen', r'epigastric|hypochondriac|umbilic|region of abdomen|lumbar'),
  ('thorax', r'pectoral|mammary|presternal|infraclavicular|region of thorax|scapular|interscapular|infrascapular|auscultation|vertebral region'),
  ('neck', r'triangle|region of neck|sternocleidomastoid|supraclavicular'),
@@ -108,7 +108,7 @@ for o in list(reg.all_objects):
     if o.type != 'MESH' or len(o.data.polygons) == 0 or o.name.endswith('.g'): continue
     b = base(o.name).lower()
     if b in ('hairs of head', 'hairs of eyebrow'): hair_objs.append(o); continue
-    if b in ('pubic hairs', 'eyelashes', 'eyebrow'): continue
+    if b in ('eyelashes', 'eyebrow', 'urogenital region', 'pubic hairs'): continue   # niente genitali: la zona si richiude liscia piu' avanti
     skin_objs.append(o)
 print('skin objs', len(skin_objs), 'hair', len(hair_objs))
 
@@ -157,11 +157,39 @@ V, T = weld_subdivide(V0, T0, SUBD)
 kd0 = kd_of(V0)
 lab = np.array([L0[kd0.find(v.tolist())[1]] for v in V])
 print('skin verts', len(V), 'tris', len(T))
+# chiude il vuoto lasciato dalla zona genitale con una superficie liscia (come un manichino)
+def fill_crotch(V, T):
+    me = bpy.data.meshes.new('fc'); me.from_pydata(V.tolist(), [], T.tolist()); me.update()
+    bm = bmesh.new(); bm.from_mesh(me); bm.verts.ensure_lookup_table()
+    hz = J['pelvis'][2]
+    near = lambda v: abs(v.co.x) < .13 and hz - .26 < v.co.z < hz + .08 and v.co.y < .06
+    edges = [e for e in bm.edges if e.is_boundary and near(e.verts[0]) and near(e.verts[1])]
+    n0 = len(bm.faces)
+    res = bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+    newf = res.get('faces', [])
+    bmesh.ops.triangulate(bm, faces=newf)
+    bm.faces.ensure_lookup_table()
+    fillv = set(v for f in bm.faces[n0:] for v in f.verts)
+    # suddivide il riempimento e lo leviga, tenendo fermo il bordo
+    newf = [f for f in bm.faces[n0:]]
+    r2 = bmesh.ops.subdivide_edges(bm, edges=list(set(e for f in newf for e in f.edges if all(v in fillv for v in e.verts))), cuts=2, use_grid_fill=True)
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    bm.verts.ensure_lookup_table()
+    inner = [v for v in bm.verts if near(v) and not v.is_boundary and (v in fillv or v.index >= len(V))]
+    for _ in range(60): bmesh.ops.smooth_vert(bm, verts=inner, factor=.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(me); bm.free()
+    V2 = np.empty(len(me.vertices) * 3); me.vertices.foreach_get('co', V2); V2 = V2.reshape(-1, 3)
+    me.calc_loop_triangles(); T2 = np.empty(len(me.loop_triangles) * 3, dtype=np.int64); me.loop_triangles.foreach_get('vertices', T2)
+    bpy.data.meshes.remove(me)
+    print('crotch filled: boundary edges', len(edges), 'new faces', len(newf), 'verts', len(V), '->', len(V2))
+    return V2, T2.reshape(-1, 3)
+V, T = fill_crotch(V, T)
+lab = np.array([L0[kd0.find(v.tolist())[1]] for v in V])
 # niente genitali: la regione urogenitale viene levigata fino a una superficie liscia da manichino (bordi fermi)
 def smooth_region(V, T, mask, iters=120):
     me = bpy.data.meshes.new('sm'); me.from_pydata(V.tolist(), [], T.tolist()); me.update()
     bm = bmesh.new(); bm.from_mesh(me); bm.verts.ensure_lookup_table()
-    inner = [v for v in bm.verts if mask[v.index] and all(mask[e.other_vert(v).index] for e in v.link_edges)]
+    inner = [v for v in bm.verts if mask[v.index] and not v.is_boundary and all(mask[e.other_vert(v).index] for e in v.link_edges)]
     for _ in range(iters): bmesh.ops.smooth_vert(bm, verts=inner, factor=.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
     out = np.array([v.co[:] for v in bm.verts]); bm.free(); bpy.data.meshes.remove(me)
     return out, len(inner)
@@ -169,7 +197,7 @@ ug = np.array([kind_of_name == 'x' for kind_of_name in []])
 UGI = [i for i, o in enumerate(skin_objs)]
 ugmask = np.zeros(len(V), bool)
 kd_ug = None
-_ugo = [o for o in skin_objs if base(o.name).lower() in ('urogenital region',)]
+_ugo = [o for o in skin_objs if base(o.name).lower() in ('urogenital region', 'pubic hairs')]
 if _ugo:
     UV = np.vstack([world_arrays(o)[0] for o in _ugo]); kd_ug = kd_of(UV)
     for i, v in enumerate(V):
@@ -182,6 +210,20 @@ if _ugo:
     V[sel, 1] = yb + (V[sel, 1] - yb) * .12
     V, _ = smooth_region(V, T, ugmask, 60)
     print('urogenital smoothed', int(ugmask.sum()), n_in)
+# davanti al cavallo nessun punto sporge oltre la linea che unisce il davanti delle due cosce (y negativa = davanti)
+hz = J['pelvis'][2]
+zone = (np.abs(V[:, 0]) < .095) & (V[:, 2] > hz - .2) & (V[:, 2] < hz + .02) & (V[:, 1] < .03)
+ring = (np.abs(V[:, 0]) > .095) & (np.abs(V[:, 0]) < .14) & (V[:, 1] < .03)
+zs = np.linspace(hz - .22, hz + .04, 14); lim = []
+for z0 in zs:
+    sel = ring & (np.abs(V[:, 2] - z0) < .02)
+    lim.append(V[sel, 1].min() if sel.any() else -.06)
+lim = np.interp(V[zone, 2], zs, np.array(lim)) + .02
+before = V[zone, 1].min()
+V[zone, 1] = np.maximum(V[zone, 1], lim)
+cm = np.zeros(len(V), bool); cm[np.nonzero(zone)[0]] = True
+V, _ = smooth_region(V, T, cm, 80)
+print('crotch flattened', int(zone.sum()), round(float(before), 3), '->', round(float(V[zone, 1].min()), 3))
 
 W = np.zeros((len(V), len(ALLB)))
 for ki, kind in enumerate(KINDS):
@@ -269,7 +311,8 @@ th = KINDS.index('thigh'); pel = KINDS.index('pelvis'); ab = KINDS.index('abdome
 for i, v in enumerate(V):
     k = lab[i, 0]; s = 'lrc'[lab[i, 1]] if lab[i, 1] < 2 else 'l'
     hipz, knz = J['hip.' + s][2], J['knee.' + s][2]
-    if k == pel or (k == th and v[2] > knz + .64 * (hipz - knz)) or (k == ab and v[2] < J['pelvis'][2] + .085): COLS[i, 2] = 1
+    # pantaloncini per altezza: dalla vita a meta' coscia, su busto, bacino e cosce (mai su braccia e mani)
+    if KINDS[k] not in ('hand', 'wrist', 'forearm', 'elbow', 'arm') and knz + .64 * (hipz - knz) < v[2] < J['pelvis'][2] + .085: COLS[i, 2] = 1
 print('shorts verts', int(COLS[:, 2].sum()))
 json.dump(GIDS, open(OUT + '.groups.json', 'w'))
 
@@ -290,6 +333,60 @@ def make_obj(name, V, T, Wm, color, cols=None):
     mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = color
     ob.data.materials.append(mat); created.append(ob)
 make_obj('skin', V, T, W, (.85, .84, .82, 1), COLS)
+
+# pantaloncini come capo vero, generati da anelli lisci attorno a bacino e cosce (non copiano le forme sotto)
+def build_shorts():
+    hz, knz = J['pelvis'][2], J['knee.l'][2]
+    top, crotch, bottom = hz + .07, hz - .085, knz + .64 * (J['hip.l'][2] - knz)
+    kindsOK = np.array([KINDS[k] not in ('hand', 'wrist', 'forearm', 'elbow', 'arm') for k in lab[:, 0]])
+    def ring(P, cx, cy, n=48, pad=.009, skipFront=False):
+        ang = np.arctan2(P[:, 1] - cy, P[:, 0] - cx); r = np.hypot(P[:, 0] - cx, P[:, 1] - cy)
+        if skipFront:                       # davanti al cavallo: ignora la zona centrale, il contorno si interpola dai lati
+            keep = ~((np.abs(P[:, 0]) < .085) & (P[:, 1] < cy)); ang, r = ang[keep], r[keep]
+        out = np.full(n, np.nan)
+        for i in range(n):
+            a = -np.pi + 2 * np.pi * i / n; d = np.abs(np.angle(np.exp(1j * (ang - a)))); sel = d < np.pi / n * 1.7
+            if sel.any(): out[i] = r[sel].max()
+        idx = np.arange(n); good = ~np.isnan(out)
+        out = np.interp(idx, np.concatenate([idx[good] - n, idx[good], idx[good] + n]), np.tile(out[good], 3))
+        for _ in range(4): out = (np.roll(out, 1) + 2 * out + np.roll(out, -1)) / 4
+        return [(cx + (rr + pad) * np.cos(-np.pi + 2 * np.pi * i / n), cy + (rr + pad) * np.sin(-np.pi + 2 * np.pi * i / n)) for i, rr in enumerate(out)]
+    verts, faces, rings = [], [], []
+    def add_ring(pts, z):
+        i0 = len(verts); verts.extend([(x, y, z) for x, y in pts]); return i0
+    def loft(a, b, n=48):
+        for i in range(n): j = (i + 1) % n; faces.append((a + i, a + j, b + j, b + i))
+    # bacino: un solo anello attorno a tutte e due le cosce, dalla vita al cavallo
+    prev = None
+    for z in np.linspace(top, crotch, 8):
+        sel = kindsOK & (np.abs(V[:, 2] - z) < .012)
+        P = V[sel]; cx, cy = 0.0, float(np.median(P[:, 1]))
+        i0 = add_ring(ring(P, cx, cy, skipFront=z < hz + .03), z)
+        if prev is not None: loft(prev, i0)
+        prev = i0
+    c = len(verts); verts.append((0.0, float(np.mean([v[1] for v in verts[prev:prev + 48]])), crotch - .005))
+    for i in range(48): faces.append((prev + i, prev + (i + 1) % 48, c)[::-1])
+    # gambe: un anello per coscia dal cavallo a meta' coscia
+    for sg in (1, -1):
+        prev = None
+        for z in np.linspace(crotch + .035, bottom, 6):
+            sel = kindsOK & (np.abs(V[:, 2] - z) < .012) & (V[:, 0] * sg > .005)
+            P = V[sel]; cx, cy = float(np.median(P[:, 0])), float(np.median(P[:, 1]))
+            i0 = add_ring(ring(P, cx, cy, pad=.008), z)
+            if prev is not None: loft(prev, i0)
+            prev = i0
+    SVv = np.array(verts)
+    me = bpy.data.meshes.new('shorts'); me.from_pydata(SVv.tolist(), [], faces); me.update()
+    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bmesh.ops.triangulate(bm, faces=bm.faces); bm.to_mesh(me); bm.free()
+    me.calc_loop_triangles(); TT = np.empty(len(me.loop_triangles) * 3, dtype=np.int64); me.loop_triangles.foreach_get('vertices', TT)
+    VV = np.empty(len(me.vertices) * 3); me.vertices.foreach_get('co', VV); VV = VV.reshape(-1, 3); bpy.data.meshes.remove(me)
+    names = ['root', 'spine1', 'thigh.l', 'thigh.r']
+    Wn = seg_weights(VV, names); WW = np.zeros((len(VV), len(ALLB)))
+    for j, n in enumerate(names): WW[:, ALLB.index(n)] = Wn[:, j]
+    make_obj('shorts', VV, TT.reshape(-1, 3), WW, (.16, .17, .19, 1))
+    print('shorts garment', len(VV), 'verts')
+build_shorts()
+
 
 # capelli e sopracciglia
 HV, HT, _ = merged(hair_objs, labels=False)
