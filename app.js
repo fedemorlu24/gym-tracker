@@ -404,6 +404,7 @@ function render() {
   document.getElementById('tabbar').innerHTML = tabs ? tabbar() : '';
   document.getElementById('tabbar').hidden = !tabs;
   document.title = t('shareTitle');
+  const wk = document.getElementById('wk-wrap'); if (wk) wk.scrollLeft = wk.scrollWidth;
 }
 function tabbar() {
   const tab = view.tab || 'sessions';
@@ -444,7 +445,48 @@ function exerciseNames() {
   }));
   return [...m.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
+// vista a settimane: righe = esercizi, colonne = settimane, celle = kg × ripetizioni
+function weeksView() {
+  const f = view.wf || '', pick = s => !f || key(s.name) === f;
+  const ss = doneSessions().filter(pick);
+  const seen = new Set(), sessNames = [...db.sessions].sort((a, b) => b.date.localeCompare(a.date))
+    .map(s => s.name).filter(n => !seen.has(key(n)) && seen.add(key(n)));
+  const chips = sessNames.length > 1 ? `<div class="hscroll">${[['', t('allSessions')], ...sessNames.map(n => [key(n), n])].map(([k, l]) =>
+    `<button class="chip" data-act="wfilter" data-k="${esc(k)}" aria-pressed="${k === f}">${esc(l)}</button>`).join('')}</div>` : '';
+  if (!ss.length) return chips + `<div class="empty">${t('weeksEmpty')}</div>`;
+  const first = weekOf(ss.map(s => s.date).sort()[0]), cw = weekOf(today()), weeks = [];
+  for (let w = first; w <= cw; w = addDays(w, 7)) weeks.push(w);
+  // esercizi presenti nelle sedute filtrate, i più recenti in alto
+  const exs = new Map();
+  [...ss].sort((a, b) => a.date.localeCompare(b.date)).forEach(s => s.exercises.forEach(e => { if (e.sets.length) exs.set(key(e.name), e.name); }));
+  const rows = [...exs.entries()].reverse().map(([k, name]) => {
+    let prevBest = 0;
+    const cells = weeks.map(w => {
+      const en = ss.filter(s => weekOf(s.date) === w).sort((a, b) => a.date.localeCompare(b.date))
+        .flatMap(s => s.exercises.filter(e => key(e.name) === k && e.sets.length).map(e => ({s, sets: e.sets})));
+      if (!en.length) return `<td class="none">·</td>`;
+      const all = en.flatMap(x => x.sets), best = Math.max(...all.map(e1rm)), bs = all.find(x => e1rm(x) === best);
+      const cls = prevBest ? (best > prevBest + 1e-9 ? 'up' : best < prevBest - 1e-9 ? 'down' : 'eq') : 'eq';
+      prevBest = best;
+      const body = en.map(x => (en.length > 1 ? `<i>${dt(x.s.date).toLocaleDateString(locale, {weekday: 'short'})}</i>` : '') +
+        x.sets.map(z => `<span${z === bs ? ' class="b"' : ''}>${fmtKg(z.kg)}×${z.reps}</span>`).join('')).join('<hr>');
+      return `<td class="${cls}" data-act="open" data-sid="${en[en.length - 1].s.id}">${body}</td>`;
+    }).join('');
+    return `<tr><th class="sticky" data-act="ex" data-name="${esc(name)}">${esc(name)}</th>${cells}</tr>`;
+  }).join('');
+  return chips + `<p class="sub" style="margin:0 2px 8px">${t('weeksSub')}</p>
+    <div class="wk-wrap" id="wk-wrap"><table class="wk"><thead><tr><th class="sticky"><span class="sub">${t('kgReps')}</span></th>${weeks.map(w =>
+      `<th class="${w === cw ? 'cur' : ''}"><span>${w === cw ? t('thisWeek') : t('weekFrom')}</span><b>${fmtShort(w)}</b></th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin-top:8px">${t('weeksLegend')}</p>`;
+}
 function progressList() {
+  const seg = `<div class="seg" role="tablist"><button role="tab" aria-selected="${view.ptab !== 'weeks'}" data-act="ptab" data-v="list">${t('progList')}</button>
+    <button role="tab" aria-selected="${view.ptab === 'weeks'}" data-act="ptab" data-v="weeks">${t('progWeeks')}</button></div>`;
+  if (view.ptab === 'weeks') return seg + weeksView();
+  return seg + progressListBody();
+}
+function progressListBody() {
   const names = exerciseNames(), gl = goalList(), open = gl.filter(g => !g.done), done = gl.filter(g => g.done);
   let html = `<div class="sec"><h2>${t('goals')}</h2><button class="chip" data-act="newgoal">${icon('plus')} ${t('newBtn')}</button></div>` +
     (open.length ? `<div class="list">${open.map(g => goalCard(g)).join('')}</div>` : `<p class="sub" style="margin:0 2px 8px">${t('goalsEmpty')}</p>`) +
@@ -1164,7 +1206,9 @@ function addExercise(name, lib) {
 }
 
 const acts = {
-  tab: b => go({name: 'home', tab: b.dataset.tab}),
+  tab: b => go({name: 'home', tab: b.dataset.tab, ptab: view.ptab, wf: view.wf}),
+  ptab: b => go({name: 'home', tab: 'progress', ptab: b.dataset.v, wf: view.wf}),
+  wfilter: b => go({name: 'home', tab: 'progress', ptab: 'weeks', wf: b.dataset.k}),
   home: () => go({name: 'home', tab: view.name === 'settings' ? (view.from || 'sessions') : 'sessions'}),
   settings: () => go({name: 'settings', from: view.tab}),
   open: b => go({name: 'session', id: b.dataset.sid}),

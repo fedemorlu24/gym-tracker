@@ -97,6 +97,7 @@ window.I18N = {
     variantsN: n => `${n} ${n === 1 ? 'variante' : 'varianti'}`, noResults: 'Nessun esercizio trovato. Puoi crearlo con il nome qui sotto.', guide: 'Guida esercizio',
     inSession: 'già nella seduta', addedX: n => `${n} aggiunto`, customEx: 'Esercizio personalizzato', allVariants: 'Altre varianti',
     theme: 'Aspetto', themeAuto: 'Automatico', themeLight: 'Chiaro', themeDark: 'Scuro',
+    progList: 'Elenco', progWeeks: 'Settimane', weeksSub: 'Serie di ogni esercizio, settimana per settimana', kgReps: 'kg × rip', allSessions: 'Tutte', weekFrom: 'sett. dal', thisWeek: 'questa sett.', weeksLegend: 'Verde: settimana migliore della precedente · rosso: peggiore · in grassetto la serie migliore. Tocca una cella per aprire la seduta.', weeksEmpty: 'Registra qualche seduta: qui vedrai settimana per settimana peso × ripetizioni di ogni esercizio.',
     shareTitle: 'Gym Tracker',
   },
   en: {
@@ -196,6 +197,7 @@ window.I18N = {
     variantsN: n => `${n} ${n === 1 ? 'variant' : 'variants'}`, noResults: 'No exercise found. You can create it with the name below.', guide: 'Exercise guide',
     inSession: 'already in this workout', addedX: n => `${n} added`, customEx: 'Custom exercise', allVariants: 'Other variants',
     theme: 'Appearance', themeAuto: 'Automatic', themeLight: 'Light', themeDark: 'Dark',
+    progList: 'List', progWeeks: 'Weeks', weeksSub: 'Sets of each exercise, week by week', kgReps: 'kg × reps', allSessions: 'All', weekFrom: 'week of', thisWeek: 'this week', weeksLegend: 'Green: better week than the previous one · red: worse · best set in bold. Tap a cell to open the workout.', weeksEmpty: 'Log a few workouts: here you will see weight × reps for each exercise, week by week.',
     shareTitle: 'Gym Tracker',
   },
   es: {
@@ -295,6 +297,7 @@ window.I18N = {
     variantsN: n => `${n} ${n === 1 ? 'variante' : 'variantes'}`, noResults: 'No se ha encontrado ningún ejercicio. Puedes crearlo con el nombre de abajo.', guide: 'Guía del ejercicio',
     inSession: 'ya está en el entreno', addedX: n => `${n} añadido`, customEx: 'Ejercicio personalizado', allVariants: 'Otras variantes',
     theme: 'Apariencia', themeAuto: 'Automático', themeLight: 'Claro', themeDark: 'Oscuro',
+    progList: 'Lista', progWeeks: 'Semanas', weeksSub: 'Series de cada ejercicio, semana a semana', kgReps: 'kg × rep', allSessions: 'Todos', weekFrom: 'sem. del', thisWeek: 'esta sem.', weeksLegend: 'Verde: semana mejor que la anterior · rojo: peor · en negrita la mejor serie. Toca una celda para abrir el entreno.', weeksEmpty: 'Registra algunos entrenos: aquí verás peso × repeticiones de cada ejercicio, semana a semana.',
     shareTitle: 'Gym Tracker',
   },
   fr: {
@@ -394,6 +397,7 @@ window.I18N = {
     variantsN: n => `${n} ${n === 1 ? 'variante' : 'variantes'}`, noResults: 'Aucun exercice trouvé. Vous pouvez le créer avec le nom ci-dessous.', guide: 'Guide de l’exercice',
     inSession: 'déjà dans la séance', addedX: n => `${n} ajouté`, customEx: 'Exercice personnalisé', allVariants: 'Autres variantes',
     theme: 'Apparence', themeAuto: 'Automatique', themeLight: 'Clair', themeDark: 'Sombre',
+    progList: 'Liste', progWeeks: 'Semaines', weeksSub: 'Séries de chaque exercice, semaine après semaine', kgReps: 'kg × rép', allSessions: 'Toutes', weekFrom: 'sem. du', thisWeek: 'cette sem.', weeksLegend: 'Vert : semaine meilleure que la précédente · rouge : moins bonne · en gras la meilleure série. Touchez une case pour ouvrir la séance.', weeksEmpty: 'Enregistrez quelques séances : ici vous verrez charge × répétitions de chaque exercice, semaine après semaine.',
     shareTitle: 'Gym Tracker',
   },
   de: {
@@ -493,6 +497,7 @@ window.I18N = {
     variantsN: n => `${n} ${n === 1 ? 'Variante' : 'Varianten'}`, noResults: 'Keine Übung gefunden. Du kannst sie unten mit dem Namen anlegen.', guide: 'Übungsanleitung',
     inSession: 'schon im Training', addedX: n => `${n} hinzugefügt`, customEx: 'Eigene Übung', allVariants: 'Weitere Varianten',
     theme: 'Darstellung', themeAuto: 'Automatisch', themeLight: 'Hell', themeDark: 'Dunkel',
+    progList: 'Liste', progWeeks: 'Wochen', weeksSub: 'Sätze jeder Übung, Woche für Woche', kgReps: 'kg × Wdh', allSessions: 'Alle', weekFrom: 'Woche ab', thisWeek: 'diese Woche', weeksLegend: 'Grün: bessere Woche als die vorige · rot: schlechter · fett der beste Satz. Tippe auf eine Zelle, um das Training zu öffnen.', weeksEmpty: 'Speichere ein paar Trainings: Hier siehst du Woche für Woche Gewicht × Wiederholungen jeder Übung.',
     shareTitle: 'Gym Tracker',
   },
 };
