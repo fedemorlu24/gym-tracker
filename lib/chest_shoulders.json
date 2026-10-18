@@ -1,0 +1,2849 @@
+[
+ {
+  "id": "chest.benchPress",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "Panca piana",
+   "en": "Flat bench press",
+   "es": "Press de banca plano",
+   "fr": "Développé couché",
+   "de": "Bankdrücken"
+  },
+  "why": {
+   "it": "Il fondamentale per forza e massa del petto.",
+   "en": "The key lift for chest strength and size.",
+   "es": "El básico para la fuerza y el tamaño del pecho.",
+   "fr": "Le mouvement de base pour la force et le volume des pectoraux.",
+   "de": "Die Grundübung für Brustkraft und -masse."
+  },
+  "tip": {
+   "it": "Scapole addotte e depresse, piedi a terra. Scendi controllato a metà petto, gomiti a ~45°, spingi senza staccare i glutei.",
+   "en": "Shoulder blades pulled back and down, feet planted. Lower under control to mid-chest, elbows ~45°, press without lifting your hips.",
+   "es": "Escápulas juntas y abajo, pies en el suelo. Baja controlado a mitad del pecho, codos a ~45°, empuja sin despegar los glúteos.",
+   "fr": "Omoplates serrées et basses, pieds au sol. Descendez contrôlé à mi-poitrine, coudes à ~45°, poussez sans décoller les fessiers.",
+   "de": "Schulterblätter zurück und runter, Füße fest am Boden. Kontrolliert zur Brustmitte senken, Ellbogen ~45°, drücken, ohne das Gesäß abzuheben."
+  },
+  "variants": [
+   {
+    "id": "chest.benchPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Panca piana con bilanciere",
+     "en": "Barbell bench press",
+     "es": "Press de banca con barra",
+     "fr": "Développé couché à la barre",
+     "de": "Bankdrücken mit Langhantel"
+    },
+    "note": {
+     "it": "Usa i fermi o un assistente quando vai pesante.",
+     "en": "Use safety bars or a spotter when going heavy.",
+     "es": "Usa topes de seguridad o un compañero si vas pesado.",
+     "fr": "Utilisez les sécurités ou un pareur en charge lourde.",
+     "de": "Nutze Sicherungen oder einen Spotter bei schweren Sätzen."
+    }
+   },
+   {
+    "id": "chest.benchPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Panca piana con manubri",
+     "en": "Dumbbell bench press",
+     "es": "Press de banca con mancuernas",
+     "fr": "Développé couché aux haltères",
+     "de": "Kurzhantel-Bankdrücken"
+    },
+    "note": {
+     "it": "Più escursione e lavoro di stabilizzazione per ogni lato.",
+     "en": "More range of motion and stabilising work for each side.",
+     "es": "Más recorrido y trabajo estabilizador en cada lado.",
+     "fr": "Plus d'amplitude et de stabilisation pour chaque côté.",
+     "de": "Mehr Bewegungsumfang und Stabilisationsarbeit pro Seite."
+    }
+   },
+   {
+    "id": "chest.benchPress.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Panca piana al multipower",
+     "en": "Smith machine bench press",
+     "es": "Press de banca en máquina Smith",
+     "fr": "Développé couché à la Smith machine",
+     "de": "Bankdrücken an der Multipresse"
+    },
+    "note": {
+     "it": "Traiettoria guidata, utile per spingere vicino al cedimento.",
+     "en": "Fixed bar path, handy for pushing close to failure.",
+     "es": "Trayectoria guiada, útil para acercarte al fallo.",
+     "fr": "Trajectoire guidée, pratique pour aller près de l'échec.",
+     "de": "Geführte Bahn, praktisch, um nah ans Muskelversagen zu gehen."
+    }
+   },
+   {
+    "id": "chest.benchPress.pause",
+    "eq": "barbell",
+    "name": {
+     "it": "Panca piana con fermo al petto",
+     "en": "Paused barbell bench press",
+     "es": "Press de banca con pausa",
+     "fr": "Développé couché avec pause",
+     "de": "Bankdrücken mit Pause"
+    },
+    "note": {
+     "it": "Fermo di 1–2 s al petto: niente rimbalzo, più forza in partenza.",
+     "en": "1–2 s pause on the chest: no bounce, stronger off the chest.",
+     "es": "Pausa de 1–2 s en el pecho: sin rebote, más fuerza abajo.",
+     "fr": "Pause de 1–2 s sur la poitrine : pas de rebond, plus de force en bas.",
+     "de": "1–2 s Pause auf der Brust: kein Abfedern, mehr Kraft unten."
+    }
+   },
+   {
+    "id": "chest.benchPress.singleArmDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Panca piana con manubrio a un braccio",
+     "en": "Single-arm dumbbell bench press",
+     "es": "Press de banca con mancuerna a una mano",
+     "fr": "Développé couché unilatéral à l'haltère",
+     "de": "Einarmiges Kurzhantel-Bankdrücken"
+    },
+    "note": {
+     "it": "Allena anche il core contro la rotazione.",
+     "en": "Also trains your core against rotation.",
+     "es": "También trabaja el core contra la rotación.",
+     "fr": "Travaille aussi le gainage anti-rotation.",
+     "de": "Trainiert zusätzlich den Rumpf gegen Rotation."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.inclineBenchPress",
+  "g": "chest",
+  "pri": [
+   "upperChest",
+   "chest"
+  ],
+  "sec": [
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "Panca inclinata",
+   "en": "Incline bench press",
+   "es": "Press inclinado",
+   "fr": "Développé incliné",
+   "de": "Schrägbankdrücken"
+  },
+  "why": {
+   "it": "Enfatizza la parte alta del petto.",
+   "en": "Emphasises the upper chest.",
+   "es": "Enfatiza la parte superior del pecho.",
+   "fr": "Cible davantage le haut des pectoraux.",
+   "de": "Betont die obere Brust."
+  },
+  "tip": {
+   "it": "Panca a 30–45°. Scapole addotte, scendi verso la parte alta del petto e spingi in linea sopra le spalle.",
+   "en": "Bench at 30–45°. Shoulder blades pinned, lower to your upper chest and press up over your shoulders.",
+   "es": "Banco a 30–45°. Escápulas juntas, baja hacia la parte alta del pecho y empuja sobre los hombros.",
+   "fr": "Banc à 30–45°. Omoplates serrées, descendez vers le haut de la poitrine et poussez au-dessus des épaules.",
+   "de": "Bank auf 30–45°. Schulterblätter fixiert, zur oberen Brust senken und über die Schultern hochdrücken."
+  },
+  "variants": [
+   {
+    "id": "chest.inclineBenchPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Panca inclinata con bilanciere",
+     "en": "Barbell incline bench press",
+     "es": "Press inclinado con barra",
+     "fr": "Développé incliné à la barre",
+     "de": "Schrägbankdrücken mit Langhantel"
+    }
+   },
+   {
+    "id": "chest.inclineBenchPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Panca inclinata con manubri",
+     "en": "Dumbbell incline bench press",
+     "es": "Press inclinado con mancuernas",
+     "fr": "Développé incliné aux haltères",
+     "de": "Kurzhantel-Schrägbankdrücken"
+    }
+   },
+   {
+    "id": "chest.inclineBenchPress.lowInclineDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Panca a bassa inclinazione con manubri",
+     "en": "Low-incline dumbbell press",
+     "es": "Press inclinado bajo con mancuernas",
+     "fr": "Développé faiblement incliné aux haltères",
+     "de": "Kurzhantel-Drücken auf flacher Schrägbank"
+    },
+    "note": {
+     "it": "Panca a 15–20°: meno spalla, più petto.",
+     "en": "Bench at 15–20°: less shoulder, more chest.",
+     "es": "Banco a 15–20°: menos hombro, más pecho.",
+     "fr": "Banc à 15–20° : moins d'épaules, plus de pectoraux.",
+     "de": "Bank auf 15–20°: weniger Schulter, mehr Brust."
+    }
+   },
+   {
+    "id": "chest.inclineBenchPress.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Panca inclinata al multipower",
+     "en": "Smith machine incline press",
+     "es": "Press inclinado en máquina Smith",
+     "fr": "Développé incliné à la Smith machine",
+     "de": "Schrägbankdrücken an der Multipresse"
+    }
+   },
+   {
+    "id": "chest.inclineBenchPress.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press inclinata",
+     "en": "Incline chest press machine",
+     "es": "Press inclinado en máquina",
+     "fr": "Développé incliné à la machine",
+     "de": "Schrägbankdrücken an der Maschine"
+    }
+   },
+   {
+    "id": "chest.inclineBenchPress.plateLoaded",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press inclinata a dischi (tipo Hammer)",
+     "en": "Plate-loaded incline press (Hammer-style)",
+     "es": "Press inclinado de discos (tipo Hammer)",
+     "fr": "Développé incliné à disques (type Hammer)",
+     "de": "Plate-loaded Schrägbankdrücken (Hammer-Stil)"
+    },
+    "note": {
+     "it": "Bracci indipendenti con traiettoria convergente.",
+     "en": "Independent arms with a converging path.",
+     "es": "Brazos independientes con trayectoria convergente.",
+     "fr": "Bras indépendants à trajectoire convergente.",
+     "de": "Unabhängige Hebel mit konvergierender Bahn."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.declineBenchPress",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "triceps",
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "Panca declinata",
+   "en": "Decline bench press",
+   "es": "Press declinado",
+   "fr": "Développé décliné",
+   "de": "Negativbankdrücken"
+  },
+  "why": {
+   "it": "Enfatizza la parte bassa del petto con meno stress per le spalle.",
+   "en": "Emphasises the lower chest with less shoulder stress.",
+   "es": "Enfatiza la parte baja del pecho con menos estrés en hombros.",
+   "fr": "Cible le bas des pectoraux en sollicitant moins les épaules.",
+   "de": "Betont die untere Brust bei weniger Schulterbelastung."
+  },
+  "tip": {
+   "it": "Panca a -15/-30°, gambe bloccate. Scendi verso la parte bassa del petto e spingi controllato. Fatti passare il peso.",
+   "en": "Bench at -15/-30°, legs locked in. Lower to your lower chest and press under control. Have the weight handed to you.",
+   "es": "Banco a -15/-30°, piernas sujetas. Baja hacia la parte baja del pecho y empuja controlado. Pide que te pasen el peso.",
+   "fr": "Banc à -15/-30°, jambes calées. Descendez vers le bas de la poitrine et poussez contrôlé. Faites-vous passer la charge.",
+   "de": "Bank auf -15/-30°, Beine fixiert. Zur unteren Brust senken und kontrolliert drücken. Lass dir das Gewicht anreichen."
+  },
+  "variants": [
+   {
+    "id": "chest.declineBenchPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Panca declinata con bilanciere",
+     "en": "Barbell decline bench press",
+     "es": "Press declinado con barra",
+     "fr": "Développé décliné à la barre",
+     "de": "Negativbankdrücken mit Langhantel"
+    }
+   },
+   {
+    "id": "chest.declineBenchPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Panca declinata con manubri",
+     "en": "Dumbbell decline bench press",
+     "es": "Press declinado con mancuernas",
+     "fr": "Développé décliné aux haltères",
+     "de": "Kurzhantel-Negativbankdrücken"
+    }
+   },
+   {
+    "id": "chest.declineBenchPress.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Panca declinata al multipower",
+     "en": "Smith machine decline press",
+     "es": "Press declinado en máquina Smith",
+     "fr": "Développé décliné à la Smith machine",
+     "de": "Negativbankdrücken an der Multipresse"
+    }
+   },
+   {
+    "id": "chest.declineBenchPress.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press declinata",
+     "en": "Decline chest press machine",
+     "es": "Press declinado en máquina",
+     "fr": "Développé décliné à la machine",
+     "de": "Negativbankdrücken an der Maschine"
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.chestPress",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Chest press",
+   "en": "Chest press",
+   "es": "Press de pecho",
+   "fr": "Chest press",
+   "de": "Brustpresse"
+  },
+  "why": {
+   "it": "Spinta per il petto guidata e sicura, ottima anche per chi inizia.",
+   "en": "Guided, safe chest pressing, great for beginners too.",
+   "es": "Empuje de pecho guiado y seguro, ideal también para empezar.",
+   "fr": "Poussée pectorale guidée et sûre, idéale aussi pour débuter.",
+   "de": "Geführtes, sicheres Brustdrücken, ideal auch für Einsteiger."
+  },
+  "tip": {
+   "it": "Regola il sedile: maniglie a metà petto. Schiena appoggiata, scapole indietro, spingi senza bloccare i gomiti e torna lento.",
+   "en": "Set the seat so handles are at mid-chest. Back on the pad, shoulder blades back, press without locking elbows, return slowly.",
+   "es": "Ajusta el asiento: agarres a mitad del pecho. Espalda apoyada, escápulas atrás, empuja sin bloquear codos y vuelve lento.",
+   "fr": "Réglez le siège : poignées à mi-poitrine. Dos plaqué, omoplates serrées, poussez sans verrouiller les coudes, revenez lentement.",
+   "de": "Sitz so einstellen, dass die Griffe auf Brustmitte sind. Rücken am Polster, Schulterblätter zurück, drücken ohne Ellbogen durchzustrecken, langsam zurück."
+  },
+  "variants": [
+   {
+    "id": "chest.chestPress.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press alla macchina",
+     "en": "Seated chest press machine",
+     "es": "Press de pecho en máquina",
+     "fr": "Chest press assis à la machine",
+     "de": "Brustpresse an der Maschine"
+    }
+   },
+   {
+    "id": "chest.chestPress.convergent",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press convergente",
+     "en": "Converging chest press",
+     "es": "Press de pecho convergente",
+     "fr": "Chest press convergent",
+     "de": "Konvergierende Brustpresse"
+    },
+    "note": {
+     "it": "Le maniglie si avvicinano in chiusura per una contrazione piena.",
+     "en": "Handles move together at the top for a full squeeze.",
+     "es": "Los agarres se juntan al final para contraer a fondo.",
+     "fr": "Les poignées se rapprochent en fin de poussée pour bien contracter.",
+     "de": "Die Griffe laufen oben zusammen für volle Kontraktion."
+    }
+   },
+   {
+    "id": "chest.chestPress.plateLoaded",
+    "eq": "machine",
+    "name": {
+     "it": "Chest press a dischi (tipo Hammer)",
+     "en": "Plate-loaded chest press (Hammer-style)",
+     "es": "Press de pecho de discos (tipo Hammer)",
+     "fr": "Chest press à disques (type Hammer)",
+     "de": "Plate-loaded Brustpresse (Hammer-Stil)"
+    },
+    "note": {
+     "it": "Bracci indipendenti: puoi lavorare anche un lato alla volta.",
+     "en": "Independent arms: you can also work one side at a time.",
+     "es": "Brazos independientes: puedes trabajar un lado cada vez.",
+     "fr": "Bras indépendants : vous pouvez aussi travailler un côté à la fois.",
+     "de": "Unabhängige Hebel: auch einseitig trainierbar."
+    }
+   },
+   {
+    "id": "chest.chestPress.cableStanding",
+    "eq": "cable",
+    "name": {
+     "it": "Chest press in piedi ai cavi",
+     "en": "Standing cable chest press",
+     "es": "Press de pecho de pie en polea",
+     "fr": "Chest press debout à la poulie",
+     "de": "Stehendes Brustdrücken am Kabelzug"
+    },
+    "note": {
+     "it": "In piedi a passo sfalsato, core attivo per restare stabile.",
+     "en": "Staggered stance, brace your core to stay stable.",
+     "es": "De pie en paso escalonado, core activo para mantenerte estable.",
+     "fr": "Debout en fente légère, gainez pour rester stable.",
+     "de": "Schrittstellung, Rumpf anspannen, um stabil zu bleiben."
+    }
+   },
+   {
+    "id": "chest.chestPress.cableSingleArm",
+    "eq": "cable",
+    "name": {
+     "it": "Chest press a un braccio ai cavi",
+     "en": "Single-arm cable chest press",
+     "es": "Press de pecho a una mano en polea",
+     "fr": "Chest press unilatéral à la poulie",
+     "de": "Einarmiges Brustdrücken am Kabelzug"
+    },
+    "note": {
+     "it": "Non ruotare il busto: lavora anche contro la rotazione.",
+     "en": "Keep your torso square: it also trains anti-rotation.",
+     "es": "No gires el tronco: también trabaja la antirrotación.",
+     "fr": "Ne tournez pas le buste : travail anti-rotation en plus.",
+     "de": "Oberkörper nicht verdrehen: trainiert zusätzlich Anti-Rotation."
+    }
+   },
+   {
+    "id": "chest.chestPress.band",
+    "eq": "band",
+    "name": {
+     "it": "Chest press con elastico",
+     "en": "Band chest press",
+     "es": "Press de pecho con banda elástica",
+     "fr": "Chest press à l'élastique",
+     "de": "Brustdrücken mit Widerstandsband"
+    },
+    "note": {
+     "it": "Elastico ancorato dietro di te, ideale a casa o in riscaldamento.",
+     "en": "Band anchored behind you, great at home or for warm-ups.",
+     "es": "Banda anclada detrás de ti, ideal en casa o para calentar.",
+     "fr": "Élastique fixé derrière vous, idéal à la maison ou en échauffement.",
+     "de": "Band hinter dir befestigt, ideal zu Hause oder zum Aufwärmen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.floorPress",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "triceps",
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "Floor press",
+   "en": "Floor press",
+   "es": "Press en el suelo",
+   "fr": "Floor press",
+   "de": "Floor Press"
+  },
+  "why": {
+   "it": "Distensione a escursione ridotta, amica delle spalle e ottima per il blocco finale.",
+   "en": "Shorter-range press that is shoulder-friendly and builds lockout strength.",
+   "es": "Press de recorrido corto, amable con los hombros y bueno para el bloqueo.",
+   "fr": "Développé à amplitude réduite, doux pour les épaules et utile pour le verrouillage.",
+   "de": "Drücken mit verkürztem Weg, schulterfreundlich und gut für den Lockout."
+  },
+  "tip": {
+   "it": "Sdraiato a terra, gambe piegate. Scendi finché i tricipiti toccano il pavimento, fermati un istante e spingi.",
+   "en": "Lie on the floor, knees bent. Lower until your upper arms touch the floor, pause briefly, then press.",
+   "es": "Tumbado en el suelo, rodillas flexionadas. Baja hasta que los tríceps toquen el suelo, pausa breve y empuja.",
+   "fr": "Allongé au sol, genoux fléchis. Descendez jusqu'au contact des triceps au sol, marquez une courte pause, poussez.",
+   "de": "Auf dem Boden liegend, Knie gebeugt. Senken, bis die Oberarme den Boden berühren, kurz halten, dann drücken."
+  },
+  "variants": [
+   {
+    "id": "chest.floorPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Floor press con bilanciere",
+     "en": "Barbell floor press",
+     "es": "Press en el suelo con barra",
+     "fr": "Floor press à la barre",
+     "de": "Floor Press mit Langhantel"
+    },
+    "note": {
+     "it": "Meglio dentro un rack con i fermi all'altezza giusta.",
+     "en": "Best inside a rack with the safeties set correctly.",
+     "es": "Mejor dentro de un rack con topes a la altura correcta.",
+     "fr": "De préférence dans un rack avec les sécurités bien réglées.",
+     "de": "Am besten im Rack mit richtig eingestellten Sicherungen."
+    }
+   },
+   {
+    "id": "chest.floorPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Floor press con manubri",
+     "en": "Dumbbell floor press",
+     "es": "Press en el suelo con mancuernas",
+     "fr": "Floor press aux haltères",
+     "de": "Floor Press mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "chest.floorPress.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Floor press con kettlebell",
+     "en": "Kettlebell floor press",
+     "es": "Press en el suelo con kettlebell",
+     "fr": "Floor press au kettlebell",
+     "de": "Floor Press mit Kettlebell"
+    },
+    "note": {
+     "it": "Polso dritto, la kettlebell appoggia sull'avambraccio.",
+     "en": "Keep your wrist straight, the bell rests on your forearm.",
+     "es": "Muñeca recta, la kettlebell apoya en el antebrazo.",
+     "fr": "Poignet droit, le kettlebell repose sur l'avant-bras.",
+     "de": "Handgelenk gerade, die Kugel liegt am Unterarm."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.dumbbellFly",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "10–15",
+  "name": {
+   "it": "Croci su panca",
+   "en": "Bench fly",
+   "es": "Aperturas en banco",
+   "fr": "Écarté couché",
+   "de": "Fliegende auf der Bank"
+  },
+  "why": {
+   "it": "Isola il petto con un forte allungamento.",
+   "en": "Isolates the chest with a strong stretch.",
+   "es": "Aísla el pecho con un buen estiramiento.",
+   "fr": "Isole les pectoraux avec un étirement marqué.",
+   "de": "Isoliert die Brust mit starker Dehnung."
+  },
+  "tip": {
+   "it": "Gomiti leggermente piegati e fissi. Apri ad arco finché senti l'allungamento senza dolore alla spalla, poi chiudi come in un abbraccio.",
+   "en": "Elbows slightly bent and fixed. Open in an arc until you feel a stretch without shoulder pain, then close as if hugging.",
+   "es": "Codos algo flexionados y fijos. Abre en arco hasta notar el estiramiento sin dolor de hombro y cierra como en un abrazo.",
+   "fr": "Coudes légèrement fléchis et fixes. Ouvrez en arc jusqu'à l'étirement sans douleur à l'épaule, puis refermez comme une étreinte.",
+   "de": "Ellbogen leicht gebeugt und fixiert. Im Bogen öffnen bis zur Dehnung ohne Schulterschmerz, dann wie bei einer Umarmung schließen."
+  },
+  "variants": [
+   {
+    "id": "chest.dumbbellFly.flatDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Croci su panca piana con manubri",
+     "en": "Flat dumbbell fly",
+     "es": "Aperturas con mancuernas en banco plano",
+     "fr": "Écarté couché aux haltères",
+     "de": "Kurzhantel-Fliegende auf der Flachbank"
+    }
+   },
+   {
+    "id": "chest.dumbbellFly.inclineDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Croci su panca inclinata con manubri",
+     "en": "Incline dumbbell fly",
+     "es": "Aperturas con mancuernas en banco inclinado",
+     "fr": "Écarté incliné aux haltères",
+     "de": "Kurzhantel-Fliegende auf der Schrägbank"
+    },
+    "note": {
+     "it": "Più lavoro sulla parte alta del petto.",
+     "en": "More work for the upper chest.",
+     "es": "Más trabajo para la parte alta del pecho.",
+     "fr": "Sollicite davantage le haut des pectoraux.",
+     "de": "Mehr Arbeit für die obere Brust."
+    }
+   },
+   {
+    "id": "chest.dumbbellFly.declineDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Croci su panca declinata con manubri",
+     "en": "Decline dumbbell fly",
+     "es": "Aperturas con mancuernas en banco declinado",
+     "fr": "Écarté décliné aux haltères",
+     "de": "Kurzhantel-Fliegende auf der Negativbank"
+    },
+    "note": {
+     "it": "Più lavoro sulla parte bassa del petto.",
+     "en": "More work for the lower chest.",
+     "es": "Más trabajo para la parte baja del pecho.",
+     "fr": "Sollicite davantage le bas des pectoraux.",
+     "de": "Mehr Arbeit für die untere Brust."
+    }
+   },
+   {
+    "id": "chest.dumbbellFly.flatCable",
+    "eq": "cable",
+    "name": {
+     "it": "Croci su panca ai cavi",
+     "en": "Cable fly on flat bench",
+     "es": "Aperturas en polea en banco plano",
+     "fr": "Écarté couché à la poulie",
+     "de": "Kabel-Fliegende auf der Flachbank"
+    },
+    "note": {
+     "it": "Tensione costante anche in chiusura.",
+     "en": "Constant tension, even at the top.",
+     "es": "Tensión constante también al cerrar.",
+     "fr": "Tension constante, même en fin de mouvement.",
+     "de": "Konstante Spannung, auch oben."
+    }
+   },
+   {
+    "id": "chest.dumbbellFly.inclineCable",
+    "eq": "cable",
+    "name": {
+     "it": "Croci su panca inclinata ai cavi",
+     "en": "Incline cable fly",
+     "es": "Aperturas en polea en banco inclinado",
+     "fr": "Écarté incliné à la poulie",
+     "de": "Kabel-Fliegende auf der Schrägbank"
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.cableCrossover",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "10–15",
+  "name": {
+   "it": "Croci ai cavi",
+   "en": "Cable crossover",
+   "es": "Cruces en polea",
+   "fr": "Vis-à-vis à la poulie",
+   "de": "Cable Crossover"
+  },
+  "why": {
+   "it": "Isolamento del petto con tensione costante a varie angolazioni.",
+   "en": "Chest isolation with constant tension at different angles.",
+   "es": "Aislamiento del pecho con tensión constante en varios ángulos.",
+   "fr": "Isolation des pectoraux avec tension constante sous plusieurs angles.",
+   "de": "Brustisolation mit konstanter Spannung in verschiedenen Winkeln."
+  },
+  "tip": {
+   "it": "Passo avanti, busto leggermente inclinato, gomiti morbidi. Porta le mani insieme davanti a te e stringi il petto, poi torna lento.",
+   "en": "Step forward, lean slightly, soft elbows. Bring your hands together in front of you, squeeze your chest, return slowly.",
+   "es": "Paso al frente, tronco algo inclinado, codos suaves. Junta las manos delante, aprieta el pecho y vuelve lento.",
+   "fr": "Un pas en avant, buste légèrement penché, coudes souples. Joignez les mains devant vous, contractez, revenez lentement.",
+   "de": "Schritt nach vorn, leicht vorgeneigt, Ellbogen locker. Hände vor dir zusammenführen, Brust anspannen, langsam zurück."
+  },
+  "variants": [
+   {
+    "id": "chest.cableCrossover.highToLow",
+    "eq": "cable",
+    "name": {
+     "it": "Croci ai cavi dall'alto verso il basso",
+     "en": "High-to-low cable fly",
+     "es": "Cruces en polea de arriba abajo",
+     "fr": "Vis-à-vis poulie haute vers le bas",
+     "de": "Kabel-Fliegende von oben nach unten"
+    },
+    "note": {
+     "it": "Pulegge alte: enfatizza la parte bassa del petto.",
+     "en": "Pulleys high: emphasises the lower chest.",
+     "es": "Poleas altas: enfatiza la parte baja del pecho.",
+     "fr": "Poulies hautes : cible le bas des pectoraux.",
+     "de": "Rollen oben: betont die untere Brust."
+    }
+   },
+   {
+    "id": "chest.cableCrossover.mid",
+    "eq": "cable",
+    "name": {
+     "it": "Croci ai cavi a metà altezza",
+     "en": "Mid-height cable fly",
+     "es": "Cruces en polea a media altura",
+     "fr": "Vis-à-vis poulie à mi-hauteur",
+     "de": "Kabel-Fliegende auf mittlerer Höhe"
+    },
+    "note": {
+     "it": "Pulegge all'altezza del petto: lavoro sul petto medio.",
+     "en": "Pulleys at chest height: targets the mid chest.",
+     "es": "Poleas a la altura del pecho: trabaja el pecho medio.",
+     "fr": "Poulies à hauteur de poitrine : milieu des pectoraux.",
+     "de": "Rollen auf Brusthöhe: mittlere Brust."
+    }
+   },
+   {
+    "id": "chest.cableCrossover.lowToHigh",
+    "eq": "cable",
+    "name": {
+     "it": "Croci ai cavi dal basso verso l'alto",
+     "en": "Low-to-high cable fly",
+     "es": "Cruces en polea de abajo arriba",
+     "fr": "Vis-à-vis poulie basse vers le haut",
+     "de": "Kabel-Fliegende von unten nach oben"
+    },
+    "note": {
+     "it": "Pulegge basse: enfatizza la parte alta del petto.",
+     "en": "Pulleys low: emphasises the upper chest.",
+     "es": "Poleas bajas: enfatiza la parte alta del pecho.",
+     "fr": "Poulies basses : cible le haut des pectoraux.",
+     "de": "Rollen unten: betont die obere Brust."
+    }
+   },
+   {
+    "id": "chest.cableCrossover.singleArm",
+    "eq": "cable",
+    "name": {
+     "it": "Croci al cavo a un braccio",
+     "en": "Single-arm cable fly",
+     "es": "Cruce en polea a una mano",
+     "fr": "Écarté unilatéral à la poulie",
+     "de": "Einarmige Kabel-Fliegende"
+    },
+    "note": {
+     "it": "Puoi portare la mano oltre la linea mediana per chiudere di più.",
+     "en": "You can cross past the midline for a stronger squeeze.",
+     "es": "Puedes cruzar la línea media para contraer más.",
+     "fr": "Vous pouvez dépasser la ligne médiane pour mieux contracter.",
+     "de": "Du kannst über die Körpermitte ziehen für stärkere Kontraktion."
+    }
+   },
+   {
+    "id": "chest.cableCrossover.band",
+    "eq": "band",
+    "name": {
+     "it": "Croci con elastico",
+     "en": "Band chest fly",
+     "es": "Aperturas con banda elástica",
+     "fr": "Écarté à l'élastique",
+     "de": "Fliegende mit Widerstandsband"
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.pecDeck",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Pectoral machine",
+   "en": "Pec deck",
+   "es": "Contractor de pecho",
+   "fr": "Pec deck",
+   "de": "Butterfly"
+  },
+  "why": {
+   "it": "Isolamento del petto semplice e stabile alla macchina.",
+   "en": "Simple, stable chest isolation on a machine.",
+   "es": "Aislamiento del pecho sencillo y estable en máquina.",
+   "fr": "Isolation des pectoraux simple et stable à la machine.",
+   "de": "Einfache, stabile Brustisolation an der Maschine."
+  },
+  "tip": {
+   "it": "Sedile con maniglie all'altezza del petto. Schiena appoggiata, chiudi con gomiti morbidi, stringi un secondo e apri senza andare oltre le spalle.",
+   "en": "Seat so handles are at chest height. Back on the pad, close with soft elbows, squeeze a second, open without going past your shoulders.",
+   "es": "Asiento con agarres a la altura del pecho. Espalda apoyada, cierra con codos suaves, aprieta un segundo y abre sin pasar los hombros.",
+   "fr": "Siège réglé, poignées à hauteur de poitrine. Dos plaqué, fermez coudes souples, contractez 1 s, ouvrez sans dépasser les épaules.",
+   "de": "Sitz so, dass die Griffe auf Brusthöhe sind. Rücken am Polster, mit lockeren Ellbogen schließen, 1 s halten, öffnen, nicht hinter die Schultern."
+  },
+  "variants": [
+   {
+    "id": "chest.pecDeck.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Pectoral machine (butterfly)",
+     "en": "Pec deck (butterfly) machine",
+     "es": "Contractor de pecho (pec deck)",
+     "fr": "Pec deck (butterfly)",
+     "de": "Butterfly-Maschine"
+    }
+   },
+   {
+    "id": "chest.pecDeck.handles",
+    "eq": "machine",
+    "name": {
+     "it": "Pectoral machine con maniglie a braccia tese",
+     "en": "Straight-arm pec fly machine",
+     "es": "Contractor de pecho con agarres y brazos extendidos",
+     "fr": "Pec fly à bras tendus",
+     "de": "Butterfly mit gestreckten Armen an Griffen"
+    },
+    "note": {
+     "it": "Versione con maniglie al posto dei cuscinetti per gli avambracci.",
+     "en": "Handle version instead of forearm pads.",
+     "es": "Versión con agarres en vez de almohadillas para antebrazos.",
+     "fr": "Version à poignées au lieu des appuis d'avant-bras.",
+     "de": "Griffversion statt Unterarmpolstern."
+    }
+   },
+   {
+    "id": "chest.pecDeck.singleArm",
+    "eq": "machine",
+    "name": {
+     "it": "Pectoral machine a un braccio",
+     "en": "Single-arm pec deck",
+     "es": "Contractor de pecho a una mano",
+     "fr": "Pec deck unilatéral",
+     "de": "Einarmiger Butterfly"
+    },
+    "note": {
+     "it": "Un lato alla volta per correggere squilibri.",
+     "en": "One side at a time to fix imbalances.",
+     "es": "Un lado cada vez para corregir desequilibrios.",
+     "fr": "Un côté à la fois pour corriger les déséquilibres.",
+     "de": "Einseitig, um Ungleichgewichte auszugleichen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.pushUp",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "triceps",
+   "frontDelt",
+   "abs"
+  ],
+  "lvl": 0,
+  "reps": "10–20",
+  "name": {
+   "it": "Piegamenti",
+   "en": "Push-up",
+   "es": "Flexiones",
+   "fr": "Pompes",
+   "de": "Liegestütze"
+  },
+  "why": {
+   "it": "Spinta a corpo libero per petto, tricipiti e core, ovunque.",
+   "en": "Bodyweight press for chest, triceps and core, anywhere.",
+   "es": "Empuje con peso corporal para pecho, tríceps y core, en cualquier lugar.",
+   "fr": "Poussée au poids du corps pour pectoraux, triceps et gainage, partout.",
+   "de": "Drücken mit Körpergewicht für Brust, Trizeps und Rumpf, überall."
+  },
+  "tip": {
+   "it": "Mani poco oltre le spalle, corpo in linea dalla testa ai talloni. Scendi col petto vicino a terra, gomiti a ~45°. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Hands just wider than shoulders, body straight from head to heels. Lower your chest near the floor, elbows ~45°. Log the added weight (0 if none).",
+   "es": "Manos algo más abiertas que los hombros, cuerpo recto de cabeza a talones. Baja el pecho cerca del suelo, codos a ~45°. Registra el peso añadido (0 si no hay).",
+   "fr": "Mains un peu plus larges que les épaules, corps aligné. Descendez la poitrine près du sol, coudes à ~45°. Notez la charge ajoutée (0 si aucune).",
+   "de": "Hände etwas breiter als die Schultern, Körper gerade. Brust nah zum Boden senken, Ellbogen ~45°. Trag das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "chest.pushUp.standard",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti classici",
+     "en": "Standard push-up",
+     "es": "Flexiones clásicas",
+     "fr": "Pompes classiques",
+     "de": "Klassische Liegestütze"
+    }
+   },
+   {
+    "id": "chest.pushUp.knee",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti sulle ginocchia",
+     "en": "Knee push-up",
+     "es": "Flexiones de rodillas",
+     "fr": "Pompes sur les genoux",
+     "de": "Liegestütze auf den Knien"
+    },
+    "note": {
+     "it": "Versione facilitata: mantieni anche qui il corpo in linea.",
+     "en": "Easier version: still keep your body in line.",
+     "es": "Versión más fácil: mantén igual el cuerpo alineado.",
+     "fr": "Version facilitée : gardez quand même le corps aligné.",
+     "de": "Leichtere Version: Körper trotzdem gerade halten."
+    }
+   },
+   {
+    "id": "chest.pushUp.incline",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti inclinati (mani su panca)",
+     "en": "Incline push-up (hands on bench)",
+     "es": "Flexiones inclinadas (manos en banco)",
+     "fr": "Pompes inclinées (mains sur banc)",
+     "de": "Schräge Liegestütze (Hände auf Bank)"
+    },
+    "note": {
+     "it": "Più alto è l'appoggio, più è facile.",
+     "en": "The higher the support, the easier it is.",
+     "es": "Cuanto más alto el apoyo, más fácil.",
+     "fr": "Plus l'appui est haut, plus c'est facile.",
+     "de": "Je höher die Auflage, desto leichter."
+    }
+   },
+   {
+    "id": "chest.pushUp.decline",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti declinati (piedi rialzati)",
+     "en": "Decline push-up (feet elevated)",
+     "es": "Flexiones declinadas (pies elevados)",
+     "fr": "Pompes déclinées (pieds surélevés)",
+     "de": "Liegestütze mit erhöhten Füßen"
+    },
+    "note": {
+     "it": "Più difficili, più lavoro sulla parte alta del petto.",
+     "en": "Harder, more upper-chest work.",
+     "es": "Más difíciles, más trabajo de pecho superior.",
+     "fr": "Plus difficiles, plus de haut des pectoraux.",
+     "de": "Schwerer, mehr obere Brust."
+    }
+   },
+   {
+    "id": "chest.pushUp.deficit",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti in deficit (su maniglie o rialzi)",
+     "en": "Deficit push-up (on handles or blocks)",
+     "es": "Flexiones con déficit (en agarres o bloques)",
+     "fr": "Pompes en déficit (sur poignées ou blocs)",
+     "de": "Defizit-Liegestütze (auf Griffen oder Blöcken)"
+    },
+    "note": {
+     "it": "Scendi sotto il livello delle mani per più allungamento.",
+     "en": "Go below hand level for a deeper stretch.",
+     "es": "Baja por debajo de las manos para más estiramiento.",
+     "fr": "Descendez sous le niveau des mains pour plus d'étirement.",
+     "de": "Unter Handhöhe absenken für mehr Dehnung."
+    }
+   },
+   {
+    "id": "chest.pushUp.wide",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti a presa larga",
+     "en": "Wide push-up",
+     "es": "Flexiones abiertas",
+     "fr": "Pompes mains larges",
+     "de": "Breite Liegestütze"
+    },
+    "note": {
+     "it": "Mani più larghe: più petto, meno tricipiti.",
+     "en": "Wider hands: more chest, less triceps.",
+     "es": "Manos más abiertas: más pecho, menos tríceps.",
+     "fr": "Mains plus écartées : plus de pectoraux, moins de triceps.",
+     "de": "Breitere Hände: mehr Brust, weniger Trizeps."
+    }
+   },
+   {
+    "id": "chest.pushUp.weighted",
+    "eq": "plate",
+    "name": {
+     "it": "Piegamenti zavorrati (disco sulla schiena)",
+     "en": "Weighted push-up (plate on back)",
+     "es": "Flexiones lastradas (disco en la espalda)",
+     "fr": "Pompes lestées (disque sur le dos)",
+     "de": "Liegestütze mit Gewichtsscheibe auf dem Rücken"
+    },
+    "note": {
+     "it": "Disco tra le scapole. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Plate between your shoulder blades. Log the added weight (0 if none).",
+     "es": "Disco entre las escápulas. Registra el peso añadido (0 si no hay).",
+     "fr": "Disque entre les omoplates. Notez la charge ajoutée (0 si aucune).",
+     "de": "Scheibe zwischen den Schulterblättern. Trag das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "chest.pushUp.suspension",
+    "eq": "suspension",
+    "name": {
+     "it": "Piegamenti al TRX",
+     "en": "Suspension trainer push-up",
+     "es": "Flexiones en TRX",
+     "fr": "Pompes au TRX",
+     "de": "Liegestütze im Schlingentrainer"
+    },
+    "note": {
+     "it": "Maniglie instabili: più lavoro di stabilizzazione e core.",
+     "en": "Unstable handles: more stabiliser and core work.",
+     "es": "Agarres inestables: más estabilización y core.",
+     "fr": "Poignées instables : plus de stabilisation et de gainage.",
+     "de": "Instabile Griffe: mehr Stabilisation und Rumpf."
+    }
+   },
+   {
+    "id": "chest.pushUp.band",
+    "eq": "band",
+    "name": {
+     "it": "Piegamenti con elastico",
+     "en": "Band-resisted push-up",
+     "es": "Flexiones con banda elástica",
+     "fr": "Pompes avec élastique",
+     "de": "Liegestütze mit Widerstandsband"
+    },
+    "note": {
+     "it": "Elastico dietro la schiena, tenuto sotto le mani.",
+     "en": "Band across your back, held under your hands.",
+     "es": "Banda por la espalda, sujeta bajo las manos.",
+     "fr": "Élastique sur le dos, tenu sous les mains.",
+     "de": "Band über den Rücken, unter den Händen fixiert."
+    }
+   },
+   {
+    "id": "chest.pushUp.plyo",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti esplosivi",
+     "en": "Plyometric push-up",
+     "es": "Flexiones pliométricas",
+     "fr": "Pompes pliométriques",
+     "de": "Explosive Liegestütze"
+    },
+    "note": {
+     "it": "Spinta esplosiva con mani che si staccano, atterra morbido.",
+     "en": "Push explosively so your hands leave the floor, land softly.",
+     "es": "Empuje explosivo despegando las manos, aterriza suave.",
+     "fr": "Poussée explosive mains décollées, réception en douceur.",
+     "de": "Explosiv drücken, Hände lösen sich, weich landen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.svendPress",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Svend press",
+   "en": "Svend press",
+   "es": "Press Svend",
+   "fr": "Svend press",
+   "de": "Svend Press"
+  },
+  "why": {
+   "it": "Spinta a presa stretta che fa contrarre il petto in modo continuo.",
+   "en": "Squeezing press that keeps the chest contracted throughout.",
+   "es": "Empuje apretando que mantiene el pecho contraído todo el tiempo.",
+   "fr": "Poussée en serrant qui garde les pectoraux contractés tout du long.",
+   "de": "Drücken mit Zusammenpressen, hält die Brust dauerhaft angespannt."
+  },
+  "tip": {
+   "it": "Premi forte i palmi contro il peso, spingi in avanti a braccia tese e torna al petto senza mai mollare la pressione.",
+   "en": "Press your palms hard into the weight, push forward to straight arms and back to your chest without easing the squeeze.",
+   "es": "Aprieta fuerte las palmas contra el peso, empuja al frente con brazos extendidos y vuelve al pecho sin soltar la presión.",
+   "fr": "Serrez fort les paumes contre la charge, poussez bras tendus puis revenez à la poitrine sans relâcher la pression.",
+   "de": "Handflächen fest gegen das Gewicht pressen, nach vorn strecken und zur Brust zurück, ohne den Druck zu lösen."
+  },
+  "variants": [
+   {
+    "id": "chest.svendPress.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Svend press con disco",
+     "en": "Plate Svend press",
+     "es": "Press Svend con disco",
+     "fr": "Svend press au disque",
+     "de": "Svend Press mit Gewichtsscheibe"
+    },
+    "note": {
+     "it": "Uno o due dischi lisci tenuti tra i palmi, in piedi.",
+     "en": "One or two smooth plates held between your palms, standing.",
+     "es": "Uno o dos discos lisos entre las palmas, de pie.",
+     "fr": "Un ou deux disques lisses entre les paumes, debout.",
+     "de": "Eine oder zwei glatte Scheiben zwischen den Handflächen, im Stand."
+    }
+   },
+   {
+    "id": "chest.svendPress.dumbbellSqueeze",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Squeeze press con manubri su panca",
+     "en": "Dumbbell squeeze press (hex press)",
+     "es": "Press apretado con mancuernas (hex press)",
+     "fr": "Développé serré aux haltères (hex press)",
+     "de": "Kurzhantel-Squeeze-Press (Hex Press)"
+    },
+    "note": {
+     "it": "Sdraiato, manubri a contatto tra loro per tutta la ripetizione.",
+     "en": "Lying down, dumbbells touching for the whole rep.",
+     "es": "Tumbado, mancuernas en contacto durante toda la repetición.",
+     "fr": "Allongé, haltères en contact pendant toute la répétition.",
+     "de": "Im Liegen, Hanteln berühren sich während der ganzen Wiederholung."
+    }
+   },
+   {
+    "id": "chest.svendPress.inclineDumbbellSqueeze",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Squeeze press con manubri su panca inclinata",
+     "en": "Incline dumbbell squeeze press",
+     "es": "Press apretado con mancuernas en banco inclinado",
+     "fr": "Développé serré incliné aux haltères",
+     "de": "Kurzhantel-Squeeze-Press auf der Schrägbank"
+    },
+    "note": {
+     "it": "Più lavoro sulla parte alta del petto.",
+     "en": "More work for the upper chest.",
+     "es": "Más trabajo para la parte alta del pecho.",
+     "fr": "Sollicite davantage le haut des pectoraux.",
+     "de": "Mehr Arbeit für die obere Brust."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.landmineChestPress",
+  "g": "chest",
+  "pri": [
+   "upperChest",
+   "chest"
+  ],
+  "sec": [
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Landmine press per il petto",
+   "en": "Landmine chest press",
+   "es": "Press landmine para pecho",
+   "fr": "Landmine press pour les pectoraux",
+   "de": "Landmine-Brustdrücken"
+  },
+  "why": {
+   "it": "Spinta inclinata in piedi per la parte alta del petto, comoda per le spalle.",
+   "en": "Standing angled press for the upper chest, easy on the shoulders.",
+   "es": "Empuje inclinado de pie para el pecho superior, cómodo para los hombros.",
+   "fr": "Poussée inclinée debout pour le haut des pectoraux, douce pour les épaules.",
+   "de": "Schräges Drücken im Stand für die obere Brust, schulterschonend."
+  },
+  "tip": {
+   "it": "Bilanciere fissato a terra, estremità al petto. Busto leggermente in avanti, spingi in alto e avanti e stringi il petto in cima.",
+   "en": "Bar anchored to the floor, end at your chest. Lean slightly forward, press up and forward and squeeze your chest at the top.",
+   "es": "Barra anclada al suelo, extremo en el pecho. Tronco algo adelantado, empuja arriba y al frente y aprieta el pecho arriba.",
+   "fr": "Barre ancrée au sol, extrémité à la poitrine. Buste légèrement penché, poussez vers le haut et l'avant, contractez en haut.",
+   "de": "Stange am Boden verankert, Ende an der Brust. Leicht vorgeneigt nach oben und vorn drücken, oben die Brust anspannen."
+  },
+  "variants": [
+   {
+    "id": "chest.landmineChestPress.twoHand",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine press a due mani",
+     "en": "Two-hand landmine chest press",
+     "es": "Press landmine a dos manos",
+     "fr": "Landmine press à deux mains",
+     "de": "Beidhändiges Landmine-Brustdrücken"
+    },
+    "note": {
+     "it": "Mani intrecciate sull'estremità del bilanciere.",
+     "en": "Hands clasped around the end of the bar.",
+     "es": "Manos entrelazadas en el extremo de la barra.",
+     "fr": "Mains jointes autour de l'extrémité de la barre.",
+     "de": "Hände um das Stangenende verschränkt."
+    }
+   },
+   {
+    "id": "chest.landmineChestPress.singleArm",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine press per il petto a un braccio",
+     "en": "Single-arm landmine chest press",
+     "es": "Press landmine para pecho a una mano",
+     "fr": "Landmine press unilatéral pour les pectoraux",
+     "de": "Einarmiges Landmine-Brustdrücken"
+    },
+    "note": {
+     "it": "Passo sfalsato, spingi verso la linea mediana.",
+     "en": "Staggered stance, press across toward your midline.",
+     "es": "Paso escalonado, empuja hacia la línea media.",
+     "fr": "Fente légère, poussez vers la ligne médiane.",
+     "de": "Schrittstellung, Richtung Körpermitte drücken."
+    }
+   },
+   {
+    "id": "chest.landmineChestPress.kneeling",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine press per il petto in ginocchio",
+     "en": "Kneeling landmine chest press",
+     "es": "Press landmine para pecho de rodillas",
+     "fr": "Landmine press à genoux",
+     "de": "Kniendes Landmine-Brustdrücken"
+    },
+    "note": {
+     "it": "In ginocchio elimini la spinta delle gambe.",
+     "en": "Kneeling removes leg drive.",
+     "es": "De rodillas eliminas el impulso de las piernas.",
+     "fr": "À genoux, vous supprimez l'aide des jambes.",
+     "de": "Kniend fällt der Beinschwung weg."
+    }
+   }
+  ]
+ },
+ {
+  "id": "chest.pullover",
+  "g": "chest",
+  "pri": [
+   "chest"
+  ],
+  "sec": [
+   "lats",
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "10–12",
+  "name": {
+   "it": "Pullover",
+   "en": "Pullover",
+   "es": "Pullover",
+   "fr": "Pull-over",
+   "de": "Überzüge"
+  },
+  "why": {
+   "it": "Allunga e lavora petto e dorsali in un solo movimento.",
+   "en": "Stretches and works chest and lats in one movement.",
+   "es": "Estira y trabaja pecho y dorsales en un solo movimiento.",
+   "fr": "Étire et travaille pectoraux et dorsaux en un seul mouvement.",
+   "de": "Dehnt und trainiert Brust und Latissimus in einer Bewegung."
+  },
+  "tip": {
+   "it": "Gomiti leggermente piegati e fissi, core attivo per non inarcare. Porta il peso dietro la testa fin dove è comodo e torna sopra il petto.",
+   "en": "Elbows slightly bent and fixed, brace your core so your back does not arch. Lower behind your head as far as comfortable, return over your chest.",
+   "es": "Codos algo flexionados y fijos, core activo para no arquear. Lleva el peso tras la cabeza hasta donde sea cómodo y vuelve sobre el pecho.",
+   "fr": "Coudes légèrement fléchis et fixes, gainage pour ne pas cambrer. Descendez derrière la tête sans forcer, revenez au-dessus de la poitrine.",
+   "de": "Ellbogen leicht gebeugt und fixiert, Rumpf fest, kein Hohlkreuz. Gewicht so weit hinter den Kopf wie angenehm, zurück über die Brust."
+  },
+  "variants": [
+   {
+    "id": "chest.pullover.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Pullover con manubrio",
+     "en": "Dumbbell pullover",
+     "es": "Pullover con mancuerna",
+     "fr": "Pull-over à l'haltère",
+     "de": "Kurzhantel-Überzüge"
+    },
+    "note": {
+     "it": "Afferra un manubrio con entrambe le mani sotto il disco superiore.",
+     "en": "Hold one dumbbell with both hands under the top plate.",
+     "es": "Sujeta una mancuerna con ambas manos bajo el disco superior.",
+     "fr": "Tenez un haltère à deux mains sous le disque supérieur.",
+     "de": "Eine Kurzhantel mit beiden Händen unter der oberen Scheibe halten."
+    }
+   },
+   {
+    "id": "chest.pullover.dumbbellCross",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Pullover con manubrio trasversale alla panca",
+     "en": "Cross-bench dumbbell pullover",
+     "es": "Pullover con mancuerna transversal al banco",
+     "fr": "Pull-over à l'haltère en travers du banc",
+     "de": "Kurzhantel-Überzüge quer zur Bank"
+    },
+    "note": {
+     "it": "Solo le spalle sulla panca, anche per un allungamento maggiore.",
+     "en": "Only your upper back on the bench, for a longer stretch.",
+     "es": "Solo la parte alta de la espalda en el banco, para más estiramiento.",
+     "fr": "Seul le haut du dos sur le banc, pour plus d'étirement.",
+     "de": "Nur der obere Rücken auf der Bank, für mehr Dehnung."
+    }
+   },
+   {
+    "id": "chest.pullover.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Pullover con bilanciere EZ",
+     "en": "EZ-bar pullover",
+     "es": "Pullover con barra EZ",
+     "fr": "Pull-over à la barre EZ",
+     "de": "SZ-Stangen-Überzüge"
+    }
+   },
+   {
+    "id": "chest.pullover.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Pullover ai cavi su panca",
+     "en": "Lying cable pullover",
+     "es": "Pullover en polea tumbado",
+     "fr": "Pull-over à la poulie allongé",
+     "de": "Kabel-Überzüge im Liegen"
+    },
+    "note": {
+     "it": "Panca davanti alla puleggia bassa: tensione costante.",
+     "en": "Bench in front of a low pulley: constant tension.",
+     "es": "Banco delante de la polea baja: tensión constante.",
+     "fr": "Banc devant la poulie basse : tension constante.",
+     "de": "Bank vor dem unteren Kabelzug: konstante Spannung."
+    }
+   },
+   {
+    "id": "chest.pullover.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Pullover alla macchina",
+     "en": "Pullover machine",
+     "es": "Pullover en máquina",
+     "fr": "Pull-over à la machine",
+     "de": "Überzüge an der Maschine"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.overheadPress",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "triceps",
+   "upperChest",
+   "abs"
+  ],
+  "lvl": 1,
+  "reps": "5–8",
+  "name": {
+   "it": "Lento avanti",
+   "en": "Overhead press",
+   "es": "Press militar",
+   "fr": "Développé militaire",
+   "de": "Schulterdrücken"
+  },
+  "why": {
+   "it": "Il fondamentale per spalle forti e stabili sopra la testa.",
+   "en": "The key lift for strong, stable shoulders overhead.",
+   "es": "El básico para unos hombros fuertes y estables por encima de la cabeza.",
+   "fr": "Le mouvement de base pour des épaules fortes et stables au-dessus de la tête.",
+   "de": "Die Grundübung für starke, stabile Schultern über Kopf."
+  },
+  "tip": {
+   "it": "Glutei e addome contratti, non inarcare la schiena. Spingi in verticale passando vicino al viso, testa avanti a fine spinta.",
+   "en": "Squeeze glutes and abs, do not arch your back. Press straight up close to your face, head through at the top.",
+   "es": "Glúteos y abdomen apretados, no arquees la espalda. Empuja en vertical cerca de la cara, cabeza adelante al final.",
+   "fr": "Fessiers et abdos contractés, ne cambrez pas. Poussez à la verticale près du visage, tête vers l'avant en haut.",
+   "de": "Gesäß und Bauch fest, kein Hohlkreuz. Senkrecht nah am Gesicht vorbei drücken, oben Kopf nach vorn."
+  },
+  "variants": [
+   {
+    "id": "shoulders.overheadPress.barbellStanding",
+    "eq": "barbell",
+    "name": {
+     "it": "Lento avanti in piedi con bilanciere",
+     "en": "Standing barbell overhead press",
+     "es": "Press militar de pie con barra",
+     "fr": "Développé militaire debout à la barre",
+     "de": "Stehendes Schulterdrücken mit Langhantel"
+    },
+    "note": {
+     "it": "La versione classica: lavora anche gambe e core.",
+     "en": "The classic version: also works legs and core.",
+     "es": "La versión clásica: trabaja también piernas y core.",
+     "fr": "La version classique : sollicite aussi jambes et gainage.",
+     "de": "Die klassische Version: fordert auch Beine und Rumpf."
+    }
+   },
+   {
+    "id": "shoulders.overheadPress.barbellSeated",
+    "eq": "barbell",
+    "name": {
+     "it": "Lento avanti seduto con bilanciere",
+     "en": "Seated barbell overhead press",
+     "es": "Press militar sentado con barra",
+     "fr": "Développé militaire assis à la barre",
+     "de": "Sitzendes Schulterdrücken mit Langhantel"
+    },
+    "note": {
+     "it": "Schienale quasi verticale: più isolamento delle spalle.",
+     "en": "Near-upright backrest: more shoulder isolation.",
+     "es": "Respaldo casi vertical: más aislamiento del hombro.",
+     "fr": "Dossier presque vertical : plus d'isolation des épaules.",
+     "de": "Fast senkrechte Lehne: mehr Schulterisolation."
+    }
+   },
+   {
+    "id": "shoulders.overheadPress.smithSeated",
+    "eq": "smith",
+    "name": {
+     "it": "Lento avanti al multipower",
+     "en": "Smith machine overhead press",
+     "es": "Press militar en máquina Smith",
+     "fr": "Développé militaire à la Smith machine",
+     "de": "Schulterdrücken an der Multipresse"
+    },
+    "note": {
+     "it": "Traiettoria guidata, panca leggermente avanti rispetto al bilanciere.",
+     "en": "Fixed path, set the bench slightly in front of the bar.",
+     "es": "Trayectoria guiada, banco un poco por delante de la barra.",
+     "fr": "Trajectoire guidée, banc légèrement devant la barre.",
+     "de": "Geführte Bahn, Bank leicht vor der Stange."
+    }
+   },
+   {
+    "id": "shoulders.overheadPress.behindNeck",
+    "eq": "barbell",
+    "name": {
+     "it": "Lento dietro con bilanciere",
+     "en": "Behind-the-neck press",
+     "es": "Press tras nuca con barra",
+     "fr": "Développé nuque à la barre",
+     "de": "Nackendrücken mit Langhantel"
+    },
+    "note": {
+     "it": "Solo con ottima mobilità e senza dolore: carichi leggeri, non scendere sotto le orecchie.",
+     "en": "Only with good mobility and no pain: light loads, stop at ear level.",
+     "es": "Solo con buena movilidad y sin dolor: cargas ligeras, no bajes de las orejas.",
+     "fr": "Seulement avec une bonne mobilité, sans douleur : charges légères, pas sous les oreilles.",
+     "de": "Nur mit guter Mobilität und schmerzfrei: leichte Last, nicht unter Ohrhöhe."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.dumbbellShoulderPress",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Shoulder press con manubri",
+   "en": "Dumbbell shoulder press",
+   "es": "Press de hombros con mancuernas",
+   "fr": "Développé épaules aux haltères",
+   "de": "Kurzhantel-Schulterdrücken"
+  },
+  "why": {
+   "it": "Spinta sopra la testa con più libertà per le spalle e lavoro per ogni lato.",
+   "en": "Overhead press with more shoulder freedom and work for each side.",
+   "es": "Empuje sobre la cabeza con más libertad de hombro y trabajo por lado.",
+   "fr": "Poussée au-dessus de la tête plus libre pour les épaules, chaque côté travaille.",
+   "de": "Überkopfdrücken mit mehr Schulterfreiheit und Arbeit pro Seite."
+  },
+  "tip": {
+   "it": "Manubri all'altezza delle orecchie, gomiti un po' in avanti. Spingi in alto senza sbattere i manubri e scendi controllato.",
+   "en": "Dumbbells at ear height, elbows slightly forward. Press up without clashing the weights and lower under control.",
+   "es": "Mancuernas a la altura de las orejas, codos algo adelantados. Empuja arriba sin chocarlas y baja controlado.",
+   "fr": "Haltères à hauteur des oreilles, coudes légèrement en avant. Poussez sans les entrechoquer et redescendez contrôlé.",
+   "de": "Hanteln auf Ohrhöhe, Ellbogen leicht nach vorn. Hochdrücken, ohne sie zusammenzuschlagen, kontrolliert senken."
+  },
+  "variants": [
+   {
+    "id": "shoulders.dumbbellShoulderPress.seated",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Shoulder press seduto con manubri",
+     "en": "Seated dumbbell shoulder press",
+     "es": "Press de hombros sentado con mancuernas",
+     "fr": "Développé épaules assis aux haltères",
+     "de": "Sitzendes Kurzhantel-Schulterdrücken"
+    }
+   },
+   {
+    "id": "shoulders.dumbbellShoulderPress.standing",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Shoulder press in piedi con manubri",
+     "en": "Standing dumbbell shoulder press",
+     "es": "Press de hombros de pie con mancuernas",
+     "fr": "Développé épaules debout aux haltères",
+     "de": "Stehendes Kurzhantel-Schulterdrücken"
+    },
+    "note": {
+     "it": "Più lavoro di core: niente iperestensione della schiena.",
+     "en": "More core work: avoid leaning back.",
+     "es": "Más trabajo de core: no te eches hacia atrás.",
+     "fr": "Plus de gainage : ne vous penchez pas en arrière.",
+     "de": "Mehr Rumpfarbeit: nicht nach hinten lehnen."
+    }
+   },
+   {
+    "id": "shoulders.dumbbellShoulderPress.neutralGrip",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Shoulder press con manubri a presa neutra",
+     "en": "Neutral-grip dumbbell shoulder press",
+     "es": "Press de hombros con mancuernas agarre neutro",
+     "fr": "Développé épaules aux haltères prise neutre",
+     "de": "Kurzhantel-Schulterdrücken mit neutralem Griff"
+    },
+    "note": {
+     "it": "Palmi uno verso l'altro: spesso più comodo per le spalle.",
+     "en": "Palms facing each other: often easier on the shoulders.",
+     "es": "Palmas enfrentadas: suele ser más cómodo para el hombro.",
+     "fr": "Paumes face à face : souvent plus confortable pour les épaules.",
+     "de": "Handflächen zueinander: oft schulterschonender."
+    }
+   },
+   {
+    "id": "shoulders.dumbbellShoulderPress.singleArm",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Shoulder press con manubrio a un braccio",
+     "en": "Single-arm dumbbell shoulder press",
+     "es": "Press de hombro con mancuerna a una mano",
+     "fr": "Développé épaule unilatéral à l'haltère",
+     "de": "Einarmiges Kurzhantel-Schulterdrücken"
+    },
+    "note": {
+     "it": "In piedi, non piegarti di lato: lavora anche il core.",
+     "en": "Standing, do not lean sideways: it trains your core too.",
+     "es": "De pie, no te inclines de lado: trabaja también el core.",
+     "fr": "Debout, ne penchez pas sur le côté : gainage en plus.",
+     "de": "Im Stand nicht seitlich neigen: trainiert auch den Rumpf."
+    }
+   },
+   {
+    "id": "shoulders.dumbbellShoulderPress.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Shoulder press con kettlebell",
+     "en": "Kettlebell overhead press",
+     "es": "Press de hombro con kettlebell",
+     "fr": "Développé épaule au kettlebell",
+     "de": "Kettlebell-Schulterdrücken"
+    },
+    "note": {
+     "it": "Parti dalla posizione di rack, polso dritto, kettlebell sull'avambraccio.",
+     "en": "Start from the rack position, wrist straight, bell on your forearm.",
+     "es": "Empieza en posición de rack, muñeca recta, kettlebell en el antebrazo.",
+     "fr": "Partez en position rack, poignet droit, kettlebell sur l'avant-bras.",
+     "de": "Aus der Rack-Position starten, Handgelenk gerade, Kugel am Unterarm."
+    }
+   },
+   {
+    "id": "shoulders.dumbbellShoulderPress.kettlebellBottomsUp",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Shoulder press con kettlebell capovolta",
+     "en": "Bottoms-up kettlebell press",
+     "es": "Press con kettlebell invertida",
+     "fr": "Développé kettlebell à l'envers",
+     "de": "Bottoms-up-Kettlebell-Drücken"
+    },
+    "note": {
+     "it": "Kettlebell a testa in su: carico leggero, molta stabilità di spalla e presa.",
+     "en": "Bell upside down: light load, lots of shoulder stability and grip.",
+     "es": "Kettlebell boca abajo: carga ligera, mucha estabilidad y agarre.",
+     "fr": "Kettlebell à l'envers : charge légère, beaucoup de stabilité et de grip.",
+     "de": "Kugel nach oben: leichtes Gewicht, viel Schulterstabilität und Griffkraft."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.machineShoulderPress",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "triceps"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Shoulder press alla macchina",
+   "en": "Machine shoulder press",
+   "es": "Press de hombros en máquina",
+   "fr": "Développé épaules à la machine",
+   "de": "Schulterpresse an der Maschine"
+  },
+  "why": {
+   "it": "Spinta sopra la testa guidata e sicura, facile da caricare.",
+   "en": "Guided, safe overhead press that is easy to load.",
+   "es": "Empuje sobre la cabeza guiado, seguro y fácil de cargar.",
+   "fr": "Poussée au-dessus de la tête guidée, sûre et facile à charger.",
+   "de": "Geführtes, sicheres Überkopfdrücken, leicht zu beladen."
+  },
+  "tip": {
+   "it": "Sedile regolato con maniglie all'altezza delle spalle. Schiena appoggiata, spingi senza bloccare i gomiti e torna lento.",
+   "en": "Seat set so handles are at shoulder height. Back on the pad, press without locking elbows, return slowly.",
+   "es": "Asiento ajustado con agarres a la altura de los hombros. Espalda apoyada, empuja sin bloquear codos y vuelve lento.",
+   "fr": "Siège réglé, poignées à hauteur d'épaules. Dos plaqué, poussez sans verrouiller les coudes, revenez lentement.",
+   "de": "Sitz so, dass die Griffe auf Schulterhöhe sind. Rücken am Polster, ohne Durchstrecken drücken, langsam zurück."
+  },
+  "variants": [
+   {
+    "id": "shoulders.machineShoulderPress.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Shoulder press alla macchina",
+     "en": "Seated shoulder press machine",
+     "es": "Press de hombros en máquina sentado",
+     "fr": "Développé épaules assis à la machine",
+     "de": "Schulterpresse sitzend"
+    }
+   },
+   {
+    "id": "shoulders.machineShoulderPress.plateLoaded",
+    "eq": "machine",
+    "name": {
+     "it": "Shoulder press a dischi (tipo Hammer)",
+     "en": "Plate-loaded shoulder press (Hammer-style)",
+     "es": "Press de hombros de discos (tipo Hammer)",
+     "fr": "Développé épaules à disques (type Hammer)",
+     "de": "Plate-loaded Schulterpresse (Hammer-Stil)"
+    },
+    "note": {
+     "it": "Bracci indipendenti: puoi lavorare un lato alla volta.",
+     "en": "Independent arms: you can work one side at a time.",
+     "es": "Brazos independientes: puedes trabajar un lado cada vez.",
+     "fr": "Bras indépendants : un côté à la fois possible.",
+     "de": "Unabhängige Hebel: auch einseitig trainierbar."
+    }
+   },
+   {
+    "id": "shoulders.machineShoulderPress.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Shoulder press ai cavi",
+     "en": "Cable shoulder press",
+     "es": "Press de hombros en polea",
+     "fr": "Développé épaules à la poulie",
+     "de": "Schulterdrücken am Kabelzug"
+    },
+    "note": {
+     "it": "Seduto tra due pulegge basse: tensione costante.",
+     "en": "Seated between two low pulleys: constant tension.",
+     "es": "Sentado entre dos poleas bajas: tensión constante.",
+     "fr": "Assis entre deux poulies basses : tension constante.",
+     "de": "Sitzend zwischen zwei unteren Kabelzügen: konstante Spannung."
+    }
+   },
+   {
+    "id": "shoulders.machineShoulderPress.band",
+    "eq": "band",
+    "name": {
+     "it": "Shoulder press con elastico",
+     "en": "Band shoulder press",
+     "es": "Press de hombros con banda elástica",
+     "fr": "Développé épaules à l'élastique",
+     "de": "Schulterdrücken mit Widerstandsband"
+    },
+    "note": {
+     "it": "Elastico sotto i piedi, ottimo a casa o per riscaldarti.",
+     "en": "Band under your feet, great at home or to warm up.",
+     "es": "Banda bajo los pies, ideal en casa o para calentar.",
+     "fr": "Élastique sous les pieds, idéal à la maison ou en échauffement.",
+     "de": "Band unter den Füßen, ideal zu Hause oder zum Aufwärmen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.arnoldPress",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "triceps"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Arnold press",
+   "en": "Arnold press",
+   "es": "Press Arnold",
+   "fr": "Développé Arnold",
+   "de": "Arnold Press"
+  },
+  "why": {
+   "it": "Spinta con rotazione che coinvolge tutto il deltoide anteriore e laterale.",
+   "en": "Rotating press that works the whole front and side delts.",
+   "es": "Empuje con rotación que trabaja deltoide anterior y lateral.",
+   "fr": "Poussée avec rotation qui sollicite deltoïdes antérieurs et latéraux.",
+   "de": "Drücken mit Rotation für vorderen und seitlichen Deltamuskel."
+  },
+  "tip": {
+   "it": "Parti con palmi verso di te davanti al viso. Ruota i polsi mentre spingi, finendo con palmi in avanti, e inverti scendendo.",
+   "en": "Start with palms facing you in front of your face. Rotate as you press so palms face forward at the top, reverse on the way down.",
+   "es": "Empieza con las palmas hacia ti delante de la cara. Gira mientras empujas hasta palmas al frente y deshaz al bajar.",
+   "fr": "Départ paumes vers vous devant le visage. Tournez en poussant pour finir paumes vers l'avant, inversez en descendant.",
+   "de": "Start mit Handflächen zu dir vor dem Gesicht. Beim Drücken drehen, oben zeigen sie nach vorn, beim Senken umgekehrt."
+  },
+  "variants": [
+   {
+    "id": "shoulders.arnoldPress.seated",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Arnold press seduto con manubri",
+     "en": "Seated dumbbell Arnold press",
+     "es": "Press Arnold sentado con mancuernas",
+     "fr": "Développé Arnold assis aux haltères",
+     "de": "Sitzende Arnold Press mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "shoulders.arnoldPress.standing",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Arnold press in piedi con manubri",
+     "en": "Standing dumbbell Arnold press",
+     "es": "Press Arnold de pie con mancuernas",
+     "fr": "Développé Arnold debout aux haltères",
+     "de": "Stehende Arnold Press mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Core attivo, non inarcare la schiena.",
+     "en": "Brace your core, do not arch your back.",
+     "es": "Core activo, no arquees la espalda.",
+     "fr": "Gainez, ne cambrez pas.",
+     "de": "Rumpf fest, kein Hohlkreuz."
+    }
+   },
+   {
+    "id": "shoulders.arnoldPress.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Arnold press con kettlebell",
+     "en": "Kettlebell Arnold press",
+     "es": "Press Arnold con kettlebell",
+     "fr": "Développé Arnold au kettlebell",
+     "de": "Arnold Press mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.landminePress",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt"
+  ],
+  "sec": [
+   "upperChest",
+   "triceps",
+   "abs"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Landmine press",
+   "en": "Landmine press",
+   "es": "Press landmine",
+   "fr": "Landmine press",
+   "de": "Landmine Press"
+  },
+  "why": {
+   "it": "Spinta in diagonale amica delle spalle, utile se la spinta verticale dà fastidio.",
+   "en": "Shoulder-friendly angled press, useful if overhead pressing hurts.",
+   "es": "Empuje en diagonal amable con el hombro, útil si el press vertical molesta.",
+   "fr": "Poussée en diagonale douce pour les épaules, utile si le vertical gêne.",
+   "de": "Schulterfreundliches Schrägdrücken, gut, wenn Überkopfdrücken stört."
+  },
+  "tip": {
+   "it": "Estremità del bilanciere alla spalla. Core attivo, spingi in alto e avanti fino a braccio teso, poi torna controllato.",
+   "en": "End of the bar at your shoulder. Brace, press up and forward to a straight arm, then return under control.",
+   "es": "Extremo de la barra en el hombro. Core activo, empuja arriba y al frente hasta extender el brazo y vuelve controlado.",
+   "fr": "Extrémité de la barre à l'épaule. Gainez, poussez vers le haut et l'avant bras tendu, revenez contrôlé.",
+   "de": "Stangenende an der Schulter. Rumpf fest, nach oben und vorn bis zum gestreckten Arm drücken, kontrolliert zurück."
+  },
+  "variants": [
+   {
+    "id": "shoulders.landminePress.halfKneeling",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine press a un braccio in ginocchio",
+     "en": "Half-kneeling single-arm landmine press",
+     "es": "Press landmine a una mano semiarrodillado",
+     "fr": "Landmine press unilatéral un genou au sol",
+     "de": "Einarmige Landmine Press im Halbknien"
+    },
+    "note": {
+     "it": "Ginocchio a terra dal lato che spinge: niente compensi con la schiena.",
+     "en": "Knee down on the pressing side: no cheating with your back.",
+     "es": "Rodilla en el suelo del lado que empuja: sin compensar con la espalda.",
+     "fr": "Genou au sol côté poussée : pas de compensation du dos.",
+     "de": "Knie auf der Druckseite am Boden: kein Ausweichen mit dem Rücken."
+    }
+   },
+   {
+    "id": "shoulders.landminePress.standingSingleArm",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine press a un braccio in piedi",
+     "en": "Standing single-arm landmine press",
+     "es": "Press landmine a una mano de pie",
+     "fr": "Landmine press unilatéral debout",
+     "de": "Einarmige Landmine Press im Stand"
+    }
+   },
+   {
+    "id": "shoulders.landminePress.pushPress",
+    "eq": "landmine",
+    "name": {
+     "it": "Landmine push press",
+     "en": "Landmine push press",
+     "es": "Push press landmine",
+     "fr": "Landmine push press",
+     "de": "Landmine Push Press"
+    },
+    "note": {
+     "it": "Breve spinta delle gambe per un lavoro più esplosivo.",
+     "en": "A short leg dip for more explosive work.",
+     "es": "Breve impulso de piernas para un trabajo más explosivo.",
+     "fr": "Courte impulsion des jambes pour un travail plus explosif.",
+     "de": "Kurzer Beinimpuls für explosiveres Training."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.lateralRaise",
+  "g": "shoulders",
+  "pri": [
+   "sideDelt"
+  ],
+  "sec": [
+   "traps",
+   "frontDelt"
+  ],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Alzate laterali",
+   "en": "Lateral raise",
+   "es": "Elevaciones laterales",
+   "fr": "Élévations latérales",
+   "de": "Seitheben"
+  },
+  "why": {
+   "it": "Isola il deltoide laterale per spalle più larghe.",
+   "en": "Isolates the side delts for wider shoulders.",
+   "es": "Aísla el deltoide lateral para unos hombros más anchos.",
+   "fr": "Isole les deltoïdes latéraux pour des épaules plus larges.",
+   "de": "Isoliert die seitlichen Schultern für breitere Schultern."
+  },
+  "tip": {
+   "it": "Gomiti leggermente piegati, sali di lato fino all'altezza delle spalle guidando con i gomiti. Niente slanci, scendi lento.",
+   "en": "Elbows slightly bent, raise out to the side to shoulder height leading with your elbows. No swinging, lower slowly.",
+   "es": "Codos algo flexionados, sube de lado hasta la altura del hombro guiando con los codos. Sin impulso, baja lento.",
+   "fr": "Coudes légèrement fléchis, montez sur le côté jusqu'aux épaules en menant avec les coudes. Sans élan, descendez lentement.",
+   "de": "Ellbogen leicht gebeugt, seitlich bis Schulterhöhe heben, Ellbogen führen. Kein Schwung, langsam senken."
+  },
+  "variants": [
+   {
+    "id": "shoulders.lateralRaise.dumbbellStanding",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate laterali in piedi con manubri",
+     "en": "Standing dumbbell lateral raise",
+     "es": "Elevaciones laterales de pie con mancuernas",
+     "fr": "Élévations latérales debout aux haltères",
+     "de": "Seitheben im Stand mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.dumbbellSeated",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate laterali da seduto con manubri",
+     "en": "Seated dumbbell lateral raise",
+     "es": "Elevaciones laterales sentado con mancuernas",
+     "fr": "Élévations latérales assis aux haltères",
+     "de": "Seitheben im Sitzen mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Da seduto è più difficile barare con lo slancio.",
+     "en": "Seated makes it harder to cheat with momentum.",
+     "es": "Sentado es más difícil hacer trampa con impulso.",
+     "fr": "Assis, il est plus dur de tricher avec l'élan.",
+     "de": "Im Sitzen ist Schwungholen schwieriger."
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.leanAwayDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzata laterale inclinata con manubrio",
+     "en": "Lean-away dumbbell lateral raise",
+     "es": "Elevación lateral inclinada con mancuerna",
+     "fr": "Élévation latérale penchée à l'haltère",
+     "de": "Seitheben mit Kurzhantel in Seitneigung"
+    },
+    "note": {
+     "it": "Tieniti a un supporto e inclinati: più carico nella parte bassa.",
+     "en": "Hold a support and lean away: more tension at the bottom.",
+     "es": "Agárrate a un soporte e inclínate: más tensión abajo.",
+     "fr": "Tenez un support et penchez-vous : plus de tension en bas.",
+     "de": "An einer Stütze festhalten und weglehnen: mehr Spannung unten."
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Alzata laterale al cavo basso",
+     "en": "Cable lateral raise",
+     "es": "Elevación lateral en polea baja",
+     "fr": "Élévation latérale à la poulie basse",
+     "de": "Seitheben am Kabelzug"
+    },
+    "note": {
+     "it": "Tensione costante su tutto il movimento.",
+     "en": "Constant tension through the whole movement.",
+     "es": "Tensión constante en todo el recorrido.",
+     "fr": "Tension constante sur tout le mouvement.",
+     "de": "Konstante Spannung über die ganze Bewegung."
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.leanAwayCable",
+    "eq": "cable",
+    "name": {
+     "it": "Alzata laterale inclinata al cavo",
+     "en": "Lean-away cable lateral raise",
+     "es": "Elevación lateral inclinada en polea",
+     "fr": "Élévation latérale penchée à la poulie",
+     "de": "Seitheben am Kabelzug in Seitneigung"
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Alzate laterali alla macchina",
+     "en": "Machine lateral raise",
+     "es": "Elevaciones laterales en máquina",
+     "fr": "Élévations latérales à la machine",
+     "de": "Seitheben an der Maschine"
+    },
+    "note": {
+     "it": "Spingi con i gomiti contro i cuscinetti, spalle basse.",
+     "en": "Push with your elbows into the pads, shoulders down.",
+     "es": "Empuja con los codos contra las almohadillas, hombros bajos.",
+     "fr": "Poussez avec les coudes dans les appuis, épaules basses.",
+     "de": "Mit den Ellbogen gegen die Polster drücken, Schultern unten."
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.band",
+    "eq": "band",
+    "name": {
+     "it": "Alzate laterali con elastico",
+     "en": "Band lateral raise",
+     "es": "Elevaciones laterales con banda elástica",
+     "fr": "Élévations latérales à l'élastique",
+     "de": "Seitheben mit Widerstandsband"
+    }
+   },
+   {
+    "id": "shoulders.lateralRaise.inclineSideLying",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzata laterale su panca inclinata di fianco",
+     "en": "Side-lying incline lateral raise",
+     "es": "Elevación lateral de lado en banco inclinado",
+     "fr": "Élévation latérale allongé sur le côté, banc incliné",
+     "de": "Seitheben seitlich liegend auf der Schrägbank"
+    },
+    "note": {
+     "it": "Di fianco sulla panca inclinata: più tensione nell'allungamento.",
+     "en": "Lying sideways on an incline bench: more tension when stretched.",
+     "es": "De lado en banco inclinado: más tensión en el estiramiento.",
+     "fr": "Sur le côté, banc incliné : plus de tension en étirement.",
+     "de": "Seitlich auf der Schrägbank: mehr Spannung in der Dehnung."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.frontRaise",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt"
+  ],
+  "sec": [
+   "upperChest",
+   "sideDelt"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Alzate frontali",
+   "en": "Front raise",
+   "es": "Elevaciones frontales",
+   "fr": "Élévations frontales",
+   "de": "Frontheben"
+  },
+  "why": {
+   "it": "Isola il deltoide anteriore.",
+   "en": "Isolates the front delts.",
+   "es": "Aísla el deltoide anterior.",
+   "fr": "Isole les deltoïdes antérieurs.",
+   "de": "Isoliert den vorderen Deltamuskel."
+  },
+  "tip": {
+   "it": "Busto fermo, gomiti morbidi. Solleva davanti a te fino all'altezza delle spalle senza slanciarti e scendi lento.",
+   "en": "Torso still, soft elbows. Raise in front of you to shoulder height without swinging, lower slowly.",
+   "es": "Tronco quieto, codos suaves. Sube al frente hasta la altura del hombro sin impulso y baja lento.",
+   "fr": "Buste immobile, coudes souples. Montez devant vous jusqu'aux épaules sans élan, descendez lentement.",
+   "de": "Oberkörper ruhig, Ellbogen locker. Vor dir bis Schulterhöhe heben, ohne Schwung, langsam senken."
+  },
+  "variants": [
+   {
+    "id": "shoulders.frontRaise.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate frontali con manubri",
+     "en": "Dumbbell front raise",
+     "es": "Elevaciones frontales con mancuernas",
+     "fr": "Élévations frontales aux haltères",
+     "de": "Frontheben mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Puoi alternare le braccia o salire insieme.",
+     "en": "Alternate arms or raise both together.",
+     "es": "Puedes alternar brazos o subir los dos a la vez.",
+     "fr": "Alternez les bras ou montez les deux ensemble.",
+     "de": "Arme abwechselnd oder gleichzeitig heben."
+    }
+   },
+   {
+    "id": "shoulders.frontRaise.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Alzata frontale con disco",
+     "en": "Plate front raise",
+     "es": "Elevación frontal con disco",
+     "fr": "Élévation frontale au disque",
+     "de": "Frontheben mit Gewichtsscheibe"
+    },
+    "note": {
+     "it": "Disco tenuto ai lati con presa neutra.",
+     "en": "Plate held at the sides with a neutral grip.",
+     "es": "Disco sujeto por los lados con agarre neutro.",
+     "fr": "Disque tenu sur les côtés en prise neutre.",
+     "de": "Scheibe seitlich mit neutralem Griff halten."
+    }
+   },
+   {
+    "id": "shoulders.frontRaise.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Alzata frontale con bilanciere",
+     "en": "Barbell front raise",
+     "es": "Elevación frontal con barra",
+     "fr": "Élévation frontale à la barre",
+     "de": "Frontheben mit Langhantel"
+    }
+   },
+   {
+    "id": "shoulders.frontRaise.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Alzata frontale con bilanciere EZ",
+     "en": "EZ-bar front raise",
+     "es": "Elevación frontal con barra EZ",
+     "fr": "Élévation frontale à la barre EZ",
+     "de": "Frontheben mit SZ-Stange"
+    }
+   },
+   {
+    "id": "shoulders.frontRaise.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Alzata frontale al cavo basso",
+     "en": "Cable front raise",
+     "es": "Elevación frontal en polea baja",
+     "fr": "Élévation frontale à la poulie basse",
+     "de": "Frontheben am Kabelzug"
+    },
+    "note": {
+     "it": "Con corda o barra, dando le spalle o di fronte alla puleggia.",
+     "en": "With rope or bar, facing away from or toward the pulley.",
+     "es": "Con cuerda o barra, de espaldas o de frente a la polea.",
+     "fr": "Avec corde ou barre, dos ou face à la poulie.",
+     "de": "Mit Seil oder Stange, mit dem Rücken oder Gesicht zum Kabel."
+    }
+   },
+   {
+    "id": "shoulders.frontRaise.band",
+    "eq": "band",
+    "name": {
+     "it": "Alzata frontale con elastico",
+     "en": "Band front raise",
+     "es": "Elevación frontal con banda elástica",
+     "fr": "Élévation frontale à l'élastique",
+     "de": "Frontheben mit Widerstandsband"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.reverseFly",
+  "g": "shoulders",
+  "pri": [
+   "rearDelt"
+  ],
+  "sec": [
+   "upperBack",
+   "traps"
+  ],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Alzate posteriori",
+   "en": "Reverse fly",
+   "es": "Pájaros",
+   "fr": "Oiseau",
+   "de": "Reverse Flys"
+  },
+  "why": {
+   "it": "Rinforza il deltoide posteriore per spalle equilibrate e postura migliore.",
+   "en": "Strengthens the rear delts for balanced shoulders and better posture.",
+   "es": "Fortalece el deltoide posterior para hombros equilibrados y mejor postura.",
+   "fr": "Renforce les deltoïdes postérieurs pour des épaules équilibrées et une meilleure posture.",
+   "de": "Stärkt die hintere Schulter für ausgewogene Schultern und bessere Haltung."
+  },
+  "tip": {
+   "it": "Gomiti leggermente piegati e fissi. Apri le braccia di lato guidando con i gomiti, senza stringere troppo le scapole. Carichi leggeri.",
+   "en": "Elbows slightly bent and fixed. Open your arms out to the side leading with the elbows, without over-squeezing your shoulder blades. Go light.",
+   "es": "Codos algo flexionados y fijos. Abre los brazos de lado guiando con los codos, sin juntar demasiado las escápulas. Carga ligera.",
+   "fr": "Coudes légèrement fléchis et fixes. Ouvrez les bras sur le côté en menant avec les coudes, sans trop serrer les omoplates. Charges légères.",
+   "de": "Ellbogen leicht gebeugt und fixiert. Arme seitlich öffnen, Ellbogen führen, Schulterblätter nicht zu stark zusammenziehen. Leichtes Gewicht."
+  },
+  "variants": [
+   {
+    "id": "shoulders.reverseFly.bentOverDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate posteriori a busto flesso con manubri",
+     "en": "Bent-over dumbbell reverse fly",
+     "es": "Pájaros inclinado con mancuernas",
+     "fr": "Oiseau buste penché aux haltères",
+     "de": "Vorgebeugte Reverse Flys mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Busto quasi parallelo al pavimento, schiena neutra.",
+     "en": "Torso near parallel to the floor, neutral back.",
+     "es": "Tronco casi paralelo al suelo, espalda neutra.",
+     "fr": "Buste presque parallèle au sol, dos neutre.",
+     "de": "Oberkörper fast parallel zum Boden, Rücken neutral."
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.chestSupportedDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate posteriori su panca inclinata con manubri",
+     "en": "Chest-supported dumbbell reverse fly",
+     "es": "Pájaros con pecho apoyado en banco inclinado",
+     "fr": "Oiseau buste appuyé sur banc incliné",
+     "de": "Reverse Flys mit Kurzhanteln, Brust auf Schrägbank"
+    },
+    "note": {
+     "it": "Petto appoggiato: zero carico sulla zona lombare.",
+     "en": "Chest on the pad: no load on your lower back.",
+     "es": "Pecho apoyado: nada de carga lumbar.",
+     "fr": "Poitrine en appui : aucune charge sur le bas du dos.",
+     "de": "Brust aufgelegt: keine Belastung im unteren Rücken."
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.seatedDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Alzate posteriori da seduto con manubri",
+     "en": "Seated bent-over reverse fly",
+     "es": "Pájaros sentado con mancuernas",
+     "fr": "Oiseau assis buste penché",
+     "de": "Reverse Flys sitzend vorgebeugt"
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.reversePecDeck",
+    "eq": "machine",
+    "name": {
+     "it": "Pectoral machine inversa",
+     "en": "Reverse pec deck",
+     "es": "Contractor de pecho inverso",
+     "fr": "Pec deck inversé",
+     "de": "Reverse Butterfly"
+    },
+    "note": {
+     "it": "Petto contro lo schienale, maniglie all'altezza delle spalle.",
+     "en": "Chest against the pad, handles at shoulder height.",
+     "es": "Pecho contra el respaldo, agarres a la altura del hombro.",
+     "fr": "Poitrine contre le dossier, poignées à hauteur d'épaules.",
+     "de": "Brust ans Polster, Griffe auf Schulterhöhe."
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Alzate posteriori ai cavi incrociati",
+     "en": "Cable reverse fly",
+     "es": "Pájaros en polea cruzada",
+     "fr": "Oiseau à la poulie vis-à-vis",
+     "de": "Reverse Flys am Kabelzug"
+    },
+    "note": {
+     "it": "Pulegge all'altezza delle spalle, cavi incrociati davanti a te.",
+     "en": "Pulleys at shoulder height, cables crossed in front of you.",
+     "es": "Poleas a la altura del hombro, cables cruzados delante.",
+     "fr": "Poulies à hauteur d'épaules, câbles croisés devant vous.",
+     "de": "Rollen auf Schulterhöhe, Kabel vor dir gekreuzt."
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.bandPullApart",
+    "eq": "band",
+    "name": {
+     "it": "Band pull-apart",
+     "en": "Band pull-apart",
+     "es": "Aperturas con banda (band pull-apart)",
+     "fr": "Band pull-apart (écartés à l'élastique)",
+     "de": "Band Pull-Apart"
+    },
+    "note": {
+     "it": "Braccia tese davanti, apri l'elastico fino al petto.",
+     "en": "Arms straight in front, pull the band apart to your chest.",
+     "es": "Brazos al frente, abre la banda hasta el pecho.",
+     "fr": "Bras tendus devant, écartez l'élastique jusqu'à la poitrine.",
+     "de": "Arme gestreckt vor dir, Band bis zur Brust auseinanderziehen."
+    }
+   },
+   {
+    "id": "shoulders.reverseFly.suspension",
+    "eq": "suspension",
+    "name": {
+     "it": "Alzate posteriori al TRX",
+     "en": "Suspension trainer reverse fly",
+     "es": "Pájaros en TRX",
+     "fr": "Oiseau au TRX",
+     "de": "Reverse Flys im Schlingentrainer"
+    },
+    "note": {
+     "it": "Più sei inclinato indietro, più è difficile.",
+     "en": "The further you lean back, the harder it gets.",
+     "es": "Cuanto más te inclines atrás, más difícil.",
+     "fr": "Plus vous êtes incliné en arrière, plus c'est dur.",
+     "de": "Je weiter du dich zurücklehnst, desto schwerer."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.facePull",
+  "g": "shoulders",
+  "pri": [
+   "rearDelt"
+  ],
+  "sec": [
+   "upperBack",
+   "traps"
+  ],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Face pull",
+   "en": "Face pull",
+   "es": "Face pull",
+   "fr": "Face pull",
+   "de": "Face Pulls"
+  },
+  "why": {
+   "it": "Rinforza deltoidi posteriori e cuffia, ottimo per la salute delle spalle.",
+   "en": "Builds rear delts and rotator cuff, great for shoulder health.",
+   "es": "Fortalece deltoide posterior y manguito rotador, ideal para la salud del hombro.",
+   "fr": "Renforce deltoïdes postérieurs et coiffe des rotateurs, idéal pour la santé des épaules.",
+   "de": "Stärkt hintere Schulter und Rotatorenmanschette, top für gesunde Schultern."
+  },
+  "tip": {
+   "it": "Corda all'altezza del viso. Tira verso la fronte aprendo le mani ai lati della testa, gomiti alti, e ruota le mani indietro in chiusura.",
+   "en": "Rope at face height. Pull toward your forehead, hands splitting beside your head, elbows high, rotating your hands back at the end.",
+   "es": "Cuerda a la altura de la cara. Tira hacia la frente separando las manos junto a la cabeza, codos altos, y gira las manos atrás al final.",
+   "fr": "Corde à hauteur du visage. Tirez vers le front en écartant les mains, coudes hauts, et tournez les mains vers l'arrière en fin.",
+   "de": "Seil auf Gesichtshöhe. Zur Stirn ziehen, Hände neben dem Kopf auseinander, Ellbogen hoch, am Ende Hände nach hinten drehen."
+  },
+  "variants": [
+   {
+    "id": "shoulders.facePull.cableRope",
+    "eq": "cable",
+    "name": {
+     "it": "Face pull al cavo con corda",
+     "en": "Cable rope face pull",
+     "es": "Face pull en polea con cuerda",
+     "fr": "Face pull à la poulie avec corde",
+     "de": "Face Pulls am Kabelzug mit Seil"
+    }
+   },
+   {
+    "id": "shoulders.facePull.cableKneeling",
+    "eq": "cable",
+    "name": {
+     "it": "Face pull al cavo in ginocchio",
+     "en": "Kneeling cable face pull",
+     "es": "Face pull en polea de rodillas",
+     "fr": "Face pull à genoux à la poulie",
+     "de": "Face Pulls am Kabelzug kniend"
+    },
+    "note": {
+     "it": "In ginocchio eviti di aiutarti con la schiena.",
+     "en": "Kneeling stops you from using your back.",
+     "es": "De rodillas evitas ayudarte con la espalda.",
+     "fr": "À genoux, vous n'aidez pas avec le dos.",
+     "de": "Kniend hilfst du nicht mit dem Rücken nach."
+    }
+   },
+   {
+    "id": "shoulders.facePull.band",
+    "eq": "band",
+    "name": {
+     "it": "Face pull con elastico",
+     "en": "Band face pull",
+     "es": "Face pull con banda elástica",
+     "fr": "Face pull à l'élastique",
+     "de": "Face Pulls mit Widerstandsband"
+    },
+    "note": {
+     "it": "Ottimo come riscaldamento prima della spinta.",
+     "en": "Great as a warm-up before pressing.",
+     "es": "Ideal como calentamiento antes del empuje.",
+     "fr": "Idéal en échauffement avant les poussées.",
+     "de": "Ideal zum Aufwärmen vor dem Drücken."
+    }
+   },
+   {
+    "id": "shoulders.facePull.suspension",
+    "eq": "suspension",
+    "name": {
+     "it": "Face pull al TRX",
+     "en": "Suspension trainer face pull",
+     "es": "Face pull en TRX",
+     "fr": "Face pull au TRX",
+     "de": "Face Pulls im Schlingentrainer"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.uprightRow",
+  "g": "shoulders",
+  "pri": [
+   "sideDelt"
+  ],
+  "sec": [
+   "traps",
+   "frontDelt",
+   "biceps"
+  ],
+  "lvl": 1,
+  "reps": "10–15",
+  "name": {
+   "it": "Tirate al mento",
+   "en": "Upright row",
+   "es": "Remo al mentón",
+   "fr": "Tirage menton",
+   "de": "Aufrechtes Rudern"
+  },
+  "why": {
+   "it": "Lavora deltoide laterale e trapezio in un unico movimento.",
+   "en": "Works side delts and traps in one movement.",
+   "es": "Trabaja deltoide lateral y trapecio en un solo movimiento.",
+   "fr": "Travaille deltoïdes latéraux et trapèzes en un seul mouvement.",
+   "de": "Trainiert seitliche Schulter und Nacken in einer Bewegung."
+  },
+  "tip": {
+   "it": "Presa almeno larga quanto le spalle. Tira guidando con i gomiti fino all'altezza delle spalle, non oltre. Fermati se senti dolore.",
+   "en": "Grip at least shoulder-width. Pull leading with your elbows up to shoulder height, no higher. Stop if you feel pain.",
+   "es": "Agarre al menos a la anchura de los hombros. Tira guiando con los codos hasta la altura del hombro, no más. Para si duele.",
+   "fr": "Prise au moins largeur d'épaules. Tirez en menant avec les coudes jusqu'aux épaules, pas plus haut. Arrêtez en cas de douleur.",
+   "de": "Griff mindestens schulterbreit. Mit den Ellbogen voran bis Schulterhöhe ziehen, nicht höher. Bei Schmerz aufhören."
+  },
+  "variants": [
+   {
+    "id": "shoulders.uprightRow.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Tirate al mento con bilanciere",
+     "en": "Barbell upright row",
+     "es": "Remo al mentón con barra",
+     "fr": "Tirage menton à la barre",
+     "de": "Aufrechtes Rudern mit Langhantel"
+    },
+    "note": {
+     "it": "Evita la presa stretta: stressa di più le spalle.",
+     "en": "Avoid a narrow grip: it stresses the shoulders more.",
+     "es": "Evita el agarre estrecho: carga más los hombros.",
+     "fr": "Évitez la prise serrée : plus de stress pour les épaules.",
+     "de": "Engen Griff vermeiden: belastet die Schultern stärker."
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Tirate al mento con bilanciere EZ",
+     "en": "EZ-bar upright row",
+     "es": "Remo al mentón con barra EZ",
+     "fr": "Tirage menton à la barre EZ",
+     "de": "Aufrechtes Rudern mit SZ-Stange"
+    },
+    "note": {
+     "it": "Polsi più comodi grazie all'impugnatura angolata.",
+     "en": "Angled grip is kinder to your wrists.",
+     "es": "El agarre angulado es más cómodo para las muñecas.",
+     "fr": "La prise angulée ménage les poignets.",
+     "de": "Der gewinkelte Griff schont die Handgelenke."
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Tirate al mento con manubri",
+     "en": "Dumbbell upright row",
+     "es": "Remo al mentón con mancuernas",
+     "fr": "Tirage menton aux haltères",
+     "de": "Aufrechtes Rudern mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Le mani sono libere: traiettoria più naturale per le spalle.",
+     "en": "Free hands: a more natural path for your shoulders.",
+     "es": "Manos libres: trayectoria más natural para los hombros.",
+     "fr": "Mains libres : trajectoire plus naturelle pour les épaules.",
+     "de": "Freie Hände: natürlichere Bahn für die Schultern."
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Tirate al mento al cavo basso",
+     "en": "Cable upright row",
+     "es": "Remo al mentón en polea baja",
+     "fr": "Tirage menton à la poulie basse",
+     "de": "Aufrechtes Rudern am Kabelzug"
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Tirate al mento al multipower",
+     "en": "Smith machine upright row",
+     "es": "Remo al mentón en máquina Smith",
+     "fr": "Tirage menton à la Smith machine",
+     "de": "Aufrechtes Rudern an der Multipresse"
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Tirate al mento con kettlebell",
+     "en": "Kettlebell upright row",
+     "es": "Remo al mentón con kettlebell",
+     "fr": "Tirage menton au kettlebell",
+     "de": "Aufrechtes Rudern mit Kettlebell"
+    }
+   },
+   {
+    "id": "shoulders.uprightRow.band",
+    "eq": "band",
+    "name": {
+     "it": "Tirate al mento con elastico",
+     "en": "Band upright row",
+     "es": "Remo al mentón con banda elástica",
+     "fr": "Tirage menton à l'élastique",
+     "de": "Aufrechtes Rudern mit Widerstandsband"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.cubanPress",
+  "g": "shoulders",
+  "pri": [
+   "rearDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "frontDelt",
+   "upperBack"
+  ],
+  "lvl": 1,
+  "reps": "10–12",
+  "name": {
+   "it": "Cuban press",
+   "en": "Cuban press",
+   "es": "Press cubano",
+   "fr": "Cuban press",
+   "de": "Cuban Press"
+  },
+  "why": {
+   "it": "Combina tirata, rotazione esterna e spinta per spalle sane e stabili.",
+   "en": "Combines a pull, external rotation and a press for healthy, stable shoulders.",
+   "es": "Combina tirón, rotación externa y empuje para hombros sanos y estables.",
+   "fr": "Combine tirage, rotation externe et poussée pour des épaules saines et stables.",
+   "de": "Kombiniert Zug, Außenrotation und Drücken für gesunde, stabile Schultern."
+  },
+  "tip": {
+   "it": "Tira i gomiti all'altezza delle spalle, ruota gli avambracci in alto tenendo i gomiti fermi, poi spingi sopra la testa. Carichi molto leggeri.",
+   "en": "Pull elbows to shoulder height, rotate forearms up keeping elbows still, then press overhead. Use very light weights.",
+   "es": "Lleva los codos a la altura del hombro, gira los antebrazos arriba sin mover los codos y empuja arriba. Cargas muy ligeras.",
+   "fr": "Montez les coudes à hauteur d'épaules, tournez les avant-bras vers le haut coudes fixes, puis poussez. Charges très légères.",
+   "de": "Ellbogen auf Schulterhöhe ziehen, Unterarme bei ruhigen Ellbogen nach oben drehen, dann über Kopf drücken. Sehr leichtes Gewicht."
+  },
+  "variants": [
+   {
+    "id": "shoulders.cubanPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Cuban press con manubri",
+     "en": "Dumbbell Cuban press",
+     "es": "Press cubano con mancuernas",
+     "fr": "Cuban press aux haltères",
+     "de": "Cuban Press mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "shoulders.cubanPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Cuban press con bilanciere",
+     "en": "Barbell Cuban press",
+     "es": "Press cubano con barra",
+     "fr": "Cuban press à la barre",
+     "de": "Cuban Press mit Langhantel"
+    },
+    "note": {
+     "it": "Anche il solo bilanciere scarico può bastare.",
+     "en": "An empty bar may be enough.",
+     "es": "Puede bastar con la barra vacía.",
+     "fr": "La barre à vide peut suffire.",
+     "de": "Die leere Stange kann schon reichen."
+    }
+   },
+   {
+    "id": "shoulders.cubanPress.band",
+    "eq": "band",
+    "name": {
+     "it": "Cuban press con elastico",
+     "en": "Band Cuban press",
+     "es": "Press cubano con banda elástica",
+     "fr": "Cuban press à l'élastique",
+     "de": "Cuban Press mit Widerstandsband"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.yRaise",
+  "g": "shoulders",
+  "pri": [
+   "rearDelt",
+   "traps"
+  ],
+  "sec": [
+   "sideDelt",
+   "upperBack"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Y raise",
+   "en": "Y raise",
+   "es": "Elevación en Y",
+   "fr": "Élévation en Y",
+   "de": "Y-Heben"
+  },
+  "why": {
+   "it": "Rinforza trapezio basso e deltoidi posteriori per scapole stabili.",
+   "en": "Strengthens lower traps and rear delts for stable shoulder blades.",
+   "es": "Fortalece trapecio inferior y deltoide posterior para escápulas estables.",
+   "fr": "Renforce le bas des trapèzes et les deltoïdes postérieurs pour des omoplates stables.",
+   "de": "Stärkt unteren Trapezmuskel und hintere Schulter für stabile Schulterblätter."
+  },
+  "tip": {
+   "it": "Pollici in alto, solleva le braccia tese formando una Y con il corpo, scapole verso il basso. Niente slanci, carichi leggeri.",
+   "en": "Thumbs up, raise straight arms into a Y with your body, shoulder blades down. No swinging, light weights.",
+   "es": "Pulgares arriba, sube los brazos rectos formando una Y, escápulas abajo. Sin impulso, cargas ligeras.",
+   "fr": "Pouces vers le haut, montez les bras tendus en Y, omoplates basses. Sans élan, charges légères.",
+   "de": "Daumen nach oben, gestreckte Arme zu einem Y heben, Schulterblätter nach unten. Kein Schwung, leichtes Gewicht."
+  },
+  "variants": [
+   {
+    "id": "shoulders.yRaise.inclineDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Y raise su panca inclinata con manubri",
+     "en": "Incline dumbbell Y raise",
+     "es": "Elevación en Y en banco inclinado con mancuernas",
+     "fr": "Élévation en Y sur banc incliné aux haltères",
+     "de": "Y-Heben auf der Schrägbank mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Petto sulla panca a 30–45°.",
+     "en": "Chest on a bench set at 30–45°.",
+     "es": "Pecho en el banco a 30–45°.",
+     "fr": "Poitrine sur un banc à 30–45°.",
+     "de": "Brust auf der Bank bei 30–45°."
+    }
+   },
+   {
+    "id": "shoulders.yRaise.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Y raise ai cavi",
+     "en": "Cable Y raise",
+     "es": "Elevación en Y en polea",
+     "fr": "Élévation en Y à la poulie",
+     "de": "Y-Heben am Kabelzug"
+    }
+   },
+   {
+    "id": "shoulders.yRaise.suspension",
+    "eq": "suspension",
+    "name": {
+     "it": "Y raise al TRX",
+     "en": "Suspension trainer Y raise",
+     "es": "Elevación en Y en TRX",
+     "fr": "Élévation en Y au TRX",
+     "de": "Y-Heben im Schlingentrainer"
+    }
+   },
+   {
+    "id": "shoulders.yRaise.band",
+    "eq": "band",
+    "name": {
+     "it": "Y raise con elastico",
+     "en": "Band Y raise",
+     "es": "Elevación en Y con banda elástica",
+     "fr": "Élévation en Y à l'élastique",
+     "de": "Y-Heben mit Widerstandsband"
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.pikePushUp",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt"
+  ],
+  "sec": [
+   "triceps",
+   "sideDelt",
+   "upperChest"
+  ],
+  "lvl": 1,
+  "reps": "6–12",
+  "name": {
+   "it": "Pike push-up",
+   "en": "Pike push-up",
+   "es": "Flexiones pica",
+   "fr": "Pompes piquées",
+   "de": "Pike Push-up"
+  },
+  "why": {
+   "it": "Spinta verticale a corpo libero, primo passo verso la verticale.",
+   "en": "Bodyweight overhead press, the first step toward handstand push-ups.",
+   "es": "Empuje vertical con peso corporal, primer paso hacia el pino.",
+   "fr": "Poussée verticale au poids du corps, première étape vers l'équilibre.",
+   "de": "Überkopfdrücken mit Körpergewicht, erster Schritt zum Handstand."
+  },
+  "tip": {
+   "it": "Bacino in alto a V rovesciata, testa tra le mani. Scendi con la testa in avanti verso il pavimento, gomiti all'indietro. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Hips high in an inverted V, head between your hands. Lower your head forward toward the floor, elbows back. Log the added weight (0 if none).",
+   "es": "Cadera alta en V invertida, cabeza entre las manos. Baja la cabeza hacia delante al suelo, codos atrás. Registra el peso añadido (0 si no hay).",
+   "fr": "Bassin haut en V inversé, tête entre les mains. Descendez la tête vers l'avant au sol, coudes vers l'arrière. Notez la charge ajoutée (0 si aucune).",
+   "de": "Hüfte hoch als umgekehrtes V, Kopf zwischen den Händen. Kopf nach vorn Richtung Boden senken, Ellbogen nach hinten. Trag das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "shoulders.pikePushUp.floor",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Pike push-up a terra",
+     "en": "Floor pike push-up",
+     "es": "Flexiones pica en el suelo",
+     "fr": "Pompes piquées au sol",
+     "de": "Pike Push-up am Boden"
+    }
+   },
+   {
+    "id": "shoulders.pikePushUp.feetElevated",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Pike push-up con piedi rialzati",
+     "en": "Feet-elevated pike push-up",
+     "es": "Flexiones pica con pies elevados",
+     "fr": "Pompes piquées pieds surélevés",
+     "de": "Pike Push-up mit erhöhten Füßen"
+    },
+    "note": {
+     "it": "Piedi su panca o box: più peso sulle spalle.",
+     "en": "Feet on a bench or box: more load on your shoulders.",
+     "es": "Pies en banco o cajón: más carga en hombros.",
+     "fr": "Pieds sur banc ou box : plus de charge sur les épaules.",
+     "de": "Füße auf Bank oder Box: mehr Last auf den Schultern."
+    }
+   }
+  ]
+ },
+ {
+  "id": "shoulders.handstandPushUp",
+  "g": "shoulders",
+  "pri": [
+   "frontDelt",
+   "sideDelt"
+  ],
+  "sec": [
+   "triceps",
+   "traps",
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "3–8",
+  "name": {
+   "it": "Piegamenti in verticale",
+   "en": "Handstand push-up",
+   "es": "Flexiones en pino",
+   "fr": "Pompes en équilibre",
+   "de": "Handstand-Liegestütze"
+  },
+  "why": {
+   "it": "Spinta verticale avanzata a corpo libero per spalle molto forti.",
+   "en": "Advanced bodyweight overhead press for very strong shoulders.",
+   "es": "Empuje vertical avanzado con peso corporal para hombros muy fuertes.",
+   "fr": "Poussée verticale avancée au poids du corps pour des épaules très fortes.",
+   "de": "Fortgeschrittenes Überkopfdrücken mit Körpergewicht für sehr starke Schultern."
+  },
+  "tip": {
+   "it": "In verticale al muro, core contratto. Scendi controllato con la testa su un tappetino, mani a triangolo, poi spingi. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Handstand against a wall, core tight. Lower under control to a mat, hands and head in a triangle, then press. Log the added weight (0 if none).",
+   "es": "Pino contra la pared, core firme. Baja controlado a una colchoneta, manos y cabeza en triángulo, y empuja. Registra el peso añadido (0 si no hay).",
+   "fr": "Équilibre contre un mur, gainé. Descendez contrôlé sur un tapis, mains et tête en triangle, puis poussez. Notez la charge ajoutée (0 si aucune).",
+   "de": "Handstand an der Wand, Rumpf fest. Kontrolliert auf eine Matte senken, Hände und Kopf im Dreieck, dann drücken. Trag das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "shoulders.handstandPushUp.wall",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti in verticale al muro",
+     "en": "Wall handstand push-up",
+     "es": "Flexiones en pino contra la pared",
+     "fr": "Pompes en équilibre contre le mur",
+     "de": "Handstand-Liegestütze an der Wand"
+    }
+   },
+   {
+    "id": "shoulders.handstandPushUp.negative",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti in verticale solo negativa",
+     "en": "Negative wall handstand push-up",
+     "es": "Flexiones en pino solo negativa",
+     "fr": "Pompes en équilibre en négatif",
+     "de": "Negative Handstand-Liegestütze an der Wand"
+    },
+    "note": {
+     "it": "Solo la discesa lenta (3–5 s), per costruire forza.",
+     "en": "Slow lowering only (3–5 s) to build strength.",
+     "es": "Solo la bajada lenta (3–5 s) para ganar fuerza.",
+     "fr": "Seulement la descente lente (3–5 s) pour gagner en force.",
+     "de": "Nur das langsame Absenken (3–5 s) zum Kraftaufbau."
+    }
+   },
+   {
+    "id": "shoulders.handstandPushUp.deficit",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Piegamenti in verticale in deficit",
+     "en": "Deficit handstand push-up",
+     "es": "Flexiones en pino con déficit",
+     "fr": "Pompes en équilibre en déficit",
+     "de": "Defizit-Handstand-Liegestütze"
+    },
+    "note": {
+     "it": "Mani su rialzi: escursione maggiore, molto avanzato.",
+     "en": "Hands on blocks: longer range, very advanced.",
+     "es": "Manos sobre bloques: más recorrido, muy avanzado.",
+     "fr": "Mains sur blocs : amplitude accrue, très avancé.",
+     "de": "Hände auf Blöcken: größerer Weg, sehr fortgeschritten."
+    }
+   }
+  ]
+ }
+]

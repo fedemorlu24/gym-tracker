@@ -1,0 +1,3635 @@
+[
+ {
+  "id": "quads.backSquat",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors",
+   "hams",
+   "lowerBack"
+  ],
+  "lvl": 1,
+  "reps": "5–10",
+  "name": {
+   "it": "Squat",
+   "en": "Back squat",
+   "es": "Sentadilla trasera",
+   "fr": "Squat arrière",
+   "de": "Kniebeuge"
+  },
+  "why": {
+   "it": "Base della forza per gambe e glutei.",
+   "en": "The foundation of leg and glute strength.",
+   "es": "La base de la fuerza de piernas y glúteos.",
+   "fr": "La base de la force des jambes et des fessiers.",
+   "de": "Die Basis für Kraft in Beinen und Gesäß."
+  },
+  "tip": {
+   "it": "Piedi a larghezza spalle, petto alto; scendi controllato con le ginocchia in linea con le punte e spingi con tutto il piede.",
+   "en": "Feet shoulder-width, chest up; descend under control with knees tracking over toes and drive through the whole foot.",
+   "es": "Pies al ancho de hombros, pecho arriba; baja controlado con las rodillas en línea con las puntas y empuja con todo el pie.",
+   "fr": "Pieds largeur d'épaules, poitrine haute ; descendez sous contrôle, genoux dans l'axe des orteils, poussez avec tout le pied.",
+   "de": "Füße schulterbreit, Brust hoch; kontrolliert absenken, Knie über den Zehen, mit dem ganzen Fuß hochdrücken."
+  },
+  "variants": [
+   {
+    "id": "quads.backSquat.highBar",
+    "eq": "barbell",
+    "name": {
+     "it": "Squat con bilanciere high bar",
+     "en": "High-bar back squat",
+     "es": "Sentadilla trasera con barra alta",
+     "fr": "Squat barre haute",
+     "de": "Kniebeuge High-Bar"
+    },
+    "note": {
+     "it": "Bilanciere sui trapezi, busto più verticale, più quadricipiti.",
+     "en": "Bar on the traps, more upright torso, more quads.",
+     "es": "Barra sobre los trapecios, torso más vertical, más cuádriceps.",
+     "fr": "Barre sur les trapèzes, buste plus droit, plus de quadriceps.",
+     "de": "Stange auf dem Trapez, aufrechterer Oberkörper, mehr Quadrizeps."
+    }
+   },
+   {
+    "id": "quads.backSquat.lowBar",
+    "eq": "barbell",
+    "name": {
+     "it": "Squat con bilanciere low bar",
+     "en": "Low-bar back squat",
+     "es": "Sentadilla trasera con barra baja",
+     "fr": "Squat barre basse",
+     "de": "Kniebeuge Low-Bar"
+    },
+    "note": {
+     "it": "Bilanciere sui deltoidi posteriori, busto più inclinato, più glutei.",
+     "en": "Bar on the rear delts, more forward lean, more glutes.",
+     "es": "Barra sobre los deltoides posteriores, más inclinación, más glúteos.",
+     "fr": "Barre sur l'arrière des épaules, buste plus penché, plus de fessiers.",
+     "de": "Stange auf den hinteren Schultern, mehr Vorlage, mehr Gesäß."
+    }
+   },
+   {
+    "id": "quads.backSquat.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Squat al multipower",
+     "en": "Smith machine squat",
+     "es": "Sentadilla en máquina Smith",
+     "fr": "Squat à la Smith machine",
+     "de": "Kniebeuge an der Multipresse"
+    },
+    "note": {
+     "it": "Traiettoria guidata: piedi un po' avanti per stare comodo.",
+     "en": "Guided path: place your feet slightly forward for comfort.",
+     "es": "Trayectoria guiada: pies algo adelantados para mayor comodidad.",
+     "fr": "Trajectoire guidée : pieds un peu en avant pour plus de confort.",
+     "de": "Geführte Bahn: Füße etwas nach vorn stellen."
+    }
+   },
+   {
+    "id": "quads.backSquat.safetyBar",
+    "eq": "barbell",
+    "name": {
+     "it": "Squat con safety bar",
+     "en": "Safety bar squat",
+     "es": "Sentadilla con safety bar",
+     "fr": "Squat à la safety bar",
+     "de": "Kniebeuge mit Safety Bar"
+    },
+    "note": {
+     "it": "Impugnature davanti: meno stress sulle spalle, busto più dritto.",
+     "en": "Front handles: less shoulder stress, more upright torso.",
+     "es": "Asas delante: menos estrés en los hombros, torso más erguido.",
+     "fr": "Poignées devant : moins de stress aux épaules, buste plus droit.",
+     "de": "Griffe vorn: weniger Schulterbelastung, aufrechter Oberkörper."
+    }
+   },
+   {
+    "id": "quads.backSquat.box",
+    "eq": "barbell",
+    "name": {
+     "it": "Box squat con bilanciere",
+     "en": "Barbell box squat",
+     "es": "Box squat con barra",
+     "fr": "Box squat à la barre",
+     "de": "Box-Kniebeuge mit Langhantel"
+    },
+    "note": {
+     "it": "Siediti sul box senza rilassarti, poi risali esplosivo.",
+     "en": "Sit back to the box without relaxing, then drive up hard.",
+     "es": "Siéntate en el cajón sin relajarte y sube explosivo.",
+     "fr": "Asseyez-vous sur la box sans relâcher, puis remontez fort.",
+     "de": "Auf die Box setzen ohne zu entspannen, dann explosiv hoch."
+    }
+   },
+   {
+    "id": "quads.backSquat.pause",
+    "eq": "barbell",
+    "name": {
+     "it": "Squat con fermo",
+     "en": "Pause squat",
+     "es": "Sentadilla con pausa",
+     "fr": "Squat avec pause",
+     "de": "Kniebeuge mit Pause"
+    },
+    "note": {
+     "it": "Fermo di 1–3 s in basso restando in tensione.",
+     "en": "Hold 1–3 s at the bottom while staying tight.",
+     "es": "Pausa de 1–3 s abajo manteniendo la tensión.",
+     "fr": "Pause de 1–3 s en bas en restant gainé.",
+     "de": "1–3 s unten halten und dabei Spannung behalten."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.frontSquat",
+  "g": "quads",
+  "pri": [
+   "quads"
+  ],
+  "sec": [
+   "glutes",
+   "adductors",
+   "upperBack",
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "4–8",
+  "name": {
+   "it": "Front squat",
+   "en": "Front squat",
+   "es": "Sentadilla frontal",
+   "fr": "Squat avant",
+   "de": "Frontkniebeuge"
+  },
+  "why": {
+   "it": "Enfatizza i quadricipiti con busto verticale e core forte.",
+   "en": "Emphasises the quads with an upright torso and a strong core.",
+   "es": "Enfatiza los cuádriceps con el torso vertical y un core fuerte.",
+   "fr": "Cible les quadriceps avec un buste droit et une sangle solide.",
+   "de": "Betont den Quadrizeps bei aufrechtem Oberkörper und starkem Rumpf."
+  },
+  "tip": {
+   "it": "Gomiti alti e carico sulle spalle anteriori; resta dritto e scendi tra le ginocchia.",
+   "en": "Elbows high, load on the front of the shoulders; stay upright and sit down between your knees.",
+   "es": "Codos altos y carga sobre la parte delantera de los hombros; mantente erguido y baja entre las rodillas.",
+   "fr": "Coudes hauts, charge sur l'avant des épaules ; restez droit et descendez entre les genoux.",
+   "de": "Ellbogen hoch, Last auf den vorderen Schultern; aufrecht bleiben und zwischen die Knie sinken."
+  },
+  "variants": [
+   {
+    "id": "quads.frontSquat.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Front squat con bilanciere",
+     "en": "Barbell front squat",
+     "es": "Sentadilla frontal con barra",
+     "fr": "Squat avant à la barre",
+     "de": "Frontkniebeuge mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.frontSquat.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Front squat al multipower",
+     "en": "Smith machine front squat",
+     "es": "Sentadilla frontal en máquina Smith",
+     "fr": "Squat avant à la Smith machine",
+     "de": "Frontkniebeuge an der Multipresse"
+    },
+    "note": {
+     "it": "Più stabile: utile per imparare la posizione.",
+     "en": "More stable: useful to learn the rack position.",
+     "es": "Más estable: útil para aprender la posición.",
+     "fr": "Plus stable : utile pour apprendre la position.",
+     "de": "Stabiler: gut zum Erlernen der Position."
+    }
+   },
+   {
+    "id": "quads.frontSquat.doubleKettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Front squat con due kettlebell",
+     "en": "Double kettlebell front squat",
+     "es": "Sentadilla frontal con dos kettlebells",
+     "fr": "Squat avant avec deux kettlebells",
+     "de": "Frontkniebeuge mit zwei Kettlebells"
+    },
+    "note": {
+     "it": "Kettlebell in rack sul petto, ottimo per il core.",
+     "en": "Kettlebells racked on the chest, great for the core.",
+     "es": "Kettlebells en rack sobre el pecho, ideal para el core.",
+     "fr": "Kettlebells en rack sur la poitrine, idéal pour la sangle.",
+     "de": "Kettlebells in Rack-Position, super für den Rumpf."
+    }
+   },
+   {
+    "id": "quads.frontSquat.zercher",
+    "eq": "barbell",
+    "name": {
+     "it": "Zercher squat",
+     "en": "Zercher squat",
+     "es": "Sentadilla Zercher",
+     "fr": "Squat Zercher",
+     "de": "Zercher-Kniebeuge"
+    },
+    "note": {
+     "it": "Bilanciere nell'incavo dei gomiti: più core e dorsali alti.",
+     "en": "Bar in the crook of the elbows: more core and upper back.",
+     "es": "Barra en el pliegue de los codos: más core y espalda alta.",
+     "fr": "Barre au creux des coudes : plus de gainage et de haut du dos.",
+     "de": "Stange in den Ellenbeugen: mehr Rumpf und oberer Rücken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.gobletSquat",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors",
+   "abs"
+  ],
+  "lvl": 0,
+  "reps": "8–15",
+  "name": {
+   "it": "Goblet squat",
+   "en": "Goblet squat",
+   "es": "Sentadilla goblet",
+   "fr": "Squat goblet",
+   "de": "Goblet Squat"
+  },
+  "why": {
+   "it": "Squat semplice da imparare, ottimo per tecnica e mobilità.",
+   "en": "An easy-to-learn squat, great for technique and mobility.",
+   "es": "Sentadilla fácil de aprender, ideal para técnica y movilidad.",
+   "fr": "Un squat facile à apprendre, idéal pour la technique et la mobilité.",
+   "de": "Leicht zu lernende Kniebeuge, ideal für Technik und Mobilität."
+  },
+  "tip": {
+   "it": "Tieni il peso al petto, gomiti tra le ginocchia in basso, schiena neutra.",
+   "en": "Hold the weight at your chest, elbows inside the knees at the bottom, neutral back.",
+   "es": "Sujeta el peso en el pecho, codos entre las rodillas abajo, espalda neutra.",
+   "fr": "Tenez la charge contre la poitrine, coudes entre les genoux en bas, dos neutre.",
+   "de": "Gewicht vor der Brust halten, Ellbogen unten zwischen den Knien, Rücken neutral."
+  },
+  "variants": [
+   {
+    "id": "quads.gobletSquat.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Goblet squat con manubrio",
+     "en": "Dumbbell goblet squat",
+     "es": "Sentadilla goblet con mancuerna",
+     "fr": "Squat goblet avec haltère",
+     "de": "Goblet Squat mit Kurzhantel"
+    }
+   },
+   {
+    "id": "quads.gobletSquat.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Goblet squat con kettlebell",
+     "en": "Kettlebell goblet squat",
+     "es": "Sentadilla goblet con kettlebell",
+     "fr": "Squat goblet avec kettlebell",
+     "de": "Goblet Squat mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.machineSquat",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Squat alla macchina",
+   "en": "Machine squat",
+   "es": "Sentadilla en máquina",
+   "fr": "Squat à la machine",
+   "de": "Maschinen-Kniebeuge"
+  },
+  "why": {
+   "it": "Tanto lavoro per le gambe con schiena supportata e poco equilibrio richiesto.",
+   "en": "Lots of leg work with back support and little balance demand.",
+   "es": "Mucho trabajo de piernas con la espalda apoyada y poco equilibrio.",
+   "fr": "Beaucoup de travail des jambes, dos soutenu, peu d'équilibre requis.",
+   "de": "Viel Beinarbeit mit Rückenstütze und wenig Gleichgewichtsanspruch."
+  },
+  "tip": {
+   "it": "Schiena ben appoggiata, scendi in profondità senza staccare i talloni e non bloccare le ginocchia in alto.",
+   "en": "Keep your back against the pad, go deep without lifting your heels and don't lock your knees at the top.",
+   "es": "Espalda bien apoyada, baja profundo sin levantar los talones y no bloquees las rodillas arriba.",
+   "fr": "Dos bien calé, descendez profond sans décoller les talons et ne verrouillez pas les genoux en haut.",
+   "de": "Rücken fest am Polster, tief gehen ohne die Fersen zu heben, Knie oben nicht durchstrecken."
+  },
+  "variants": [
+   {
+    "id": "quads.machineSquat.hackSquat",
+    "eq": "machine",
+    "name": {
+     "it": "Hack squat",
+     "en": "Hack squat machine",
+     "es": "Hack squat en máquina",
+     "fr": "Hack squat à la machine",
+     "de": "Hackenschmidt-Kniebeuge"
+    },
+    "note": {
+     "it": "Piedi bassi sulla pedana per più quadricipiti.",
+     "en": "Feet low on the platform for more quads.",
+     "es": "Pies bajos en la plataforma para más cuádriceps.",
+     "fr": "Pieds bas sur la plateforme pour plus de quadriceps.",
+     "de": "Füße tief auf der Plattform für mehr Quadrizeps."
+    }
+   },
+   {
+    "id": "quads.machineSquat.pendulum",
+    "eq": "machine",
+    "name": {
+     "it": "Pendulum squat",
+     "en": "Pendulum squat",
+     "es": "Sentadilla péndulo",
+     "fr": "Pendulum squat",
+     "de": "Pendel-Kniebeuge"
+    },
+    "note": {
+     "it": "Traiettoria ad arco: grande profondità con schiena protetta.",
+     "en": "Arcing path: great depth with a protected back.",
+     "es": "Trayectoria en arco: gran profundidad con la espalda protegida.",
+     "fr": "Trajectoire en arc : grande amplitude, dos protégé.",
+     "de": "Bogenförmige Bahn: große Tiefe bei geschütztem Rücken."
+    }
+   },
+   {
+    "id": "quads.machineSquat.beltSquat",
+    "eq": "machine",
+    "name": {
+     "it": "Belt squat",
+     "en": "Belt squat",
+     "es": "Sentadilla con cinturón (belt squat)",
+     "fr": "Belt squat",
+     "de": "Belt Squat"
+    },
+    "note": {
+     "it": "Carico sulla cintura: gambe a fondo senza caricare la colonna.",
+     "en": "Load on a hip belt: train legs hard without spinal loading.",
+     "es": "Carga en el cinturón: piernas a tope sin cargar la columna.",
+     "fr": "Charge à la ceinture : jambes à fond sans charger la colonne.",
+     "de": "Last am Hüftgurt: Beine hart trainieren ohne Wirbelsäulenlast."
+    }
+   },
+   {
+    "id": "quads.machineSquat.vSquat",
+    "eq": "machine",
+    "name": {
+     "it": "V-squat",
+     "en": "V-squat machine",
+     "es": "Sentadilla en máquina V-squat",
+     "fr": "V-squat à la machine",
+     "de": "V-Squat-Maschine"
+    },
+    "note": {
+     "it": "Simile all'hack squat, con appoggio sulle spalle e traiettoria inclinata.",
+     "en": "Like a hack squat, with shoulder pads and an angled path.",
+     "es": "Similar al hack squat, con apoyo en los hombros y trayectoria inclinada.",
+     "fr": "Proche du hack squat, appuis aux épaules et trajectoire inclinée.",
+     "de": "Ähnlich der Hackenschmidt, mit Schulterpolstern und schräger Bahn."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.bodyweightSquat",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "hams",
+   "adductors"
+  ],
+  "lvl": 0,
+  "reps": "15–25",
+  "name": {
+   "it": "Squat a corpo libero",
+   "en": "Bodyweight squat",
+   "es": "Sentadilla con peso corporal",
+   "fr": "Squat au poids du corps",
+   "de": "Kniebeuge ohne Gewicht"
+  },
+  "why": {
+   "it": "Squat senza attrezzi per riscaldamento, tecnica e resistenza.",
+   "en": "Equipment-free squats for warm-up, technique and endurance.",
+   "es": "Sentadillas sin material para calentar, técnica y resistencia.",
+   "fr": "Des squats sans matériel pour l'échauffement, la technique et l'endurance.",
+   "de": "Kniebeugen ohne Geräte für Aufwärmen, Technik und Ausdauer."
+  },
+  "tip": {
+   "it": "Braccia avanti per equilibrio, scendi almeno a parallelo con i talloni a terra. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Arms forward for balance, go at least to parallel with heels down. Log the added weight (0 if none).",
+   "es": "Brazos al frente para equilibrarte, baja al menos a paralelo con los talones apoyados. Registra el peso añadido (0 si no hay).",
+   "fr": "Bras devant pour l'équilibre, descendez au moins à la parallèle, talons au sol. Notez la charge ajoutée (0 si aucune).",
+   "de": "Arme nach vorn, mindestens bis parallel gehen, Fersen am Boden. Trage das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "quads.bodyweightSquat.air",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Squat a corpo libero",
+     "en": "Air squat",
+     "es": "Sentadilla al aire",
+     "fr": "Squat au poids du corps",
+     "de": "Kniebeuge ohne Gewicht"
+    }
+   },
+   {
+    "id": "quads.bodyweightSquat.jump",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Jump squat",
+     "en": "Jump squat",
+     "es": "Sentadilla con salto",
+     "fr": "Squat sauté",
+     "de": "Sprungkniebeuge"
+    },
+    "note": {
+     "it": "Salta esplosivo e atterra morbido sugli avampiedi.",
+     "en": "Jump explosively and land softly through the forefoot.",
+     "es": "Salta explosivo y aterriza suave sobre la parte delantera del pie.",
+     "fr": "Sautez de façon explosive et réceptionnez-vous en douceur.",
+     "de": "Explosiv springen und weich auf dem Vorfuß landen."
+    }
+   },
+   {
+    "id": "quads.bodyweightSquat.pistol",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Pistol squat",
+     "en": "Pistol squat",
+     "es": "Sentadilla pistol",
+     "fr": "Pistol squat",
+     "de": "Pistol Squat (einbeinige Kniebeuge)"
+    },
+    "note": {
+     "it": "Su una gamba, l'altra tesa avanti: livello avanzato.",
+     "en": "On one leg with the other straight out: advanced.",
+     "es": "A una pierna con la otra estirada al frente: nivel avanzado.",
+     "fr": "Sur une jambe, l'autre tendue devant : niveau avancé.",
+     "de": "Auf einem Bein, das andere gestreckt vorn: fortgeschritten."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.sissySquat",
+  "g": "quads",
+  "pri": [
+   "quads"
+  ],
+  "sec": [
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "8–15",
+  "name": {
+   "it": "Sissy squat",
+   "en": "Sissy squat",
+   "es": "Sentadilla sissy",
+   "fr": "Sissy squat",
+   "de": "Sissy Squat"
+  },
+  "why": {
+   "it": "Isola i quadricipiti, soprattutto il retto femorale.",
+   "en": "Isolates the quads, especially the rectus femoris.",
+   "es": "Aísla los cuádriceps, sobre todo el recto femoral.",
+   "fr": "Isole les quadriceps, surtout le droit fémoral.",
+   "de": "Isoliert den Quadrizeps, vor allem den geraden Schenkelmuskel."
+  },
+  "tip": {
+   "it": "Sali sulle punte, porta le ginocchia avanti e inclinati indietro in linea retta da ginocchia a spalle. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Rise onto your toes, push your knees forward and lean back in a straight line from knees to shoulders. Log the added weight (0 if none).",
+   "es": "Ponte de puntillas, lleva las rodillas adelante e inclínate atrás en línea recta de rodillas a hombros. Registra el peso añadido (0 si no hay).",
+   "fr": "Montez sur la pointe des pieds, genoux en avant, penchez-vous en arrière en ligne droite. Notez la charge ajoutée (0 si aucune).",
+   "de": "Auf die Zehen, Knie nach vorn, Körper gerade von Knie bis Schulter nach hinten lehnen. Trage das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "quads.sissySquat.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Sissy squat a corpo libero",
+     "en": "Bodyweight sissy squat",
+     "es": "Sentadilla sissy con peso corporal",
+     "fr": "Sissy squat au poids du corps",
+     "de": "Sissy Squat ohne Gewicht"
+    }
+   },
+   {
+    "id": "quads.sissySquat.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Sissy squat alla macchina",
+     "en": "Sissy squat machine",
+     "es": "Sentadilla sissy en máquina",
+     "fr": "Sissy squat à la machine",
+     "de": "Sissy-Squat-Gerät"
+    },
+    "note": {
+     "it": "Il supporto blocca le caviglie e dà più stabilità.",
+     "en": "The pad locks your ankles for more stability.",
+     "es": "El soporte fija los tobillos y da más estabilidad.",
+     "fr": "Le support bloque les chevilles pour plus de stabilité.",
+     "de": "Das Polster fixiert die Knöchel für mehr Stabilität."
+    }
+   },
+   {
+    "id": "quads.sissySquat.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Sissy squat con disco",
+     "en": "Plate-loaded sissy squat",
+     "es": "Sentadilla sissy con disco",
+     "fr": "Sissy squat avec disque",
+     "de": "Sissy Squat mit Hantelscheibe"
+    },
+    "note": {
+     "it": "Disco al petto per aumentare il carico.",
+     "en": "Hold a plate on your chest to add load.",
+     "es": "Sujeta un disco en el pecho para añadir carga.",
+     "fr": "Tenez un disque contre la poitrine pour ajouter de la charge.",
+     "de": "Scheibe vor der Brust für mehr Last."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.legPress",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors",
+   "hams"
+  ],
+  "lvl": 0,
+  "reps": "8–15",
+  "name": {
+   "it": "Leg press",
+   "en": "Leg press",
+   "es": "Prensa de piernas",
+   "fr": "Presse à cuisses",
+   "de": "Beinpresse"
+  },
+  "why": {
+   "it": "Carico elevato sulle gambe con la schiena supportata.",
+   "en": "Heavy leg loading with full back support.",
+   "es": "Mucha carga en las piernas con la espalda apoyada.",
+   "fr": "Charge lourde sur les jambes avec le dos soutenu.",
+   "de": "Hohe Beinlast bei voll gestütztem Rücken."
+  },
+  "tip": {
+   "it": "Lombari sempre a contatto con lo schienale, scendi finché il bacino resta fermo e non bloccare le ginocchia.",
+   "en": "Keep your lower back on the pad, lower until just before your pelvis tucks and never lock your knees.",
+   "es": "Lumbares siempre apoyadas, baja hasta justo antes de que la pelvis se despegue y no bloquees las rodillas.",
+   "fr": "Bas du dos toujours collé, descendez tant que le bassin reste calé et ne verrouillez pas les genoux.",
+   "de": "Unterer Rücken bleibt am Polster, absenken bis kurz bevor das Becken abkippt, Knie nie durchstrecken."
+  },
+  "variants": [
+   {
+    "id": "quads.legPress.incline45",
+    "eq": "machine",
+    "name": {
+     "it": "Leg press 45°",
+     "en": "45° leg press",
+     "es": "Prensa inclinada 45°",
+     "fr": "Presse à cuisses 45°",
+     "de": "Beinpresse 45°"
+    }
+   },
+   {
+    "id": "quads.legPress.horizontal",
+    "eq": "machine",
+    "name": {
+     "it": "Leg press orizzontale",
+     "en": "Horizontal leg press",
+     "es": "Prensa horizontal",
+     "fr": "Presse à cuisses horizontale",
+     "de": "Horizontale Beinpresse"
+    },
+    "note": {
+     "it": "Seduto, carichi più leggeri: ottima per iniziare.",
+     "en": "Seated, lighter loads: good for beginners.",
+     "es": "Sentado, cargas más ligeras: buena para principiantes.",
+     "fr": "Assis, charges plus légères : idéale pour débuter.",
+     "de": "Sitzend, leichtere Lasten: gut für Einsteiger."
+    }
+   },
+   {
+    "id": "quads.legPress.singleLeg",
+    "eq": "machine",
+    "name": {
+     "it": "Leg press a una gamba",
+     "en": "Single-leg leg press",
+     "es": "Prensa a una pierna",
+     "fr": "Presse à cuisses unilatérale",
+     "de": "Einbeinige Beinpresse"
+    },
+    "note": {
+     "it": "Una gamba alla volta per correggere gli squilibri.",
+     "en": "One leg at a time to fix imbalances.",
+     "es": "Una pierna cada vez para corregir desequilibrios.",
+     "fr": "Une jambe à la fois pour corriger les déséquilibres.",
+     "de": "Ein Bein nach dem anderen gegen Dysbalancen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.lunge",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors",
+   "hams"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Affondi",
+   "en": "Lunge",
+   "es": "Zancadas",
+   "fr": "Fentes",
+   "de": "Ausfallschritte"
+  },
+  "why": {
+   "it": "Gambe e glutei un lato alla volta, con equilibrio e stabilità.",
+   "en": "Trains legs and glutes one side at a time, with balance and stability.",
+   "es": "Trabaja piernas y glúteos por lados, con equilibrio y estabilidad.",
+   "fr": "Travaille jambes et fessiers côté par côté, avec équilibre et stabilité.",
+   "de": "Trainiert Beine und Gesäß einseitig, mit Gleichgewicht und Stabilität."
+  },
+  "tip": {
+   "it": "Passo lungo, scendi in verticale finché il ginocchio dietro sfiora il pavimento, poi spingi col piede davanti.",
+   "en": "Take a long step, drop straight down until the back knee nearly touches the floor, then push through the front foot.",
+   "es": "Paso largo, baja en vertical hasta que la rodilla trasera casi toque el suelo y empuja con el pie delantero.",
+   "fr": "Grand pas, descendez à la verticale jusqu'à frôler le sol du genou arrière, puis poussez avec le pied avant.",
+   "de": "Großer Schritt, senkrecht absenken bis das hintere Knie fast den Boden berührt, dann über den vorderen Fuß drücken."
+  },
+  "variants": [
+   {
+    "id": "quads.lunge.forwardDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Affondi in avanti con manubri",
+     "en": "Dumbbell forward lunge",
+     "es": "Zancadas al frente con mancuernas",
+     "fr": "Fentes avant avec haltères",
+     "de": "Ausfallschritte vorwärts mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "quads.lunge.forwardBarbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Affondi in avanti con bilanciere",
+     "en": "Barbell forward lunge",
+     "es": "Zancadas al frente con barra",
+     "fr": "Fentes avant à la barre",
+     "de": "Ausfallschritte vorwärts mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.lunge.reverseDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Affondi indietro con manubri",
+     "en": "Dumbbell reverse lunge",
+     "es": "Zancadas hacia atrás con mancuernas",
+     "fr": "Fentes arrière avec haltères",
+     "de": "Ausfallschritte rückwärts mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Più facile per le ginocchia e più lavoro sui glutei.",
+     "en": "Easier on the knees, more glute work.",
+     "es": "Más amable con las rodillas y más trabajo de glúteos.",
+     "fr": "Plus doux pour les genoux, plus de travail des fessiers.",
+     "de": "Knieschonender, mehr Gesäßarbeit."
+    }
+   },
+   {
+    "id": "quads.lunge.reverseBarbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Affondi indietro con bilanciere",
+     "en": "Barbell reverse lunge",
+     "es": "Zancadas hacia atrás con barra",
+     "fr": "Fentes arrière à la barre",
+     "de": "Ausfallschritte rückwärts mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.lunge.reverseSmith",
+    "eq": "smith",
+    "name": {
+     "it": "Affondi indietro al multipower",
+     "en": "Smith machine reverse lunge",
+     "es": "Zancadas hacia atrás en máquina Smith",
+     "fr": "Fentes arrière à la Smith machine",
+     "de": "Ausfallschritte rückwärts an der Multipresse"
+    },
+    "note": {
+     "it": "Bilanciere guidato: meno equilibrio, più carico.",
+     "en": "Guided bar: less balance needed, more load.",
+     "es": "Barra guiada: menos equilibrio, más carga.",
+     "fr": "Barre guidée : moins d'équilibre, plus de charge.",
+     "de": "Geführte Stange: weniger Balance, mehr Last."
+    }
+   },
+   {
+    "id": "quads.lunge.walkingDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Affondi camminati con manubri",
+     "en": "Dumbbell walking lunge",
+     "es": "Zancadas caminando con mancuernas",
+     "fr": "Fentes marchées avec haltères",
+     "de": "Gehende Ausfallschritte mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Avanza a ogni passo: più resistenza e coordinazione.",
+     "en": "Step forward each rep: more endurance and coordination.",
+     "es": "Avanza en cada paso: más resistencia y coordinación.",
+     "fr": "Avancez à chaque pas : plus d'endurance et de coordination.",
+     "de": "Bei jeder Wiederholung vorwärts: mehr Ausdauer und Koordination."
+    }
+   },
+   {
+    "id": "quads.lunge.walkingBarbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Affondi camminati con bilanciere",
+     "en": "Barbell walking lunge",
+     "es": "Zancadas caminando con barra",
+     "fr": "Fentes marchées à la barre",
+     "de": "Gehende Ausfallschritte mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.lunge.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Affondi a corpo libero",
+     "en": "Bodyweight lunge",
+     "es": "Zancadas con peso corporal",
+     "fr": "Fentes au poids du corps",
+     "de": "Ausfallschritte ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.bulgarianSplitSquat",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "adductors",
+   "hams"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Bulgarian split squat",
+   "en": "Bulgarian split squat",
+   "es": "Sentadilla búlgara",
+   "fr": "Squat bulgare",
+   "de": "Bulgarische Kniebeuge"
+  },
+  "why": {
+   "it": "Lavoro unilaterale intenso per quadricipiti e glutei.",
+   "en": "Intense single-leg work for quads and glutes.",
+   "es": "Trabajo unilateral intenso de cuádriceps y glúteos.",
+   "fr": "Travail unilatéral intense des quadriceps et des fessiers.",
+   "de": "Intensive einbeinige Arbeit für Quadrizeps und Gesäß."
+  },
+  "tip": {
+   "it": "Piede dietro su una panca, scendi in verticale; busto inclinato per i glutei, più dritto per i quadricipiti.",
+   "en": "Back foot on a bench, drop straight down; lean forward for glutes, stay upright for quads.",
+   "es": "Pie trasero en un banco, baja en vertical; inclínate para glúteos, erguido para cuádriceps.",
+   "fr": "Pied arrière sur un banc, descendez à la verticale ; penché pour les fessiers, droit pour les quadriceps.",
+   "de": "Hinterer Fuß auf der Bank, senkrecht absenken; Vorlage für Gesäß, aufrecht für Quadrizeps."
+  },
+  "variants": [
+   {
+    "id": "quads.bulgarianSplitSquat.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Bulgarian split squat con manubri",
+     "en": "Dumbbell Bulgarian split squat",
+     "es": "Sentadilla búlgara con mancuernas",
+     "fr": "Squat bulgare avec haltères",
+     "de": "Bulgarische Kniebeuge mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "quads.bulgarianSplitSquat.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Bulgarian split squat con bilanciere",
+     "en": "Barbell Bulgarian split squat",
+     "es": "Sentadilla búlgara con barra",
+     "fr": "Squat bulgare à la barre",
+     "de": "Bulgarische Kniebeuge mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.bulgarianSplitSquat.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Bulgarian split squat al multipower",
+     "en": "Smith machine Bulgarian split squat",
+     "es": "Sentadilla búlgara en máquina Smith",
+     "fr": "Squat bulgare à la Smith machine",
+     "de": "Bulgarische Kniebeuge an der Multipresse"
+    }
+   },
+   {
+    "id": "quads.bulgarianSplitSquat.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Bulgarian split squat a corpo libero",
+     "en": "Bodyweight Bulgarian split squat",
+     "es": "Sentadilla búlgara con peso corporal",
+     "fr": "Squat bulgare au poids du corps",
+     "de": "Bulgarische Kniebeuge ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "quads.bulgarianSplitSquat.splitSquatDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Split squat con manubri",
+     "en": "Dumbbell split squat",
+     "es": "Sentadilla dividida con mancuernas",
+     "fr": "Split squat avec haltères",
+     "de": "Split Squat mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Entrambi i piedi a terra: versione più semplice.",
+     "en": "Both feet on the floor: an easier version.",
+     "es": "Ambos pies en el suelo: versión más sencilla.",
+     "fr": "Les deux pieds au sol : version plus simple.",
+     "de": "Beide Füße am Boden: einfachere Version."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.stepUp",
+  "g": "quads",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "hams",
+   "adductors"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Step-up",
+   "en": "Step-up",
+   "es": "Subida al cajón",
+   "fr": "Step-up",
+   "de": "Step-up"
+  },
+  "why": {
+   "it": "Forza unilaterale funzionale, utile per scale e salite.",
+   "en": "Functional single-leg strength that carries over to stairs and hills.",
+   "es": "Fuerza unilateral funcional, útil para escaleras y cuestas.",
+   "fr": "Force unilatérale fonctionnelle, utile pour les escaliers et les côtes.",
+   "de": "Funktionelle einbeinige Kraft, hilfreich für Treppen und Steigungen."
+  },
+  "tip": {
+   "it": "Tutto il piede sul box, spingi con la gamba davanti senza slancio da quella dietro; scendi controllato.",
+   "en": "Whole foot on the box, drive with the front leg without pushing off the back one; lower under control.",
+   "es": "Todo el pie sobre el cajón, empuja con la pierna delantera sin impulso de la trasera; baja controlado.",
+   "fr": "Tout le pied sur la box, poussez avec la jambe avant sans élan de l'arrière ; redescendez sous contrôle.",
+   "de": "Ganzer Fuß auf der Box, mit dem vorderen Bein drücken ohne Schwung vom hinteren; kontrolliert absenken."
+  },
+  "variants": [
+   {
+    "id": "quads.stepUp.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Step-up con manubri",
+     "en": "Dumbbell step-up",
+     "es": "Subida al cajón con mancuernas",
+     "fr": "Step-up avec haltères",
+     "de": "Step-up mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "quads.stepUp.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Step-up con bilanciere",
+     "en": "Barbell step-up",
+     "es": "Subida al cajón con barra",
+     "fr": "Step-up à la barre",
+     "de": "Step-up mit Langhantel"
+    }
+   },
+   {
+    "id": "quads.stepUp.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Step-up a corpo libero",
+     "en": "Bodyweight step-up",
+     "es": "Subida al cajón con peso corporal",
+     "fr": "Step-up au poids du corps",
+     "de": "Step-up ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.legExtension",
+  "g": "quads",
+  "pri": [
+   "quads"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Leg extension",
+   "en": "Leg extension",
+   "es": "Extensión de cuádriceps",
+   "fr": "Leg extension",
+   "de": "Beinstrecker"
+  },
+  "why": {
+   "it": "Isola i quadricipiti, utile per volume e rifinitura.",
+   "en": "Isolates the quads, great for volume and finishing work.",
+   "es": "Aísla los cuádriceps, ideal para volumen y trabajo final.",
+   "fr": "Isole les quadriceps, idéal pour le volume et la finition.",
+   "de": "Isoliert den Quadrizeps, ideal für Volumen und Finisher."
+  },
+  "tip": {
+   "it": "Ginocchio allineato al perno, estendi fino in alto con un attimo di contrazione e scendi lento.",
+   "en": "Line your knee up with the pivot, extend fully with a brief squeeze and lower slowly.",
+   "es": "Rodilla alineada con el eje, extiende del todo con una breve contracción y baja lento.",
+   "fr": "Genou aligné sur l'axe, tendez complètement avec une brève contraction, redescendez lentement.",
+   "de": "Knie auf Höhe der Drehachse, voll strecken, kurz halten und langsam absenken."
+  },
+  "variants": [
+   {
+    "id": "quads.legExtension.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Leg extension",
+     "en": "Leg extension machine",
+     "es": "Extensión de cuádriceps en máquina",
+     "fr": "Leg extension à la machine",
+     "de": "Beinstrecker an der Maschine"
+    }
+   },
+   {
+    "id": "quads.legExtension.singleLeg",
+    "eq": "machine",
+    "name": {
+     "it": "Leg extension a una gamba",
+     "en": "Single-leg leg extension",
+     "es": "Extensión de cuádriceps a una pierna",
+     "fr": "Leg extension unilatéral",
+     "de": "Einbeiniger Beinstrecker"
+    },
+    "note": {
+     "it": "Una gamba alla volta per pareggiare i lati.",
+     "en": "One leg at a time to even out both sides.",
+     "es": "Una pierna cada vez para equilibrar los lados.",
+     "fr": "Une jambe à la fois pour équilibrer les côtés.",
+     "de": "Einzeln, um Seitenunterschiede auszugleichen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.hipAdduction",
+  "g": "quads",
+  "pri": [
+   "adductors"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Adduttori",
+   "en": "Hip adduction",
+   "es": "Aducción de cadera",
+   "fr": "Adduction de hanche",
+   "de": "Hüftadduktion"
+  },
+  "why": {
+   "it": "Rinforza gli adduttori, utili per squat e stabilità dell'anca.",
+   "en": "Strengthens the adductors, key for squats and hip stability.",
+   "es": "Fortalece los aductores, clave para la sentadilla y la cadera.",
+   "fr": "Renforce les adducteurs, utiles au squat et à la stabilité de hanche.",
+   "de": "Stärkt die Adduktoren, wichtig für Kniebeugen und Hüftstabilität."
+  },
+  "tip": {
+   "it": "Chiudi le gambe controllato senza sbattere i pad, poi apri lentamente fino a un allungamento comodo.",
+   "en": "Squeeze the legs together under control without slamming the pads, then open slowly to a comfortable stretch.",
+   "es": "Cierra las piernas controlado sin golpear los apoyos y abre despacio hasta un estiramiento cómodo.",
+   "fr": "Serrez les jambes sous contrôle sans claquer les appuis, puis ouvrez lentement jusqu'à un étirement confortable.",
+   "de": "Beine kontrolliert schließen, ohne die Polster zu knallen; dann langsam bis zu einer angenehmen Dehnung öffnen."
+  },
+  "variants": [
+   {
+    "id": "quads.hipAdduction.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Adductor machine",
+     "en": "Adductor machine",
+     "es": "Máquina de aductores",
+     "fr": "Machine à adducteurs",
+     "de": "Adduktorenmaschine"
+    }
+   },
+   {
+    "id": "quads.hipAdduction.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Adduzione al cavo",
+     "en": "Cable hip adduction",
+     "es": "Aducción de cadera en polea",
+     "fr": "Adduction de hanche à la poulie",
+     "de": "Hüftadduktion am Kabelzug"
+    },
+    "note": {
+     "it": "In piedi con cavigliera: una gamba alla volta.",
+     "en": "Standing with an ankle strap: one leg at a time.",
+     "es": "De pie con tobillera: una pierna cada vez.",
+     "fr": "Debout avec sangle de cheville : une jambe à la fois.",
+     "de": "Stehend mit Fußschlaufe: ein Bein nach dem anderen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.copenhagenPlank",
+  "g": "quads",
+  "pri": [
+   "adductors"
+  ],
+  "sec": [
+   "obliques",
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "20–40 s",
+  "name": {
+   "it": "Copenhagen plank",
+   "en": "Copenhagen plank",
+   "es": "Plancha Copenhague",
+   "fr": "Planche de Copenhague",
+   "de": "Copenhagen Plank"
+  },
+  "why": {
+   "it": "Rinforza adduttori e core, ottimo per prevenire gli infortuni all'inguine.",
+   "en": "Builds adductors and core, great for preventing groin injuries.",
+   "es": "Fortalece aductores y core, ideal para prevenir lesiones de ingle.",
+   "fr": "Renforce adducteurs et sangle, idéal contre les blessures à l'aine.",
+   "de": "Stärkt Adduktoren und Rumpf, ideal gegen Leistenverletzungen."
+  },
+  "tip": {
+   "it": "Plank laterale con la gamba sopra su una panca e il corpo in linea. Registra i secondi come ripetizioni e 0 kg.",
+   "en": "Side plank with your top leg on a bench and your body in line. Log seconds as reps and 0 kg.",
+   "es": "Plancha lateral con la pierna de arriba en un banco y el cuerpo alineado. Registra los segundos como repeticiones y 0 kg.",
+   "fr": "Gainage latéral, jambe du dessus sur un banc, corps aligné. Notez les secondes comme répétitions et 0 kg.",
+   "de": "Seitstütz mit dem oberen Bein auf der Bank, Körper gerade. Trage die Sekunden als Wiederholungen und 0 kg ein."
+  },
+  "variants": [
+   {
+    "id": "quads.copenhagenPlank.longLever",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Copenhagen plank a gamba tesa",
+     "en": "Long-lever Copenhagen plank",
+     "es": "Plancha Copenhague con pierna estirada",
+     "fr": "Planche de Copenhague jambe tendue",
+     "de": "Copenhagen Plank mit gestrecktem Bein"
+    },
+    "note": {
+     "it": "Piede sulla panca: versione completa.",
+     "en": "Foot on the bench: the full version.",
+     "es": "Pie en el banco: versión completa.",
+     "fr": "Pied sur le banc : version complète.",
+     "de": "Fuß auf der Bank: volle Version."
+    }
+   },
+   {
+    "id": "quads.copenhagenPlank.shortLever",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Copenhagen plank con ginocchio in appoggio",
+     "en": "Short-lever Copenhagen plank",
+     "es": "Plancha Copenhague con rodilla apoyada",
+     "fr": "Planche de Copenhague genou en appui",
+     "de": "Copenhagen Plank mit aufgelegtem Knie"
+    },
+    "note": {
+     "it": "Ginocchio sulla panca: versione più facile per iniziare.",
+     "en": "Knee on the bench: an easier version to start with.",
+     "es": "Rodilla en el banco: versión más fácil para empezar.",
+     "fr": "Genou sur le banc : version plus facile pour commencer.",
+     "de": "Knie auf der Bank: leichtere Einstiegsversion."
+    }
+   }
+  ]
+ },
+ {
+  "id": "quads.wallSit",
+  "g": "quads",
+  "pri": [
+   "quads"
+  ],
+  "sec": [
+   "glutes"
+  ],
+  "lvl": 0,
+  "reps": "30–60 s",
+  "name": {
+   "it": "Wall sit",
+   "en": "Wall sit",
+   "es": "Sentadilla isométrica en pared",
+   "fr": "Chaise contre le mur",
+   "de": "Wandsitzen"
+  },
+  "why": {
+   "it": "Isometria per la resistenza dei quadricipiti, senza attrezzi.",
+   "en": "An isometric hold for quad endurance, no equipment needed.",
+   "es": "Isométrico para la resistencia de cuádriceps, sin material.",
+   "fr": "Gainage isométrique pour l'endurance des quadriceps, sans matériel.",
+   "de": "Isometrisches Halten für Quadrizeps-Ausdauer, ohne Geräte."
+  },
+  "tip": {
+   "it": "Schiena al muro, cosce parallele al pavimento e ginocchia a 90°; respira con calma.",
+   "en": "Back flat on the wall, thighs parallel to the floor, knees at 90°; breathe steadily.",
+   "es": "Espalda en la pared, muslos paralelos al suelo y rodillas a 90°; respira tranquilo.",
+   "fr": "Dos au mur, cuisses parallèles au sol, genoux à 90° ; respirez calmement.",
+   "de": "Rücken an der Wand, Oberschenkel parallel zum Boden, Knie 90°; ruhig atmen."
+  },
+  "variants": [
+   {
+    "id": "quads.wallSit.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Wall sit a corpo libero",
+     "en": "Bodyweight wall sit",
+     "es": "Sentadilla en pared con peso corporal",
+     "fr": "Chaise au poids du corps",
+     "de": "Wandsitzen ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra i secondi come ripetizioni e 0 kg.",
+     "en": "Log seconds as reps and 0 kg.",
+     "es": "Registra los segundos como repeticiones y 0 kg.",
+     "fr": "Notez les secondes comme répétitions et 0 kg.",
+     "de": "Trage die Sekunden als Wiederholungen und 0 kg ein."
+    }
+   },
+   {
+    "id": "quads.wallSit.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Wall sit con disco",
+     "en": "Weighted wall sit",
+     "es": "Sentadilla en pared con disco",
+     "fr": "Chaise avec disque",
+     "de": "Wandsitzen mit Hantelscheibe"
+    },
+    "note": {
+     "it": "Disco sulle cosce. Registra i secondi come ripetizioni e il peso del disco.",
+     "en": "Plate on your thighs. Log seconds as reps and the plate weight.",
+     "es": "Disco sobre los muslos. Registra los segundos como repeticiones y el peso del disco.",
+     "fr": "Disque sur les cuisses. Notez les secondes comme répétitions et le poids du disque.",
+     "de": "Scheibe auf den Oberschenkeln. Trage die Sekunden als Wiederholungen und das Scheibengewicht ein."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.romanianDeadlift",
+  "g": "hams",
+  "pri": [
+   "hams",
+   "glutes"
+  ],
+  "sec": [
+   "lowerBack",
+   "upperBack",
+   "forearms"
+  ],
+  "lvl": 1,
+  "reps": "6–12",
+  "name": {
+   "it": "Stacco rumeno",
+   "en": "Romanian deadlift",
+   "es": "Peso muerto rumano",
+   "fr": "Soulevé de terre roumain",
+   "de": "Rumänisches Kreuzheben"
+  },
+  "why": {
+   "it": "Sviluppa femorali e glutei con un ottimo allungamento sotto carico.",
+   "en": "Builds hamstrings and glutes with a strong loaded stretch.",
+   "es": "Desarrolla isquios y glúteos con un gran estiramiento bajo carga.",
+   "fr": "Développe ischios et fessiers avec un fort étirement sous charge.",
+   "de": "Baut Beinbeuger und Gesäß mit starker Dehnung unter Last auf."
+  },
+  "tip": {
+   "it": "Ginocchia morbide, spingi il bacino indietro con schiena neutra e carico vicino alle gambe; risali stringendo i glutei.",
+   "en": "Soft knees, push your hips back with a neutral spine and the weight close to your legs; stand up squeezing your glutes.",
+   "es": "Rodillas algo flexionadas, lleva la cadera atrás con la espalda neutra y el peso pegado a las piernas; sube apretando glúteos.",
+   "fr": "Genoux souples, reculez les hanches dos neutre, charge près des jambes ; remontez en serrant les fessiers.",
+   "de": "Knie leicht gebeugt, Hüfte nach hinten, Rücken neutral, Gewicht nah an den Beinen; mit Gesäßspannung aufrichten."
+  },
+  "variants": [
+   {
+    "id": "hams.romanianDeadlift.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Stacco rumeno con bilanciere",
+     "en": "Barbell Romanian deadlift",
+     "es": "Peso muerto rumano con barra",
+     "fr": "Soulevé de terre roumain à la barre",
+     "de": "Rumänisches Kreuzheben mit Langhantel"
+    }
+   },
+   {
+    "id": "hams.romanianDeadlift.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Stacco rumeno con manubri",
+     "en": "Dumbbell Romanian deadlift",
+     "es": "Peso muerto rumano con mancuernas",
+     "fr": "Soulevé de terre roumain avec haltères",
+     "de": "Rumänisches Kreuzheben mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "hams.romanianDeadlift.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Stacco rumeno al multipower",
+     "en": "Smith machine Romanian deadlift",
+     "es": "Peso muerto rumano en máquina Smith",
+     "fr": "Soulevé de terre roumain à la Smith machine",
+     "de": "Rumänisches Kreuzheben an der Multipresse"
+    },
+    "note": {
+     "it": "Traiettoria guidata, utile per concentrarti sui femorali.",
+     "en": "Guided path, handy to focus on the hamstrings.",
+     "es": "Trayectoria guiada, útil para centrarte en los isquios.",
+     "fr": "Trajectoire guidée, pratique pour cibler les ischios.",
+     "de": "Geführte Bahn, gut zur Konzentration auf die Beinbeuger."
+    }
+   },
+   {
+    "id": "hams.romanianDeadlift.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Stacco rumeno con kettlebell",
+     "en": "Kettlebell Romanian deadlift",
+     "es": "Peso muerto rumano con kettlebell",
+     "fr": "Soulevé de terre roumain avec kettlebell",
+     "de": "Rumänisches Kreuzheben mit Kettlebell"
+    }
+   },
+   {
+    "id": "hams.romanianDeadlift.singleLegDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Stacco rumeno a una gamba con manubri",
+     "en": "Single-leg dumbbell Romanian deadlift",
+     "es": "Peso muerto rumano a una pierna con mancuernas",
+     "fr": "Soulevé de terre roumain unilatéral avec haltères",
+     "de": "Einbeiniges rumänisches Kreuzheben mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Una gamba: più equilibrio e lavoro sul gluteo.",
+     "en": "One leg: more balance demand and glute work.",
+     "es": "A una pierna: más equilibrio y trabajo de glúteo.",
+     "fr": "Sur une jambe : plus d'équilibre et de travail fessier.",
+     "de": "Einbeinig: mehr Balance und Gesäßarbeit."
+    }
+   },
+   {
+    "id": "hams.romanianDeadlift.singleLegKettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Stacco rumeno a una gamba con kettlebell",
+     "en": "Single-leg kettlebell Romanian deadlift",
+     "es": "Peso muerto rumano a una pierna con kettlebell",
+     "fr": "Soulevé de terre roumain unilatéral avec kettlebell",
+     "de": "Einbeiniges rumänisches Kreuzheben mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.stiffLegDeadlift",
+  "g": "hams",
+  "pri": [
+   "hams"
+  ],
+  "sec": [
+   "glutes",
+   "lowerBack"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Stacco a gambe tese",
+   "en": "Stiff-leg deadlift",
+   "es": "Peso muerto con piernas rígidas",
+   "fr": "Soulevé de terre jambes tendues",
+   "de": "Kreuzheben mit gestreckten Beinen"
+  },
+  "why": {
+   "it": "Massimo allungamento dei femorali con ginocchia quasi tese.",
+   "en": "Maximum hamstring stretch with nearly straight knees.",
+   "es": "Máximo estiramiento de isquios con las rodillas casi rectas.",
+   "fr": "Étirement maximal des ischios, genoux presque tendus.",
+   "de": "Maximale Dehnung der Beinbeuger bei fast gestreckten Knien."
+  },
+  "tip": {
+   "it": "Ginocchia quasi tese ma non bloccate; scendi solo finché la schiena resta neutra e parti con carichi moderati.",
+   "en": "Knees almost straight but not locked; go only as low as your back stays neutral and start with moderate loads.",
+   "es": "Rodillas casi rectas sin bloquear; baja solo mientras la espalda siga neutra y empieza con cargas moderadas.",
+   "fr": "Genoux presque tendus sans les verrouiller ; descendez tant que le dos reste neutre et commencez léger.",
+   "de": "Knie fast gestreckt, nicht gesperrt; nur so tief, wie der Rücken neutral bleibt, mit moderater Last starten."
+  },
+  "variants": [
+   {
+    "id": "hams.stiffLegDeadlift.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Stacco a gambe tese con bilanciere",
+     "en": "Barbell stiff-leg deadlift",
+     "es": "Peso muerto con piernas rígidas con barra",
+     "fr": "Soulevé de terre jambes tendues à la barre",
+     "de": "Kreuzheben mit gestreckten Beinen mit Langhantel"
+    }
+   },
+   {
+    "id": "hams.stiffLegDeadlift.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Stacco a gambe tese con manubri",
+     "en": "Dumbbell stiff-leg deadlift",
+     "es": "Peso muerto con piernas rígidas con mancuernas",
+     "fr": "Soulevé de terre jambes tendues avec haltères",
+     "de": "Kreuzheben mit gestreckten Beinen mit Kurzhanteln"
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.legCurl",
+  "g": "hams",
+  "pri": [
+   "hams"
+  ],
+  "sec": [
+   "calves"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Leg curl",
+   "en": "Leg curl",
+   "es": "Curl femoral",
+   "fr": "Leg curl",
+   "de": "Beinbeuger"
+  },
+  "why": {
+   "it": "Isola i femorali lavorando sulla flessione del ginocchio.",
+   "en": "Isolates the hamstrings through knee flexion.",
+   "es": "Aísla los isquios mediante la flexión de rodilla.",
+   "fr": "Isole les ischios par la flexion du genou.",
+   "de": "Isoliert die Beinbeuger über die Kniebeugung."
+  },
+  "tip": {
+   "it": "Ginocchio allineato al perno, fletti fino in fondo senza alzare il bacino e torna lento.",
+   "en": "Knee lined up with the pivot, curl all the way without lifting your hips and return slowly.",
+   "es": "Rodilla alineada con el eje, flexiona del todo sin levantar la cadera y vuelve despacio.",
+   "fr": "Genou aligné sur l'axe, fléchissez complètement sans lever le bassin, revenez lentement.",
+   "de": "Knie auf Höhe der Drehachse, voll beugen ohne die Hüfte zu heben, langsam zurück."
+  },
+  "variants": [
+   {
+    "id": "hams.legCurl.lying",
+    "eq": "machine",
+    "name": {
+     "it": "Leg curl sdraiato",
+     "en": "Lying leg curl",
+     "es": "Curl femoral tumbado",
+     "fr": "Leg curl allongé",
+     "de": "Liegender Beinbeuger"
+    }
+   },
+   {
+    "id": "hams.legCurl.seated",
+    "eq": "machine",
+    "name": {
+     "it": "Leg curl seduto",
+     "en": "Seated leg curl",
+     "es": "Curl femoral sentado",
+     "fr": "Leg curl assis",
+     "de": "Sitzender Beinbeuger"
+    },
+    "note": {
+     "it": "Anca flessa: femorali più allungati, ottimo stimolo.",
+     "en": "Hips flexed: hamstrings more stretched for a strong stimulus.",
+     "es": "Cadera flexionada: isquios más estirados, gran estímulo.",
+     "fr": "Hanches fléchies : ischios plus étirés, fort stimulus.",
+     "de": "Gebeugte Hüfte: Beinbeuger stärker gedehnt, guter Reiz."
+    }
+   },
+   {
+    "id": "hams.legCurl.standingSingleLeg",
+    "eq": "machine",
+    "name": {
+     "it": "Leg curl in piedi a una gamba",
+     "en": "Standing single-leg curl",
+     "es": "Curl femoral de pie a una pierna",
+     "fr": "Leg curl debout unilatéral",
+     "de": "Stehender einbeiniger Beinbeuger"
+    }
+   },
+   {
+    "id": "hams.legCurl.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Leg curl al cavo in piedi",
+     "en": "Standing cable leg curl",
+     "es": "Curl femoral de pie en polea",
+     "fr": "Leg curl debout à la poulie",
+     "de": "Stehender Beinbeuger am Kabelzug"
+    },
+    "note": {
+     "it": "Con cavigliera: alternativa se la macchina è occupata.",
+     "en": "With an ankle strap: an option when no machine is free.",
+     "es": "Con tobillera: alternativa si la máquina está ocupada.",
+     "fr": "Avec sangle de cheville : alternative sans machine libre.",
+     "de": "Mit Fußschlaufe: Alternative, wenn die Maschine belegt ist."
+    }
+   },
+   {
+    "id": "hams.legCurl.lyingDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Leg curl sdraiato con manubrio",
+     "en": "Lying dumbbell leg curl",
+     "es": "Curl femoral tumbado con mancuerna",
+     "fr": "Leg curl allongé avec haltère",
+     "de": "Liegender Beinbeuger mit Kurzhantel"
+    },
+    "note": {
+     "it": "Manubrio tra i piedi su una panca: carichi leggeri.",
+     "en": "Dumbbell between your feet on a bench: keep it light.",
+     "es": "Mancuerna entre los pies en un banco: carga ligera.",
+     "fr": "Haltère entre les pieds sur un banc : charge légère.",
+     "de": "Kurzhantel zwischen den Füßen auf der Bank: leicht halten."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.nordicCurl",
+  "g": "hams",
+  "pri": [
+   "hams"
+  ],
+  "sec": [
+   "glutes",
+   "calves"
+  ],
+  "lvl": 2,
+  "reps": "3–8",
+  "name": {
+   "it": "Nordic curl",
+   "en": "Nordic hamstring curl",
+   "es": "Curl nórdico",
+   "fr": "Nordic curl",
+   "de": "Nordic Curl"
+  },
+  "why": {
+   "it": "Eccentrica intensa per femorali forti e meno infortuni.",
+   "en": "Intense eccentric work for strong, injury-resistant hamstrings.",
+   "es": "Excéntrico intenso para isquios fuertes y menos lesiones.",
+   "fr": "Excentrique intense pour des ischios forts et moins de blessures.",
+   "de": "Intensive Exzentrik für starke, verletzungsresistente Beinbeuger."
+  },
+  "tip": {
+   "it": "Caviglie bloccate, corpo dritto da ginocchia a spalle; scendi il più lentamente possibile e frena con le mani. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Ankles anchored, body straight from knees to shoulders; lower as slowly as you can and catch yourself with your hands. Log the added weight (0 if none).",
+   "es": "Tobillos fijos, cuerpo recto de rodillas a hombros; baja lo más lento posible y frena con las manos. Registra el peso añadido (0 si no hay).",
+   "fr": "Chevilles bloquées, corps droit des genoux aux épaules ; descendez lentement, réceptionnez-vous avec les mains. Notez la charge ajoutée (0 si aucune).",
+   "de": "Knöchel fixiert, Körper gerade von Knie bis Schulter; so langsam wie möglich absenken, mit den Händen abfangen. Trage das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "hams.nordicCurl.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Nordic curl a corpo libero",
+     "en": "Bodyweight Nordic curl",
+     "es": "Curl nórdico con peso corporal",
+     "fr": "Nordic curl au poids du corps",
+     "de": "Nordic Curl ohne Gewicht"
+    }
+   },
+   {
+    "id": "hams.nordicCurl.bandAssisted",
+    "eq": "band",
+    "name": {
+     "it": "Nordic curl assistito con elastico",
+     "en": "Band-assisted Nordic curl",
+     "es": "Curl nórdico asistido con banda",
+     "fr": "Nordic curl assisté avec élastique",
+     "de": "Nordic Curl mit Band-Unterstützung"
+    },
+    "note": {
+     "it": "L'elastico al petto ti aiuta nella discesa.",
+     "en": "A band around your chest helps you on the way down.",
+     "es": "La banda en el pecho te ayuda en la bajada.",
+     "fr": "L'élastique autour de la poitrine vous aide à la descente.",
+     "de": "Ein Band um die Brust hilft beim Absenken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.floorLegCurl",
+  "g": "hams",
+  "pri": [
+   "hams"
+  ],
+  "sec": [
+   "glutes",
+   "abs"
+  ],
+  "lvl": 1,
+  "reps": "8–15",
+  "name": {
+   "it": "Leg curl a terra",
+   "en": "Floor leg curl",
+   "es": "Curl femoral en el suelo",
+   "fr": "Leg curl au sol",
+   "de": "Beinbeuger am Boden"
+  },
+  "why": {
+   "it": "Femorali e glutei insieme, senza macchine.",
+   "en": "Works hamstrings and glutes together, no machine needed.",
+   "es": "Trabaja isquios y glúteos a la vez, sin máquinas.",
+   "fr": "Travaille ischios et fessiers ensemble, sans machine.",
+   "de": "Trainiert Beinbeuger und Gesäß zusammen, ohne Maschine."
+  },
+  "tip": {
+   "it": "Supino, bacino alto in ponte; porta i talloni verso i glutei senza far scendere i fianchi. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Lie on your back, hips up in a bridge; pull your heels toward your glutes without letting your hips drop. Log the added weight (0 if none).",
+   "es": "Boca arriba, cadera arriba en puente; lleva los talones hacia los glúteos sin bajar la cadera. Registra el peso añadido (0 si no hay).",
+   "fr": "Sur le dos, bassin en pont ; ramenez les talons vers les fessiers sans laisser tomber les hanches. Notez la charge ajoutée (0 si aucune).",
+   "de": "Rückenlage, Hüfte in der Brücke; Fersen zum Gesäß ziehen, ohne die Hüfte sinken zu lassen. Trage das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "hams.floorLegCurl.swissBall",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Leg curl con fitball",
+     "en": "Swiss ball leg curl",
+     "es": "Curl femoral con fitball",
+     "fr": "Leg curl sur swiss ball",
+     "de": "Beinbeuger auf dem Gymnastikball"
+    }
+   },
+   {
+    "id": "hams.floorLegCurl.singleLegSwissBall",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Leg curl con fitball a una gamba",
+     "en": "Single-leg Swiss ball leg curl",
+     "es": "Curl femoral con fitball a una pierna",
+     "fr": "Leg curl sur swiss ball unilatéral",
+     "de": "Einbeiniger Beinbeuger auf dem Gymnastikball"
+    },
+    "note": {
+     "it": "Una gamba alla volta: livello avanzato.",
+     "en": "One leg at a time: advanced.",
+     "es": "Una pierna cada vez: nivel avanzado.",
+     "fr": "Une jambe à la fois : niveau avancé.",
+     "de": "Einbeinig: fortgeschritten."
+    }
+   },
+   {
+    "id": "hams.floorLegCurl.slider",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Leg curl con slider",
+     "en": "Slider leg curl",
+     "es": "Curl femoral con deslizadores",
+     "fr": "Leg curl avec glisseurs",
+     "de": "Beinbeuger mit Gleitpads"
+    },
+    "note": {
+     "it": "Talloni su slider o asciugamano: più duro in allungamento.",
+     "en": "Heels on sliders or a towel: tougher as you extend.",
+     "es": "Talones sobre deslizadores o toalla: más duro al estirar.",
+     "fr": "Talons sur glisseurs ou serviette : plus dur en extension.",
+     "de": "Fersen auf Gleitpads oder Handtuch: härter beim Strecken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.hipThrust",
+  "g": "hams",
+  "pri": [
+   "glutes"
+  ],
+  "sec": [
+   "hams",
+   "adductors"
+  ],
+  "lvl": 1,
+  "reps": "8–12",
+  "name": {
+   "it": "Hip thrust",
+   "en": "Hip thrust",
+   "es": "Hip thrust",
+   "fr": "Hip thrust",
+   "de": "Hip Thrust"
+  },
+  "why": {
+   "it": "L'esercizio più diretto per forza e volume dei glutei.",
+   "en": "The most direct exercise for glute strength and size.",
+   "es": "El ejercicio más directo para fuerza y volumen de glúteos.",
+   "fr": "L'exercice le plus direct pour la force et le volume des fessiers.",
+   "de": "Die direkteste Übung für Gesäßkraft und -volumen."
+  },
+  "tip": {
+   "it": "Scapole sulla panca, tibie verticali in alto; spingi coi talloni e chiudi l'anca senza inarcare, mento basso.",
+   "en": "Shoulder blades on the bench, shins vertical at the top; drive through your heels and lock out without arching, chin tucked.",
+   "es": "Escápulas en el banco, tibias verticales arriba; empuja con los talones y extiende la cadera sin arquear, barbilla baja.",
+   "fr": "Omoplates sur le banc, tibias verticaux en haut ; poussez dans les talons, verrouillez sans cambrer, menton rentré.",
+   "de": "Schulterblätter auf der Bank, Schienbeine oben senkrecht; über die Fersen drücken, Hüfte strecken ohne Hohlkreuz, Kinn tief."
+  },
+  "variants": [
+   {
+    "id": "hams.hipThrust.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Hip thrust con bilanciere",
+     "en": "Barbell hip thrust",
+     "es": "Hip thrust con barra",
+     "fr": "Hip thrust à la barre",
+     "de": "Hip Thrust mit Langhantel"
+    }
+   },
+   {
+    "id": "hams.hipThrust.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Hip thrust al multipower",
+     "en": "Smith machine hip thrust",
+     "es": "Hip thrust en máquina Smith",
+     "fr": "Hip thrust à la Smith machine",
+     "de": "Hip Thrust an der Multipresse"
+    },
+    "note": {
+     "it": "Bilanciere guidato: setup più rapido e stabile.",
+     "en": "Guided bar: quicker, more stable setup.",
+     "es": "Barra guiada: montaje más rápido y estable.",
+     "fr": "Barre guidée : installation plus rapide et stable.",
+     "de": "Geführte Stange: schnellerer, stabilerer Aufbau."
+    }
+   },
+   {
+    "id": "hams.hipThrust.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Hip thrust alla macchina",
+     "en": "Machine hip thrust",
+     "es": "Hip thrust en máquina",
+     "fr": "Hip thrust à la machine",
+     "de": "Hip-Thrust-Maschine"
+    }
+   },
+   {
+    "id": "hams.hipThrust.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Hip thrust con manubrio",
+     "en": "Dumbbell hip thrust",
+     "es": "Hip thrust con mancuerna",
+     "fr": "Hip thrust avec haltère",
+     "de": "Hip Thrust mit Kurzhantel"
+    }
+   },
+   {
+    "id": "hams.hipThrust.singleLeg",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Hip thrust a una gamba",
+     "en": "Single-leg hip thrust",
+     "es": "Hip thrust a una pierna",
+     "fr": "Hip thrust unilatéral",
+     "de": "Einbeiniger Hip Thrust"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "hams.hipThrust.band",
+    "eq": "band",
+    "name": {
+     "it": "Hip thrust con elastico",
+     "en": "Banded hip thrust",
+     "es": "Hip thrust con banda",
+     "fr": "Hip thrust avec élastique",
+     "de": "Hip Thrust mit Band"
+    },
+    "note": {
+     "it": "Elastico sui fianchi fissato a terra: più tensione in alto.",
+     "en": "Band over the hips anchored down: more tension at the top.",
+     "es": "Banda sobre la cadera anclada al suelo: más tensión arriba.",
+     "fr": "Élastique sur les hanches fixé au sol : plus de tension en haut.",
+     "de": "Band über der Hüfte am Boden fixiert: mehr Spannung oben."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.gluteBridge",
+  "g": "hams",
+  "pri": [
+   "glutes"
+  ],
+  "sec": [
+   "hams"
+  ],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Ponte glutei",
+   "en": "Glute bridge",
+   "es": "Puente de glúteos",
+   "fr": "Pont fessier",
+   "de": "Glute Bridge"
+  },
+  "why": {
+   "it": "Attiva e rinforza i glutei da terra, ottimo anche come riscaldamento.",
+   "en": "Activates and strengthens the glutes from the floor, also a great warm-up.",
+   "es": "Activa y fortalece los glúteos desde el suelo, ideal también para calentar.",
+   "fr": "Active et renforce les fessiers au sol, parfait aussi en échauffement.",
+   "de": "Aktiviert und stärkt das Gesäß am Boden, auch ideal zum Aufwärmen."
+  },
+  "tip": {
+   "it": "Supino, piedi vicini ai glutei; solleva il bacino stringendo i glutei e tieni 1 s in alto senza inarcare.",
+   "en": "On your back, feet near your glutes; lift your hips by squeezing the glutes and hold 1 s at the top without arching.",
+   "es": "Boca arriba, pies cerca de los glúteos; sube la cadera apretando glúteos y aguanta 1 s arriba sin arquear.",
+   "fr": "Sur le dos, pieds près des fessiers ; montez le bassin en serrant les fessiers, tenez 1 s sans cambrer.",
+   "de": "Rückenlage, Füße nah am Gesäß; Hüfte mit Gesäßspannung heben, oben 1 s halten, ohne Hohlkreuz."
+  },
+  "variants": [
+   {
+    "id": "hams.gluteBridge.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Ponte glutei a corpo libero",
+     "en": "Bodyweight glute bridge",
+     "es": "Puente de glúteos con peso corporal",
+     "fr": "Pont fessier au poids du corps",
+     "de": "Glute Bridge ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "hams.gluteBridge.singleLeg",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Ponte glutei a una gamba",
+     "en": "Single-leg glute bridge",
+     "es": "Puente de glúteos a una pierna",
+     "fr": "Pont fessier unilatéral",
+     "de": "Einbeinige Glute Bridge"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "hams.gluteBridge.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Ponte glutei con bilanciere",
+     "en": "Barbell glute bridge",
+     "es": "Puente de glúteos con barra",
+     "fr": "Pont fessier à la barre",
+     "de": "Glute Bridge mit Langhantel"
+    }
+   },
+   {
+    "id": "hams.gluteBridge.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Ponte glutei con manubrio",
+     "en": "Dumbbell glute bridge",
+     "es": "Puente de glúteos con mancuerna",
+     "fr": "Pont fessier avec haltère",
+     "de": "Glute Bridge mit Kurzhantel"
+    }
+   },
+   {
+    "id": "hams.gluteBridge.band",
+    "eq": "band",
+    "name": {
+     "it": "Ponte glutei con elastico",
+     "en": "Banded glute bridge",
+     "es": "Puente de glúteos con banda",
+     "fr": "Pont fessier avec élastique",
+     "de": "Glute Bridge mit Band"
+    },
+    "note": {
+     "it": "Elastico sopra le ginocchia: spingile in fuori.",
+     "en": "Band above the knees: push them out.",
+     "es": "Banda sobre las rodillas: empújalas hacia fuera.",
+     "fr": "Élastique au-dessus des genoux : poussez vers l'extérieur.",
+     "de": "Band über den Knien: nach außen drücken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.pullThrough",
+  "g": "hams",
+  "pri": [
+   "glutes",
+   "hams"
+  ],
+  "sec": [
+   "lowerBack"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Pull-through",
+   "en": "Pull-through",
+   "es": "Pull-through",
+   "fr": "Pull-through",
+   "de": "Pull-Through"
+  },
+  "why": {
+   "it": "Insegna il movimento d'anca e lavora glutei e femorali.",
+   "en": "Teaches the hip hinge while training glutes and hamstrings.",
+   "es": "Enseña la bisagra de cadera y trabaja glúteos e isquios.",
+   "fr": "Apprend la charnière de hanche et travaille fessiers et ischios.",
+   "de": "Lehrt die Hüftbeugung und trainiert Gesäß und Beinbeuger."
+  },
+  "tip": {
+   "it": "Di spalle al cavo, corda tra le gambe; spingi il bacino indietro e torna su chiudendo coi glutei, braccia rilassate.",
+   "en": "Face away from the cable, rope between your legs; push your hips back and drive forward with your glutes, arms relaxed.",
+   "es": "De espaldas a la polea, cuerda entre las piernas; lleva la cadera atrás y vuelve con los glúteos, brazos relajados.",
+   "fr": "Dos à la poulie, corde entre les jambes ; reculez les hanches puis revenez avec les fessiers, bras relâchés.",
+   "de": "Rücken zum Kabelzug, Seil zwischen den Beinen; Hüfte nach hinten, dann mit dem Gesäß nach vorn, Arme locker."
+  },
+  "variants": [
+   {
+    "id": "hams.pullThrough.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Pull-through al cavo",
+     "en": "Cable pull-through",
+     "es": "Pull-through en polea",
+     "fr": "Pull-through à la poulie",
+     "de": "Pull-Through am Kabelzug"
+    }
+   },
+   {
+    "id": "hams.pullThrough.band",
+    "eq": "band",
+    "name": {
+     "it": "Pull-through con elastico",
+     "en": "Band pull-through",
+     "es": "Pull-through con banda",
+     "fr": "Pull-through avec élastique",
+     "de": "Pull-Through mit Band"
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.gluteKickback",
+  "g": "hams",
+  "pri": [
+   "glutes"
+  ],
+  "sec": [
+   "hams"
+  ],
+  "lvl": 0,
+  "reps": "12–15",
+  "name": {
+   "it": "Kickback glutei",
+   "en": "Glute kickback",
+   "es": "Patada de glúteo",
+   "fr": "Kickback fessier",
+   "de": "Glute Kickback"
+  },
+  "why": {
+   "it": "Isola il gluteo, un lato alla volta.",
+   "en": "Isolates the glutes, one side at a time.",
+   "es": "Aísla el glúteo, un lado cada vez.",
+   "fr": "Isole le fessier, un côté à la fois.",
+   "de": "Isoliert das Gesäß, einseitig."
+  },
+  "tip": {
+   "it": "Busto fermo e addome contratto; spingi la gamba indietro col gluteo senza inarcare la schiena.",
+   "en": "Torso still and core braced; drive the leg back with your glute without arching your lower back.",
+   "es": "Torso quieto y abdomen firme; lleva la pierna atrás con el glúteo sin arquear la espalda.",
+   "fr": "Buste fixe, abdos gainés ; poussez la jambe en arrière avec le fessier sans cambrer.",
+   "de": "Oberkörper ruhig, Bauch fest; Bein mit dem Gesäß nach hinten drücken, ohne Hohlkreuz."
+  },
+  "variants": [
+   {
+    "id": "hams.gluteKickback.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Kickback glutei al cavo",
+     "en": "Cable glute kickback",
+     "es": "Patada de glúteo en polea",
+     "fr": "Kickback fessier à la poulie",
+     "de": "Glute Kickback am Kabelzug"
+    }
+   },
+   {
+    "id": "hams.gluteKickback.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Kickback glutei alla macchina",
+     "en": "Machine glute kickback",
+     "es": "Patada de glúteo en máquina",
+     "fr": "Kickback fessier à la machine",
+     "de": "Glute-Kickback-Maschine"
+    }
+   },
+   {
+    "id": "hams.gluteKickback.band",
+    "eq": "band",
+    "name": {
+     "it": "Kickback glutei con elastico",
+     "en": "Banded glute kickback",
+     "es": "Patada de glúteo con banda",
+     "fr": "Kickback fessier avec élastique",
+     "de": "Glute Kickback mit Band"
+    },
+    "note": {
+     "it": "A quattro zampe, elastico attorno ai piedi.",
+     "en": "On all fours with a band around your feet.",
+     "es": "En cuadrupedia, con la banda en los pies.",
+     "fr": "À quatre pattes, élastique autour des pieds.",
+     "de": "Im Vierfüßlerstand, Band um die Füße."
+    }
+   }
+  ]
+ },
+ {
+  "id": "hams.hipAbduction",
+  "g": "hams",
+  "pri": [
+   "abductors"
+  ],
+  "sec": [
+   "glutes"
+  ],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Abduttori",
+   "en": "Hip abduction",
+   "es": "Abducción de cadera",
+   "fr": "Abduction de hanche",
+   "de": "Hüftabduktion"
+  },
+  "why": {
+   "it": "Rinforza gluteo medio e abduttori per anche e ginocchia stabili.",
+   "en": "Strengthens the glute medius and abductors for stable hips and knees.",
+   "es": "Fortalece glúteo medio y abductores para caderas y rodillas estables.",
+   "fr": "Renforce moyen fessier et abducteurs pour hanches et genoux stables.",
+   "de": "Stärkt mittleren Gesäßmuskel und Abduktoren für stabile Hüften und Knie."
+  },
+  "tip": {
+   "it": "Apri le gambe controllato, tieni un attimo e torna lento; busto leggermente in avanti per più gluteo.",
+   "en": "Open the legs under control, pause briefly and return slowly; lean slightly forward for more glute.",
+   "es": "Abre las piernas controlado, pausa breve y vuelve lento; inclínate un poco adelante para más glúteo.",
+   "fr": "Ouvrez les jambes sous contrôle, marquez une pause, revenez lentement ; penchez-vous un peu pour plus de fessier.",
+   "de": "Beine kontrolliert öffnen, kurz halten, langsam zurück; leicht nach vorn lehnen für mehr Gesäß."
+  },
+  "variants": [
+   {
+    "id": "hams.hipAbduction.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Abductor machine",
+     "en": "Abductor machine",
+     "es": "Máquina de abductores",
+     "fr": "Machine à abducteurs",
+     "de": "Abduktorenmaschine"
+    }
+   },
+   {
+    "id": "hams.hipAbduction.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Abduzione al cavo",
+     "en": "Cable hip abduction",
+     "es": "Abducción de cadera en polea",
+     "fr": "Abduction de hanche à la poulie",
+     "de": "Hüftabduktion am Kabelzug"
+    },
+    "note": {
+     "it": "In piedi con cavigliera: una gamba alla volta.",
+     "en": "Standing with an ankle strap: one leg at a time.",
+     "es": "De pie con tobillera: una pierna cada vez.",
+     "fr": "Debout avec sangle de cheville : une jambe à la fois.",
+     "de": "Stehend mit Fußschlaufe: ein Bein nach dem anderen."
+    }
+   },
+   {
+    "id": "hams.hipAbduction.bandSideWalk",
+    "eq": "band",
+    "name": {
+     "it": "Camminata laterale con elastico",
+     "en": "Banded side walk",
+     "es": "Paso lateral con banda",
+     "fr": "Marche latérale avec élastique",
+     "de": "Seitliches Gehen mit Band"
+    },
+    "note": {
+     "it": "Mezzo squat, passi laterali tenendo l'elastico in tensione.",
+     "en": "Half-squat stance, step sideways keeping the band tight.",
+     "es": "Media sentadilla, pasos laterales con la banda en tensión.",
+     "fr": "Mi-squat, pas latéraux en gardant l'élastique tendu.",
+     "de": "Halbe Kniebeuge, seitlich gehen, Band unter Spannung."
+    }
+   },
+   {
+    "id": "hams.hipAbduction.bandClamshell",
+    "eq": "band",
+    "name": {
+     "it": "Clamshell con elastico",
+     "en": "Banded clamshell",
+     "es": "Almeja con banda",
+     "fr": "Clamshell avec élastique",
+     "de": "Clamshell mit Band"
+    },
+    "note": {
+     "it": "Sul fianco, ginocchia flesse: apri il ginocchio senza ruotare il bacino.",
+     "en": "On your side, knees bent: open the top knee without rolling your pelvis.",
+     "es": "De lado, rodillas flexionadas: abre la rodilla sin girar la pelvis.",
+     "fr": "Sur le côté, genoux fléchis : ouvrez le genou sans tourner le bassin.",
+     "de": "Seitlage, Knie gebeugt: oberes Knie öffnen, ohne das Becken zu drehen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "calves.standingCalfRaise",
+  "g": "calves",
+  "pri": [
+   "calves"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "10–20",
+  "name": {
+   "it": "Calf raise in piedi",
+   "en": "Standing calf raise",
+   "es": "Elevación de talones de pie",
+   "fr": "Extension des mollets debout",
+   "de": "Wadenheben stehend"
+  },
+  "why": {
+   "it": "Sviluppa i polpacci, soprattutto il gastrocnemio.",
+   "en": "Builds the calves, especially the gastrocnemius.",
+   "es": "Desarrolla los gemelos, sobre todo el gastrocnemio.",
+   "fr": "Développe les mollets, surtout les gastrocnémiens.",
+   "de": "Baut die Waden auf, vor allem den Zwillingswadenmuskel."
+  },
+  "tip": {
+   "it": "Ginocchia tese ma non bloccate; scendi in allungamento completo, sali sulle punte e tieni 1 s in alto.",
+   "en": "Knees straight but not locked; sink into a full stretch, rise onto your toes and hold 1 s at the top.",
+   "es": "Rodillas rectas sin bloquear; baja a un estiramiento completo, sube de puntillas y aguanta 1 s arriba.",
+   "fr": "Genoux tendus sans verrouiller ; descendez en plein étirement, montez sur la pointe, tenez 1 s en haut.",
+   "de": "Knie gestreckt, nicht gesperrt; voll in die Dehnung sinken, auf die Zehen hoch und oben 1 s halten."
+  },
+  "variants": [
+   {
+    "id": "calves.standingCalfRaise.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Calf raise in piedi alla macchina",
+     "en": "Standing calf raise machine",
+     "es": "Elevación de talones de pie en máquina",
+     "fr": "Extension des mollets debout à la machine",
+     "de": "Wadenheben stehend an der Maschine"
+    }
+   },
+   {
+    "id": "calves.standingCalfRaise.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Calf raise al multipower",
+     "en": "Smith machine calf raise",
+     "es": "Elevación de talones en máquina Smith",
+     "fr": "Extension des mollets à la Smith machine",
+     "de": "Wadenheben an der Multipresse"
+    },
+    "note": {
+     "it": "Avampiedi su un rialzo per più escursione.",
+     "en": "Forefoot on a step or plate for more range.",
+     "es": "Antepié sobre un escalón para más recorrido.",
+     "fr": "Avant-pied sur une cale pour plus d'amplitude.",
+     "de": "Vorfuß auf einer Erhöhung für mehr Bewegungsweite."
+    }
+   },
+   {
+    "id": "calves.standingCalfRaise.singleLegDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Calf raise a una gamba con manubrio",
+     "en": "Single-leg dumbbell calf raise",
+     "es": "Elevación de talón a una pierna con mancuerna",
+     "fr": "Extension du mollet unilatérale avec haltère",
+     "de": "Einbeiniges Wadenheben mit Kurzhantel"
+    },
+    "note": {
+     "it": "Su un gradino, tieniti con la mano libera.",
+     "en": "On a step, hold on with your free hand.",
+     "es": "En un escalón, sujétate con la mano libre.",
+     "fr": "Sur une marche, tenez-vous avec la main libre.",
+     "de": "Auf einer Stufe, mit der freien Hand festhalten."
+    }
+   },
+   {
+    "id": "calves.standingCalfRaise.bodyweightStep",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Calf raise a corpo libero sul gradino",
+     "en": "Bodyweight calf raise on a step",
+     "es": "Elevación de talones en escalón con peso corporal",
+     "fr": "Extension des mollets sur marche au poids du corps",
+     "de": "Wadenheben auf der Stufe ohne Gewicht"
+    },
+    "note": {
+     "it": "Registra il peso aggiunto (0 se nessuno).",
+     "en": "Log the added weight (0 if none).",
+     "es": "Registra el peso añadido (0 si no hay).",
+     "fr": "Notez la charge ajoutée (0 si aucune).",
+     "de": "Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "calves.seatedCalfRaise",
+  "g": "calves",
+  "pri": [
+   "calves"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Calf raise seduto",
+   "en": "Seated calf raise",
+   "es": "Elevación de talones sentado",
+   "fr": "Extension des mollets assis",
+   "de": "Wadenheben sitzend"
+  },
+  "why": {
+   "it": "A ginocchia flesse lavora soprattutto il soleo.",
+   "en": "Bent knees shift the work to the soleus.",
+   "es": "Con las rodillas flexionadas trabaja sobre todo el sóleo.",
+   "fr": "Genoux fléchis pour cibler surtout le soléaire.",
+   "de": "Gebeugte Knie verlagern die Arbeit auf den Schollenmuskel."
+  },
+  "tip": {
+   "it": "Pad sulle cosce vicino alle ginocchia; scendi in allungamento completo e sali senza rimbalzare.",
+   "en": "Pad on your thighs near the knees; lower into a full stretch and rise without bouncing.",
+   "es": "Apoyo sobre los muslos cerca de las rodillas; baja a un estiramiento completo y sube sin rebotar.",
+   "fr": "Appui sur les cuisses près des genoux ; descendez en plein étirement, remontez sans rebond.",
+   "de": "Polster auf den Oberschenkeln nahe den Knien; voll dehnen und ohne Federn hochdrücken."
+  },
+  "variants": [
+   {
+    "id": "calves.seatedCalfRaise.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Calf raise seduto alla macchina",
+     "en": "Seated calf raise machine",
+     "es": "Elevación de talones sentado en máquina",
+     "fr": "Extension des mollets assis à la machine",
+     "de": "Wadenheben sitzend an der Maschine"
+    }
+   },
+   {
+    "id": "calves.seatedCalfRaise.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Calf raise seduto con manubri",
+     "en": "Seated dumbbell calf raise",
+     "es": "Elevación de talones sentado con mancuernas",
+     "fr": "Extension des mollets assis avec haltères",
+     "de": "Wadenheben sitzend mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Manubri sulle ginocchia, avampiedi su un rialzo.",
+     "en": "Dumbbells on your knees, forefoot on a raised surface.",
+     "es": "Mancuernas sobre las rodillas, antepié sobre un escalón.",
+     "fr": "Haltères sur les genoux, avant-pied sur une cale.",
+     "de": "Kurzhanteln auf den Knien, Vorfuß erhöht."
+    }
+   }
+  ]
+ },
+ {
+  "id": "calves.legPressCalfRaise",
+  "g": "calves",
+  "pri": [
+   "calves"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Calf alla leg press",
+   "en": "Leg press calf raise",
+   "es": "Gemelos en prensa",
+   "fr": "Mollets à la presse",
+   "de": "Wadendrücken an der Beinpresse"
+  },
+  "why": {
+   "it": "Carica i polpacci in sicurezza senza peso sulla schiena.",
+   "en": "Loads the calves safely with no weight on your spine.",
+   "es": "Carga los gemelos con seguridad sin peso sobre la espalda.",
+   "fr": "Charge les mollets en sécurité, sans poids sur la colonne.",
+   "de": "Belastet die Waden sicher ohne Gewicht auf der Wirbelsäule."
+  },
+  "tip": {
+   "it": "Solo gli avampiedi sul bordo della pedana, ginocchia tese ma non bloccate e sicure sempre inserite.",
+   "en": "Only the balls of your feet on the platform edge, knees straight but not locked, safety catches on.",
+   "es": "Solo el antepié en el borde de la plataforma, rodillas rectas sin bloquear y seguros puestos.",
+   "fr": "Seul l'avant-pied sur le bord, genoux tendus sans verrouiller, sécurités enclenchées.",
+   "de": "Nur der Vorfuß auf der Plattformkante, Knie gestreckt, nicht gesperrt, Sicherungen eingelegt."
+  },
+  "variants": [
+   {
+    "id": "calves.legPressCalfRaise.incline45",
+    "eq": "machine",
+    "name": {
+     "it": "Calf alla leg press 45°",
+     "en": "45° leg press calf raise",
+     "es": "Gemelos en prensa 45°",
+     "fr": "Mollets à la presse 45°",
+     "de": "Wadendrücken an der 45°-Beinpresse"
+    }
+   },
+   {
+    "id": "calves.legPressCalfRaise.horizontal",
+    "eq": "machine",
+    "name": {
+     "it": "Calf alla leg press orizzontale",
+     "en": "Horizontal leg press calf raise",
+     "es": "Gemelos en prensa horizontal",
+     "fr": "Mollets à la presse horizontale",
+     "de": "Wadendrücken an der horizontalen Beinpresse"
+    }
+   }
+  ]
+ },
+ {
+  "id": "calves.donkeyCalfRaise",
+  "g": "calves",
+  "pri": [
+   "calves"
+  ],
+  "sec": [],
+  "lvl": 1,
+  "reps": "10–20",
+  "name": {
+   "it": "Donkey calf raise",
+   "en": "Donkey calf raise",
+   "es": "Elevación de talones tipo burro",
+   "fr": "Donkey calf raise",
+   "de": "Donkey-Wadenheben"
+  },
+  "why": {
+   "it": "Busto flesso per un grande allungamento del gastrocnemio.",
+   "en": "A hinged torso gives the gastrocnemius a big stretch.",
+   "es": "Torso flexionado para un gran estiramiento del gastrocnemio.",
+   "fr": "Buste penché pour un grand étirement des gastrocnémiens.",
+   "de": "Gebeugter Oberkörper für starke Dehnung des Zwillingswadenmuskels."
+  },
+  "tip": {
+   "it": "Anca flessa a 90° e schiena neutra; scendi in allungamento e sali sulle punte con controllo.",
+   "en": "Hips bent to 90° with a neutral back; lower into the stretch and rise onto your toes under control.",
+   "es": "Cadera flexionada a 90° y espalda neutra; baja al estiramiento y sube de puntillas con control.",
+   "fr": "Hanches fléchies à 90°, dos neutre ; descendez en étirement et montez sur la pointe avec contrôle.",
+   "de": "Hüfte 90° gebeugt, Rücken neutral; in die Dehnung sinken und kontrolliert auf die Zehen."
+  },
+  "variants": [
+   {
+    "id": "calves.donkeyCalfRaise.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Donkey calf raise alla macchina",
+     "en": "Donkey calf raise machine",
+     "es": "Elevación de talones tipo burro en máquina",
+     "fr": "Donkey calf raise à la machine",
+     "de": "Donkey-Wadenheben an der Maschine"
+    }
+   },
+   {
+    "id": "calves.donkeyCalfRaise.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Donkey calf raise al multipower",
+     "en": "Smith machine donkey calf raise",
+     "es": "Elevación de talones tipo burro en máquina Smith",
+     "fr": "Donkey calf raise à la Smith machine",
+     "de": "Donkey-Wadenheben an der Multipresse"
+    },
+    "note": {
+     "it": "Bilanciere sui fianchi, mani su una panca.",
+     "en": "Bar across your hips, hands on a bench.",
+     "es": "Barra sobre la cadera, manos en un banco.",
+     "fr": "Barre sur les hanches, mains sur un banc.",
+     "de": "Stange auf der Hüfte, Hände auf einer Bank."
+    }
+   }
+  ]
+ },
+ {
+  "id": "calves.tibialisRaise",
+  "g": "calves",
+  "pri": [
+   "tibialis"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "15–25",
+  "name": {
+   "it": "Tibialis raise",
+   "en": "Tibialis raise",
+   "es": "Elevación de tibial",
+   "fr": "Relevé de tibial",
+   "de": "Tibialis Raise"
+  },
+  "why": {
+   "it": "Rinforza il tibiale anteriore per caviglie e ginocchia più resistenti.",
+   "en": "Strengthens the tibialis anterior for sturdier ankles and knees.",
+   "es": "Fortalece el tibial anterior para tobillos y rodillas más resistentes.",
+   "fr": "Renforce le tibial antérieur pour des chevilles et genoux plus solides.",
+   "de": "Stärkt den vorderen Schienbeinmuskel für robustere Knöchel und Knie."
+  },
+  "tip": {
+   "it": "Talloni a terra, solleva le punte il più possibile, tieni un attimo e scendi lento.",
+   "en": "Heels down, lift your toes as high as you can, pause briefly and lower slowly.",
+   "es": "Talones apoyados, sube las puntas al máximo, pausa breve y baja despacio.",
+   "fr": "Talons au sol, relevez les orteils au maximum, marquez une pause et redescendez lentement.",
+   "de": "Fersen am Boden, Zehen so hoch wie möglich heben, kurz halten und langsam absenken."
+  },
+  "variants": [
+   {
+    "id": "calves.tibialisRaise.wall",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Tibialis raise al muro",
+     "en": "Wall tibialis raise",
+     "es": "Elevación de tibial en pared",
+     "fr": "Relevé de tibial contre le mur",
+     "de": "Tibialis Raise an der Wand"
+    },
+    "note": {
+     "it": "Schiena al muro e talloni avanti. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Back against a wall, heels out in front. Log the added weight (0 if none).",
+     "es": "Espalda en la pared, talones adelantados. Registra el peso añadido (0 si no hay).",
+     "fr": "Dos au mur, talons en avant. Notez la charge ajoutée (0 si aucune).",
+     "de": "Rücken an der Wand, Fersen vorn. Trage das Zusatzgewicht ein (0, falls keins)."
+    }
+   },
+   {
+    "id": "calves.tibialisRaise.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Tibialis raise con disco",
+     "en": "Plate tibialis raise",
+     "es": "Elevación de tibial con disco",
+     "fr": "Relevé de tibial avec disque",
+     "de": "Tibialis Raise mit Hantelscheibe"
+    },
+    "note": {
+     "it": "Seduto su una panca, disco sul dorso dei piedi.",
+     "en": "Seated on a bench with a plate on top of your feet.",
+     "es": "Sentado en un banco con un disco sobre los pies.",
+     "fr": "Assis sur un banc, disque sur le dessus des pieds.",
+     "de": "Auf der Bank sitzend, Scheibe auf dem Fußrücken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.deadlift",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "hams",
+   "lowerBack"
+  ],
+  "sec": [
+   "quads",
+   "upperBack",
+   "traps",
+   "lats",
+   "forearms"
+  ],
+  "lvl": 2,
+  "reps": "3–6",
+  "name": {
+   "it": "Stacco da terra",
+   "en": "Deadlift",
+   "es": "Peso muerto",
+   "fr": "Soulevé de terre",
+   "de": "Kreuzheben"
+  },
+  "why": {
+   "it": "Il re della forza totale: catena posteriore, presa e core.",
+   "en": "The king of total-body strength: posterior chain, grip and core.",
+   "es": "El rey de la fuerza total: cadena posterior, agarre y core.",
+   "fr": "Le roi de la force globale : chaîne postérieure, grip et gainage.",
+   "de": "Der König der Ganzkörperkraft: hintere Kette, Griff und Rumpf."
+  },
+  "tip": {
+   "it": "Bilanciere sopra metà piede, schiena neutra e dorsali attivi; spingi il pavimento e tieni il bilanciere attaccato al corpo.",
+   "en": "Bar over mid-foot, neutral spine and lats tight; push the floor away and keep the bar against your body.",
+   "es": "Barra sobre el medio pie, espalda neutra y dorsales activos; empuja el suelo y mantén la barra pegada al cuerpo.",
+   "fr": "Barre au-dessus du milieu du pied, dos neutre, dorsaux engagés ; poussez le sol, barre collée au corps.",
+   "de": "Stange über Fußmitte, Rücken neutral, Latissimus fest; den Boden wegdrücken, Stange am Körper führen."
+  },
+  "variants": [
+   {
+    "id": "fullbody.deadlift.conventional",
+    "eq": "barbell",
+    "name": {
+     "it": "Stacco da terra con bilanciere",
+     "en": "Conventional deadlift",
+     "es": "Peso muerto convencional",
+     "fr": "Soulevé de terre conventionnel",
+     "de": "Klassisches Kreuzheben"
+    }
+   },
+   {
+    "id": "fullbody.deadlift.deficit",
+    "eq": "barbell",
+    "name": {
+     "it": "Stacco da terra in deficit",
+     "en": "Deficit deadlift",
+     "es": "Peso muerto en déficit",
+     "fr": "Soulevé de terre en déficit",
+     "de": "Defizit-Kreuzheben"
+    },
+    "note": {
+     "it": "In piedi su un rialzo di 3–8 cm: partenza più profonda.",
+     "en": "Stand on a 3–8 cm platform for a deeper start.",
+     "es": "Sobre una plataforma de 3–8 cm: salida más profunda.",
+     "fr": "Sur une cale de 3–8 cm : départ plus profond.",
+     "de": "Auf 3–8 cm Erhöhung stehen: tieferer Start."
+    }
+   },
+   {
+    "id": "fullbody.deadlift.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Stacco da terra con manubri",
+     "en": "Dumbbell deadlift",
+     "es": "Peso muerto con mancuernas",
+     "fr": "Soulevé de terre avec haltères",
+     "de": "Kreuzheben mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Più facile da imparare, carichi più leggeri.",
+     "en": "Easier to learn, lighter loads.",
+     "es": "Más fácil de aprender, cargas más ligeras.",
+     "fr": "Plus facile à apprendre, charges plus légères.",
+     "de": "Leichter zu lernen, geringere Lasten."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.sumoDeadlift",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "quads",
+   "adductors"
+  ],
+  "sec": [
+   "hams",
+   "lowerBack",
+   "traps",
+   "forearms"
+  ],
+  "lvl": 2,
+  "reps": "3–6",
+  "name": {
+   "it": "Stacco sumo",
+   "en": "Sumo deadlift",
+   "es": "Peso muerto sumo",
+   "fr": "Soulevé de terre sumo",
+   "de": "Sumo-Kreuzheben"
+  },
+  "why": {
+   "it": "Stacco a gambe larghe: più adduttori e quadricipiti, busto più dritto.",
+   "en": "Wide-stance deadlift: more adductors and quads, more upright torso.",
+   "es": "Peso muerto con piernas abiertas: más aductores y cuádriceps, torso más erguido.",
+   "fr": "Soulevé jambes écartées : plus d'adducteurs et de quadriceps, buste plus droit.",
+   "de": "Kreuzheben mit weitem Stand: mehr Adduktoren und Quadrizeps, aufrechter Oberkörper."
+  },
+  "tip": {
+   "it": "Piedi larghi e punte in fuori, presa dentro le gambe; spingi le ginocchia in fuori e tieni il petto alto.",
+   "en": "Wide stance, toes out, hands inside the legs; push your knees out and keep your chest up.",
+   "es": "Pies anchos y puntas hacia fuera, agarre entre las piernas; empuja las rodillas hacia fuera y pecho arriba.",
+   "fr": "Pieds écartés, pointes ouvertes, mains entre les jambes ; poussez les genoux dehors, poitrine haute.",
+   "de": "Weiter Stand, Zehen nach außen, Griff innen; Knie nach außen drücken, Brust hoch."
+  },
+  "variants": [
+   {
+    "id": "fullbody.sumoDeadlift.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Stacco sumo con bilanciere",
+     "en": "Barbell sumo deadlift",
+     "es": "Peso muerto sumo con barra",
+     "fr": "Soulevé de terre sumo à la barre",
+     "de": "Sumo-Kreuzheben mit Langhantel"
+    }
+   },
+   {
+    "id": "fullbody.sumoDeadlift.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Stacco sumo con kettlebell",
+     "en": "Kettlebell sumo deadlift",
+     "es": "Peso muerto sumo con kettlebell",
+     "fr": "Soulevé de terre sumo avec kettlebell",
+     "de": "Sumo-Kreuzheben mit Kettlebell"
+    },
+    "note": {
+     "it": "Ottimo per imparare il movimento con carichi leggeri.",
+     "en": "Great for learning the pattern with light loads.",
+     "es": "Ideal para aprender el movimiento con poca carga.",
+     "fr": "Idéal pour apprendre le mouvement avec peu de charge.",
+     "de": "Ideal zum Erlernen der Bewegung mit wenig Last."
+    }
+   },
+   {
+    "id": "fullbody.sumoDeadlift.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Stacco sumo con manubrio",
+     "en": "Dumbbell sumo deadlift",
+     "es": "Peso muerto sumo con mancuerna",
+     "fr": "Soulevé de terre sumo avec haltère",
+     "de": "Sumo-Kreuzheben mit Kurzhantel"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.trapBarDeadlift",
+  "g": "fullbody",
+  "pri": [
+   "quads",
+   "glutes",
+   "hams"
+  ],
+  "sec": [
+   "lowerBack",
+   "traps",
+   "forearms"
+  ],
+  "lvl": 1,
+  "reps": "4–8",
+  "name": {
+   "it": "Stacco con trap bar",
+   "en": "Trap bar deadlift",
+   "es": "Peso muerto con barra hexagonal",
+   "fr": "Soulevé de terre à la trap bar",
+   "de": "Kreuzheben mit Trap Bar"
+  },
+  "why": {
+   "it": "Uno stacco più gentile con la schiena, ottimo per forza e potenza.",
+   "en": "A back-friendlier deadlift, great for strength and power.",
+   "es": "Peso muerto más amable con la espalda, ideal para fuerza y potencia.",
+   "fr": "Un soulevé plus doux pour le dos, idéal pour la force et la puissance.",
+   "de": "Rückenfreundlicheres Kreuzheben, ideal für Kraft und Power."
+  },
+  "tip": {
+   "it": "Mettiti al centro della barra con le anche più basse che nello stacco classico; spingi con le gambe e chiudi coi glutei.",
+   "en": "Stand in the centre of the bar, hips a bit lower than a conventional pull; drive with your legs and finish with your glutes.",
+   "es": "En el centro de la barra, cadera algo más baja que en el convencional; empuja con las piernas y termina con los glúteos.",
+   "fr": "Au centre de la barre, hanches plus basses qu'en conventionnel ; poussez avec les jambes, finissez avec les fessiers.",
+   "de": "Mittig in der Stange, Hüfte etwas tiefer als beim klassischen Heben; mit den Beinen drücken, mit dem Gesäß abschließen."
+  },
+  "variants": [
+   {
+    "id": "fullbody.trapBarDeadlift.lowHandles",
+    "eq": "trapbar",
+    "name": {
+     "it": "Stacco con trap bar (maniglie basse)",
+     "en": "Trap bar deadlift (low handles)",
+     "es": "Peso muerto con barra hexagonal (asas bajas)",
+     "fr": "Soulevé de terre à la trap bar (poignées basses)",
+     "de": "Kreuzheben mit Trap Bar (tiefe Griffe)"
+    }
+   },
+   {
+    "id": "fullbody.trapBarDeadlift.highHandles",
+    "eq": "trapbar",
+    "name": {
+     "it": "Stacco con trap bar (maniglie alte)",
+     "en": "Trap bar deadlift (high handles)",
+     "es": "Peso muerto con barra hexagonal (asas altas)",
+     "fr": "Soulevé de terre à la trap bar (poignées hautes)",
+     "de": "Kreuzheben mit Trap Bar (hohe Griffe)"
+    },
+    "note": {
+     "it": "Escursione ridotta: più carico o un inizio più facile.",
+     "en": "Shorter range: heavier loads or an easier start.",
+     "es": "Recorrido más corto: más carga o un inicio más fácil.",
+     "fr": "Amplitude réduite : plus de charge ou un départ plus facile.",
+     "de": "Kürzerer Weg: mehr Last oder leichterer Einstieg."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.powerClean",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "hams",
+   "quads",
+   "traps"
+  ],
+  "sec": [
+   "upperBack",
+   "frontDelt",
+   "calves",
+   "forearms"
+  ],
+  "lvl": 2,
+  "reps": "2–5",
+  "name": {
+   "it": "Girata al petto (power clean)",
+   "en": "Power clean",
+   "es": "Cargada de potencia",
+   "fr": "Épaulé en puissance",
+   "de": "Umsetzen (Power Clean)"
+  },
+  "why": {
+   "it": "Sviluppa potenza esplosiva in tutto il corpo.",
+   "en": "Develops explosive total-body power.",
+   "es": "Desarrolla potencia explosiva en todo el cuerpo.",
+   "fr": "Développe une puissance explosive de tout le corps.",
+   "de": "Entwickelt explosive Ganzkörperkraft."
+  },
+  "tip": {
+   "it": "Peso vicino al corpo, estendi esplosivo anche, ginocchia e caviglie, poi infilati sotto e ricevi con gomiti alti. Impara leggero.",
+   "en": "Keep the bar close, extend hips, knees and ankles explosively, then pull under and catch with elbows high. Learn it light.",
+   "es": "Barra cerca del cuerpo, extiende explosivo cadera, rodillas y tobillos, métete debajo y recibe con codos altos. Aprende ligero.",
+   "fr": "Barre près du corps, extension explosive hanches-genoux-chevilles, passez dessous, recevez coudes hauts. Apprenez léger.",
+   "de": "Stange nah am Körper, Hüfte, Knie und Sprunggelenke explosiv strecken, abtauchen und mit hohen Ellbogen fangen. Erst leicht lernen."
+  },
+  "variants": [
+   {
+    "id": "fullbody.powerClean.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Girata al petto con bilanciere",
+     "en": "Barbell power clean",
+     "es": "Cargada de potencia con barra",
+     "fr": "Épaulé en puissance à la barre",
+     "de": "Umsetzen mit Langhantel"
+    }
+   },
+   {
+    "id": "fullbody.powerClean.hang",
+    "eq": "barbell",
+    "name": {
+     "it": "Girata dalla sospensione (hang clean)",
+     "en": "Hang clean",
+     "es": "Cargada colgante",
+     "fr": "Épaulé depuis la suspension",
+     "de": "Umsetzen aus dem Hang (Hang Clean)"
+    },
+    "note": {
+     "it": "Parti col bilanciere sopra le ginocchia: più facile da imparare.",
+     "en": "Start with the bar above the knees: easier to learn.",
+     "es": "Empieza con la barra sobre las rodillas: más fácil de aprender.",
+     "fr": "Départ barre au-dessus des genoux : plus facile à apprendre.",
+     "de": "Start mit der Stange über den Knien: leichter zu lernen."
+    }
+   },
+   {
+    "id": "fullbody.powerClean.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Girata al petto con manubri",
+     "en": "Dumbbell power clean",
+     "es": "Cargada de potencia con mancuernas",
+     "fr": "Épaulé en puissance avec haltères",
+     "de": "Umsetzen mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "fullbody.powerClean.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Clean con kettlebell",
+     "en": "Kettlebell clean",
+     "es": "Cargada con kettlebell",
+     "fr": "Épaulé avec kettlebell",
+     "de": "Kettlebell Clean"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.cleanAndPress",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "hams",
+   "frontDelt"
+  ],
+  "sec": [
+   "quads",
+   "traps",
+   "triceps",
+   "upperBack",
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "3–6",
+  "name": {
+   "it": "Clean and press",
+   "en": "Clean and press",
+   "es": "Cargada y press",
+   "fr": "Épaulé-développé",
+   "de": "Umsetzen und Drücken"
+  },
+  "why": {
+   "it": "Unisce girata e spinta sopra la testa in un unico gesto.",
+   "en": "Combines a clean and an overhead press in one movement.",
+   "es": "Combina una cargada y un press por encima de la cabeza.",
+   "fr": "Associe un épaulé et un développé au-dessus de la tête.",
+   "de": "Kombiniert Umsetzen und Überkopfdrücken in einer Bewegung."
+  },
+  "tip": {
+   "it": "Porta il peso in rack, stabilizzati, poi spingi sopra la testa con glutei e addome contratti, senza inarcare.",
+   "en": "Clean the weight to the rack, settle, then press overhead with glutes and abs tight and no back arch.",
+   "es": "Lleva el peso al rack, estabilízate y empuja por encima de la cabeza con glúteos y abdomen firmes, sin arquear.",
+   "fr": "Montez la charge en rack, stabilisez, puis poussez au-dessus de la tête, fessiers et abdos serrés, sans cambrer.",
+   "de": "Gewicht umsetzen, stabilisieren, dann mit fester Gesäß- und Bauchspannung über Kopf drücken, ohne Hohlkreuz."
+  },
+  "variants": [
+   {
+    "id": "fullbody.cleanAndPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Clean and press con bilanciere",
+     "en": "Barbell clean and press",
+     "es": "Cargada y press con barra",
+     "fr": "Épaulé-développé à la barre",
+     "de": "Umsetzen und Drücken mit Langhantel"
+    }
+   },
+   {
+    "id": "fullbody.cleanAndPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Clean and press con manubri",
+     "en": "Dumbbell clean and press",
+     "es": "Cargada y press con mancuernas",
+     "fr": "Épaulé-développé avec haltères",
+     "de": "Umsetzen und Drücken mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "fullbody.cleanAndPress.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Clean and press con kettlebell",
+     "en": "Kettlebell clean and press",
+     "es": "Cargada y press con kettlebell",
+     "fr": "Épaulé-développé avec kettlebell",
+     "de": "Umsetzen und Drücken mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.pushPress",
+  "g": "fullbody",
+  "pri": [
+   "frontDelt",
+   "triceps"
+  ],
+  "sec": [
+   "quads",
+   "glutes",
+   "sideDelt",
+   "upperBack"
+  ],
+  "lvl": 1,
+  "reps": "4–8",
+  "name": {
+   "it": "Push press",
+   "en": "Push press",
+   "es": "Push press",
+   "fr": "Push press",
+   "de": "Push Press"
+  },
+  "why": {
+   "it": "Spinta sopra la testa aiutata dalle gambe: più carico e potenza.",
+   "en": "An overhead press driven by the legs: more load and power.",
+   "es": "Press por encima de la cabeza ayudado por las piernas: más carga y potencia.",
+   "fr": "Développé au-dessus de la tête aidé des jambes : plus de charge et de puissance.",
+   "de": "Überkopfdrücken mit Beinschwung: mehr Last und Power."
+  },
+  "tip": {
+   "it": "Piccolo piegamento dritto delle ginocchia, poi spinta esplosiva di gambe e braccia; blocca sopra la testa con l'addome contratto.",
+   "en": "Short straight dip at the knees, then drive explosively with legs and arms; lock out overhead with abs braced.",
+   "es": "Flexión corta y recta de rodillas, luego empuje explosivo de piernas y brazos; bloquea arriba con el abdomen firme.",
+   "fr": "Petite flexion droite des genoux, puis poussée explosive des jambes et des bras ; verrouillez en haut, abdos gainés.",
+   "de": "Kurzer, gerader Knie-Dip, dann explosiv mit Beinen und Armen drücken; über Kopf mit festem Bauch fixieren."
+  },
+  "variants": [
+   {
+    "id": "fullbody.pushPress.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Push press con bilanciere",
+     "en": "Barbell push press",
+     "es": "Push press con barra",
+     "fr": "Push press à la barre",
+     "de": "Push Press mit Langhantel"
+    }
+   },
+   {
+    "id": "fullbody.pushPress.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Push press con manubri",
+     "en": "Dumbbell push press",
+     "es": "Push press con mancuernas",
+     "fr": "Push press avec haltères",
+     "de": "Push Press mit Kurzhanteln"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.snatch",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "hams"
+  ],
+  "sec": [
+   "quads",
+   "frontDelt",
+   "traps",
+   "upperBack",
+   "abs"
+  ],
+  "lvl": 2,
+  "reps": "5–10",
+  "name": {
+   "it": "Strappo",
+   "en": "Snatch",
+   "es": "Arrancada",
+   "fr": "Arraché",
+   "de": "Reißen"
+  },
+  "why": {
+   "it": "Potenza esplosiva dal pavimento a sopra la testa in un solo gesto.",
+   "en": "Explosive power from floor to overhead in one move.",
+   "es": "Potencia explosiva del suelo a por encima de la cabeza en un gesto.",
+   "fr": "Puissance explosive du sol jusqu'au-dessus de la tête en un geste.",
+   "de": "Explosive Kraft vom Boden bis über Kopf in einer Bewegung."
+  },
+  "tip": {
+   "it": "Spinta d'anca esplosiva, peso vicino al corpo; ricevilo sopra la testa a braccio teso e polso dritto.",
+   "en": "Explosive hip drive, weight close to the body; catch it overhead with a straight arm and neutral wrist.",
+   "es": "Empuje de cadera explosivo, peso cerca del cuerpo; recíbelo arriba con el brazo recto y la muñeca neutra.",
+   "fr": "Poussée de hanches explosive, charge près du corps ; recevez au-dessus de la tête bras tendu, poignet neutre.",
+   "de": "Explosiver Hüftschub, Gewicht nah am Körper; über Kopf mit gestrecktem Arm und geradem Handgelenk fangen."
+  },
+  "variants": [
+   {
+    "id": "fullbody.snatch.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Strappo con manubrio",
+     "en": "Dumbbell snatch",
+     "es": "Arrancada con mancuerna",
+     "fr": "Arraché avec haltère",
+     "de": "Reißen mit Kurzhantel"
+    }
+   },
+   {
+    "id": "fullbody.snatch.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Strappo con kettlebell",
+     "en": "Kettlebell snatch",
+     "es": "Arrancada con kettlebell",
+     "fr": "Arraché avec kettlebell",
+     "de": "Kettlebell Snatch"
+    },
+    "note": {
+     "it": "Fai ruotare la kettlebell attorno al polso senza sbatterla.",
+     "en": "Let the bell roll around your wrist, don't let it slam.",
+     "es": "Haz girar la kettlebell alrededor de la muñeca sin que golpee.",
+     "fr": "Faites tourner la kettlebell autour du poignet sans choc.",
+     "de": "Kettlebell um das Handgelenk drehen lassen, nicht aufschlagen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.thruster",
+  "g": "fullbody",
+  "pri": [
+   "quads",
+   "glutes",
+   "frontDelt"
+  ],
+  "sec": [
+   "triceps",
+   "upperBack",
+   "abs"
+  ],
+  "lvl": 1,
+  "reps": "6–12",
+  "name": {
+   "it": "Thruster",
+   "en": "Thruster",
+   "es": "Thruster",
+   "fr": "Thruster",
+   "de": "Thruster"
+  },
+  "why": {
+   "it": "Front squat e spinta in un unico movimento: forza e condizionamento.",
+   "en": "Front squat plus overhead press in one move: strength and conditioning.",
+   "es": "Sentadilla frontal y press en un movimiento: fuerza y acondicionamiento.",
+   "fr": "Squat avant et développé en un geste : force et conditionnement.",
+   "de": "Frontkniebeuge plus Überkopfdrücken in einem Zug: Kraft und Kondition."
+  },
+  "tip": {
+   "it": "Scendi in front squat, risali esplosivo e usa la spinta per portare il peso sopra la testa senza fermarti.",
+   "en": "Squat down in the front rack, drive up hard and use that momentum to press overhead without pausing.",
+   "es": "Baja en sentadilla frontal, sube explosivo y usa el impulso para empujar arriba sin pausa.",
+   "fr": "Descendez en squat avant, remontez fort et utilisez l'élan pour pousser au-dessus de la tête sans pause.",
+   "de": "In die Frontkniebeuge, explosiv hoch und den Schwung nutzen, um ohne Pause über Kopf zu drücken."
+  },
+  "variants": [
+   {
+    "id": "fullbody.thruster.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Thruster con bilanciere",
+     "en": "Barbell thruster",
+     "es": "Thruster con barra",
+     "fr": "Thruster à la barre",
+     "de": "Thruster mit Langhantel"
+    }
+   },
+   {
+    "id": "fullbody.thruster.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Thruster con manubri",
+     "en": "Dumbbell thruster",
+     "es": "Thruster con mancuernas",
+     "fr": "Thruster avec haltères",
+     "de": "Thruster mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "fullbody.thruster.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Thruster con kettlebell",
+     "en": "Kettlebell thruster",
+     "es": "Thruster con kettlebell",
+     "fr": "Thruster avec kettlebell",
+     "de": "Thruster mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.kettlebellSwing",
+  "g": "fullbody",
+  "pri": [
+   "glutes",
+   "hams"
+  ],
+  "sec": [
+   "lowerBack",
+   "abs",
+   "forearms",
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "15–25",
+  "name": {
+   "it": "Kettlebell swing",
+   "en": "Kettlebell swing",
+   "es": "Swing con kettlebell",
+   "fr": "Swing kettlebell",
+   "de": "Kettlebell Swing"
+  },
+  "why": {
+   "it": "Esplosività d'anca e condizionamento con un solo attrezzo.",
+   "en": "Hip power and conditioning with a single tool.",
+   "es": "Potencia de cadera y acondicionamiento con una sola herramienta.",
+   "fr": "Puissance de hanches et conditionnement avec un seul outil.",
+   "de": "Hüftkraft und Kondition mit nur einem Gerät."
+  },
+  "tip": {
+   "it": "È un movimento d'anca, non uno squat: spingi il bacino avanti coi glutei, braccia rilassate, peso all'altezza del petto.",
+   "en": "It's a hinge, not a squat: snap your hips forward with your glutes, arms relaxed, weight to chest height.",
+   "es": "Es bisagra, no sentadilla: lanza la cadera adelante con los glúteos, brazos relajados, peso a la altura del pecho.",
+   "fr": "Charnière, pas squat : projetez les hanches avec les fessiers, bras relâchés, charge à hauteur de poitrine.",
+   "de": "Hüftbeuge, keine Kniebeuge: Hüfte mit dem Gesäß nach vorn schnappen, Arme locker, Gewicht bis Brusthöhe."
+  },
+  "variants": [
+   {
+    "id": "fullbody.kettlebellSwing.twoHand",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Kettlebell swing a due mani",
+     "en": "Two-hand kettlebell swing",
+     "es": "Swing con kettlebell a dos manos",
+     "fr": "Swing kettlebell à deux mains",
+     "de": "Kettlebell Swing beidarmig"
+    }
+   },
+   {
+    "id": "fullbody.kettlebellSwing.oneHand",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Kettlebell swing a una mano",
+     "en": "One-hand kettlebell swing",
+     "es": "Swing con kettlebell a una mano",
+     "fr": "Swing kettlebell à une main",
+     "de": "Kettlebell Swing einarmig"
+    },
+    "note": {
+     "it": "Più lavoro anti-rotazione per il core.",
+     "en": "More anti-rotation work for the core.",
+     "es": "Más trabajo antirrotación para el core.",
+     "fr": "Plus de travail anti-rotation pour la sangle.",
+     "de": "Mehr Anti-Rotationsarbeit für den Rumpf."
+    }
+   },
+   {
+    "id": "fullbody.kettlebellSwing.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Swing con manubrio",
+     "en": "Dumbbell swing",
+     "es": "Swing con mancuerna",
+     "fr": "Swing avec haltère",
+     "de": "Kurzhantel-Swing"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.turkishGetUp",
+  "g": "fullbody",
+  "pri": [
+   "abs",
+   "frontDelt"
+  ],
+  "sec": [
+   "obliques",
+   "glutes",
+   "quads",
+   "upperBack"
+  ],
+  "lvl": 2,
+  "reps": "1–5",
+  "name": {
+   "it": "Turkish get-up",
+   "en": "Turkish get-up",
+   "es": "Levantamiento turco",
+   "fr": "Turkish get-up",
+   "de": "Turkish Get-up"
+  },
+  "why": {
+   "it": "Stabilità di spalla, core e mobilità in un unico esercizio.",
+   "en": "Shoulder stability, core strength and mobility in one drill.",
+   "es": "Estabilidad de hombro, core y movilidad en un solo ejercicio.",
+   "fr": "Stabilité d'épaule, gainage et mobilité en un seul exercice.",
+   "de": "Schulterstabilität, Rumpfkraft und Mobilität in einer Übung."
+  },
+  "tip": {
+   "it": "Braccio teso e occhi sul peso per tutto il movimento; passa da terra alla posizione in piedi a fasi lente e controllate.",
+   "en": "Arm locked and eyes on the weight throughout; move from floor to standing in slow, controlled steps.",
+   "es": "Brazo bloqueado y vista en el peso todo el tiempo; pasa del suelo a de pie por fases lentas y controladas.",
+   "fr": "Bras verrouillé, regard sur la charge ; passez du sol à debout par étapes lentes et contrôlées.",
+   "de": "Arm gestreckt, Blick auf dem Gewicht; in langsamen, kontrollierten Schritten vom Boden zum Stand."
+  },
+  "variants": [
+   {
+    "id": "fullbody.turkishGetUp.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Turkish get-up con kettlebell",
+     "en": "Kettlebell Turkish get-up",
+     "es": "Levantamiento turco con kettlebell",
+     "fr": "Turkish get-up avec kettlebell",
+     "de": "Turkish Get-up mit Kettlebell"
+    }
+   },
+   {
+    "id": "fullbody.turkishGetUp.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Turkish get-up con manubrio",
+     "en": "Dumbbell Turkish get-up",
+     "es": "Levantamiento turco con mancuerna",
+     "fr": "Turkish get-up avec haltère",
+     "de": "Turkish Get-up mit Kurzhantel"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.farmersWalk",
+  "g": "fullbody",
+  "pri": [
+   "forearms",
+   "traps"
+  ],
+  "sec": [
+   "abs",
+   "obliques",
+   "upperBack",
+   "glutes"
+  ],
+  "lvl": 0,
+  "reps": "30–60 s",
+  "name": {
+   "it": "Farmer's walk",
+   "en": "Farmer's walk",
+   "es": "Paseo del granjero",
+   "fr": "Marche du fermier",
+   "de": "Farmer's Walk"
+  },
+  "why": {
+   "it": "Rinforza presa, trapezi e core camminando con carichi pesanti.",
+   "en": "Builds grip, traps and core by walking with heavy loads.",
+   "es": "Fortalece agarre, trapecios y core caminando con mucha carga.",
+   "fr": "Renforce grip, trapèzes et sangle en marchant chargé.",
+   "de": "Stärkt Griff, Nacken und Rumpf beim Gehen mit schweren Lasten."
+  },
+  "tip": {
+   "it": "Petto alto, spalle basse, passi corti e rapidi. Registra i secondi come ripetizioni e il peso per mano.",
+   "en": "Chest up, shoulders down, short quick steps. Log seconds as reps and the weight per hand.",
+   "es": "Pecho arriba, hombros abajo, pasos cortos y rápidos. Registra los segundos como repeticiones y el peso por mano.",
+   "fr": "Poitrine haute, épaules basses, pas courts et rapides. Notez les secondes comme répétitions et la charge par main.",
+   "de": "Brust hoch, Schultern tief, kurze schnelle Schritte. Trage die Sekunden als Wiederholungen und das Gewicht pro Hand ein."
+  },
+  "variants": [
+   {
+    "id": "fullbody.farmersWalk.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Farmer's walk con manubri",
+     "en": "Dumbbell farmer's walk",
+     "es": "Paseo del granjero con mancuernas",
+     "fr": "Marche du fermier avec haltères",
+     "de": "Farmer's Walk mit Kurzhanteln"
+    }
+   },
+   {
+    "id": "fullbody.farmersWalk.trapBar",
+    "eq": "trapbar",
+    "name": {
+     "it": "Farmer's walk con trap bar",
+     "en": "Trap bar farmer's walk",
+     "es": "Paseo del granjero con barra hexagonal",
+     "fr": "Marche du fermier à la trap bar",
+     "de": "Farmer's Walk mit Trap Bar"
+    },
+    "note": {
+     "it": "Registra il peso totale della trap bar invece che per mano.",
+     "en": "Log the total trap bar weight instead of per hand.",
+     "es": "Registra el peso total de la barra en vez de por mano.",
+     "fr": "Notez la charge totale de la trap bar, pas par main.",
+     "de": "Trage das Gesamtgewicht der Trap Bar statt pro Hand ein."
+    }
+   },
+   {
+    "id": "fullbody.farmersWalk.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Farmer's walk con kettlebell",
+     "en": "Kettlebell farmer's walk",
+     "es": "Paseo del granjero con kettlebells",
+     "fr": "Marche du fermier avec kettlebells",
+     "de": "Farmer's Walk mit Kettlebells"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.suitcaseCarry",
+  "g": "fullbody",
+  "pri": [
+   "obliques",
+   "forearms"
+  ],
+  "sec": [
+   "abs",
+   "traps",
+   "glutes"
+  ],
+  "lvl": 0,
+  "reps": "30–60 s",
+  "name": {
+   "it": "Suitcase carry",
+   "en": "Suitcase carry",
+   "es": "Paseo con maleta",
+   "fr": "Marche valise",
+   "de": "Suitcase Carry"
+  },
+  "why": {
+   "it": "Carico da un solo lato: obliqui e core lavorano contro l'inclinazione.",
+   "en": "One-sided load: obliques and core fight against leaning.",
+   "es": "Carga a un lado: oblicuos y core trabajan contra la inclinación.",
+   "fr": "Charge d'un seul côté : obliques et sangle luttent contre l'inclinaison.",
+   "de": "Einseitige Last: schräge Bauchmuskeln und Rumpf arbeiten gegen das Kippen."
+  },
+  "tip": {
+   "it": "Peso in una mano, busto dritto senza inclinarti; cambia lato a metà. Registra i secondi come ripetizioni e il peso per mano.",
+   "en": "Weight in one hand, torso upright with no leaning; switch sides halfway. Log seconds as reps and the weight per hand.",
+   "es": "Peso en una mano, torso recto sin inclinarte; cambia de lado a mitad. Registra los segundos como repeticiones y el peso por mano.",
+   "fr": "Charge dans une main, buste droit sans pencher ; changez de côté à mi-parcours. Notez les secondes comme répétitions et la charge par main.",
+   "de": "Gewicht in einer Hand, Oberkörper gerade ohne Kippen; zur Hälfte Seite wechseln. Trage die Sekunden als Wiederholungen und das Gewicht pro Hand ein."
+  },
+  "variants": [
+   {
+    "id": "fullbody.suitcaseCarry.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Suitcase carry con manubrio",
+     "en": "Dumbbell suitcase carry",
+     "es": "Paseo con maleta con mancuerna",
+     "fr": "Marche valise avec haltère",
+     "de": "Suitcase Carry mit Kurzhantel"
+    }
+   },
+   {
+    "id": "fullbody.suitcaseCarry.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Suitcase carry con kettlebell",
+     "en": "Kettlebell suitcase carry",
+     "es": "Paseo con maleta con kettlebell",
+     "fr": "Marche valise avec kettlebell",
+     "de": "Suitcase Carry mit Kettlebell"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.burpee",
+  "g": "fullbody",
+  "pri": [
+   "quads",
+   "chest"
+  ],
+  "sec": [
+   "glutes",
+   "frontDelt",
+   "triceps",
+   "abs"
+  ],
+  "lvl": 1,
+  "reps": "10–20",
+  "name": {
+   "it": "Burpee",
+   "en": "Burpee",
+   "es": "Burpee",
+   "fr": "Burpee",
+   "de": "Burpee"
+  },
+  "why": {
+   "it": "Condizionamento total body senza attrezzi.",
+   "en": "Total-body conditioning with no equipment.",
+   "es": "Acondicionamiento de cuerpo completo sin material.",
+   "fr": "Conditionnement complet sans matériel.",
+   "de": "Ganzkörper-Kondition ohne Geräte."
+  },
+  "tip": {
+   "it": "Scendi in plank col petto a terra, riporta i piedi sotto e salta con le braccia in alto; core stabile. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Drop to a plank, chest to the floor, jump your feet in and leap up with arms overhead; core tight. Log the added weight (0 if none).",
+   "es": "Baja a plancha con el pecho al suelo, recoge los pies y salta con los brazos arriba; core firme. Registra el peso añadido (0 si no hay).",
+   "fr": "Planche poitrine au sol, ramenez les pieds et sautez bras en l'air ; sangle gainée. Notez la charge ajoutée (0 si aucune).",
+   "de": "In den Stütz, Brust zum Boden, Füße heranspringen und mit Armen über Kopf hochspringen; Rumpf fest. Trage das Zusatzgewicht ein (0, falls keins)."
+  },
+  "variants": [
+   {
+    "id": "fullbody.burpee.classic",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Burpee classico",
+     "en": "Classic burpee",
+     "es": "Burpee clásico",
+     "fr": "Burpee classique",
+     "de": "Klassischer Burpee"
+    }
+   },
+   {
+    "id": "fullbody.burpee.noPushUp",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Burpee senza piegamento",
+     "en": "No push-up burpee",
+     "es": "Burpee sin flexión",
+     "fr": "Burpee sans pompe",
+     "de": "Burpee ohne Liegestütz"
+    },
+    "note": {
+     "it": "Versione più semplice: niente petto a terra.",
+     "en": "Easier version: no chest to the floor.",
+     "es": "Versión más fácil: sin pecho al suelo.",
+     "fr": "Version plus simple : sans poitrine au sol.",
+     "de": "Leichtere Version: Brust nicht zum Boden."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.sledPush",
+  "g": "fullbody",
+  "pri": [
+   "quads",
+   "glutes"
+  ],
+  "sec": [
+   "calves",
+   "hams",
+   "frontDelt",
+   "triceps"
+  ],
+  "lvl": 0,
+  "reps": "20–40 s",
+  "name": {
+   "it": "Spinta della slitta",
+   "en": "Sled push",
+   "es": "Empuje de trineo",
+   "fr": "Poussée de traîneau",
+   "de": "Schlittenschieben"
+  },
+  "why": {
+   "it": "Forza delle gambe e condizionamento senza fase eccentrica, gentile con le articolazioni.",
+   "en": "Leg strength and conditioning with no eccentric phase, easy on the joints.",
+   "es": "Fuerza de piernas y acondicionamiento sin fase excéntrica, suave para las articulaciones.",
+   "fr": "Force des jambes et cardio sans phase excentrique, doux pour les articulations.",
+   "de": "Beinkraft und Kondition ohne exzentrische Phase, gelenkschonend."
+  },
+  "tip": {
+   "it": "Corpo inclinato e in linea, braccia tese o piegate; spingi con passi corti e potenti. Registra i secondi come ripetizioni e il carico sulla slitta.",
+   "en": "Lean in with a straight line from head to heel, arms straight or bent; drive with short powerful steps. Log seconds as reps and the sled load.",
+   "es": "Cuerpo inclinado y alineado, brazos rectos o flexionados; empuja con pasos cortos y potentes. Registra los segundos como repeticiones y la carga del trineo.",
+   "fr": "Corps penché et aligné, bras tendus ou fléchis ; poussez à petits pas puissants. Notez les secondes comme répétitions et la charge du traîneau.",
+   "de": "Körper schräg und gerade, Arme gestreckt oder gebeugt; mit kurzen, kraftvollen Schritten schieben. Trage die Sekunden als Wiederholungen und die Schlittenlast ein."
+  },
+  "variants": [
+   {
+    "id": "fullbody.sledPush.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Spinta della slitta con dischi",
+     "en": "Plate-loaded sled push",
+     "es": "Empuje de trineo con discos",
+     "fr": "Poussée de traîneau chargé de disques",
+     "de": "Schlittenschieben mit Hantelscheiben"
+    }
+   },
+   {
+    "id": "fullbody.sledPush.backwardDrag",
+    "eq": "plate",
+    "name": {
+     "it": "Traino della slitta all'indietro",
+     "en": "Backward sled drag",
+     "es": "Arrastre de trineo hacia atrás",
+     "fr": "Traîneau tiré à reculons",
+     "de": "Schlittenziehen rückwärts"
+    },
+    "note": {
+     "it": "Cammina all'indietro tirando: ottimo per quadricipiti e ginocchia.",
+     "en": "Walk backwards while pulling: great for quads and knees.",
+     "es": "Camina hacia atrás tirando: ideal para cuádriceps y rodillas.",
+     "fr": "Marchez à reculons en tirant : idéal pour quadriceps et genoux.",
+     "de": "Rückwärts gehen und ziehen: super für Quadrizeps und Knie."
+    }
+   },
+   {
+    "id": "fullbody.sledPush.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Spinta della slitta su tapis curvo",
+     "en": "Sled push on a non-motorised treadmill",
+     "es": "Empuje de trineo en cinta no motorizada",
+     "fr": "Poussée de traîneau sur tapis non motorisé",
+     "de": "Schlittenschieben auf dem Laufband ohne Motor"
+    },
+    "note": {
+     "it": "Registra il livello di resistenza al posto dei kg.",
+     "en": "Log the resistance level in place of kg.",
+     "es": "Registra el nivel de resistencia en lugar de los kg.",
+     "fr": "Notez le niveau de résistance à la place des kg.",
+     "de": "Trage die Widerstandsstufe statt kg ein."
+    }
+   }
+  ]
+ },
+ {
+  "id": "fullbody.battleRopes",
+  "g": "fullbody",
+  "pri": [
+   "frontDelt",
+   "abs"
+  ],
+  "sec": [
+   "forearms",
+   "sideDelt",
+   "upperBack",
+   "quads"
+  ],
+  "lvl": 0,
+  "reps": "20–40 s",
+  "name": {
+   "it": "Battle rope",
+   "en": "Battle ropes",
+   "es": "Cuerdas de batalla",
+   "fr": "Cordes ondulatoires",
+   "de": "Battle Ropes"
+  },
+  "why": {
+   "it": "Condizionamento intenso per spalle, braccia e core.",
+   "en": "Intense conditioning for shoulders, arms and core.",
+   "es": "Acondicionamiento intenso de hombros, brazos y core.",
+   "fr": "Conditionnement intense des épaules, des bras et de la sangle.",
+   "de": "Intensive Kondition für Schultern, Arme und Rumpf."
+  },
+  "tip": {
+   "it": "Mezzo squat atletico, core attivo, movimenti ampi e ritmici con le braccia. Registra i secondi come ripetizioni e 0 kg.",
+   "en": "Athletic half-squat, core braced, big rhythmic arm movements. Log seconds as reps and 0 kg.",
+   "es": "Media sentadilla atlética, core activo, movimientos amplios y rítmicos de brazos. Registra los segundos como repeticiones y 0 kg.",
+   "fr": "Demi-squat athlétique, sangle gainée, grands mouvements rythmés des bras. Notez les secondes comme répétitions et 0 kg.",
+   "de": "Athletische halbe Kniebeuge, Rumpf fest, große rhythmische Armbewegungen. Trage die Sekunden als Wiederholungen und 0 kg ein."
+  },
+  "variants": [
+   {
+    "id": "fullbody.battleRopes.alternating",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Battle rope a onde alternate",
+     "en": "Alternating battle rope waves",
+     "es": "Ondas alternas con cuerdas de batalla",
+     "fr": "Ondes alternées aux cordes ondulatoires",
+     "de": "Battle Ropes wechselseitige Wellen"
+    }
+   },
+   {
+    "id": "fullbody.battleRopes.double",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Battle rope a onde doppie",
+     "en": "Double battle rope waves",
+     "es": "Ondas dobles con cuerdas de batalla",
+     "fr": "Ondes doubles aux cordes ondulatoires",
+     "de": "Battle Ropes beidseitige Wellen"
+    }
+   },
+   {
+    "id": "fullbody.battleRopes.slams",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Battle rope slam",
+     "en": "Battle rope slams",
+     "es": "Golpes con cuerdas de batalla",
+     "fr": "Slams aux cordes ondulatoires",
+     "de": "Battle Ropes Slams"
+    },
+    "note": {
+     "it": "Solleva le corde sopra la testa e sbattile a terra con forza.",
+     "en": "Lift the ropes overhead and slam them down hard.",
+     "es": "Sube las cuerdas por encima de la cabeza y golpea fuerte el suelo.",
+     "fr": "Levez les cordes au-dessus de la tête et frappez fort le sol.",
+     "de": "Seile über Kopf heben und kräftig auf den Boden schlagen."
+    }
+   }
+  ]
+ }
+]

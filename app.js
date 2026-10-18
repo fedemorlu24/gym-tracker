@@ -65,7 +65,7 @@ function restore() {
     if ((o.ts || 0) > (db.ts || 0)) {
       db = o;
       try { localStorage.setItem(KEY, v); } catch (e) {}
-      setLang(); render();
+      setLang(); applyTheme(); render();
     } else if ((db.ts || 0) > (o.ts || 0)) idbPut(JSON.stringify(db)).catch(() => {});
   }).catch(() => {});
 }
@@ -84,6 +84,14 @@ function setLang() {
   DEC = (1.5).toLocaleString(locale).charAt(1);
   document.documentElement.lang = lang;
 }
+// tema: automatico (segue il telefono), chiaro o scuro
+function applyTheme() {
+  const th = (db.settings && db.settings.theme) || 'auto', root = document.documentElement;
+  if (th === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', th);
+  const dark = th === 'dark' || (th === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelectorAll('meta[name=theme-color]').forEach(m => { m.content = dark ? '#0e0f11' : '#f2f2f7'; });
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 function t(k, ...a) {
   const v = k in I18N[lang] ? I18N[lang][k] : I18N.en[k];
   return typeof v === 'function' ? v(...a) : v;
@@ -721,6 +729,8 @@ function settingsView() {
     <button class="row" data-act="weekly"><div class="grow"><h3>${t('perWeek')}</h3><div class="sub">${weeklyTarget()}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('language')}</p>
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
+    <p class="glabel">${t('theme')}</p>
+    <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'auto') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
     <p class="glabel">${t('backup')}</p>
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
@@ -790,13 +800,77 @@ function sheetNewSession() {
     <form data-form="newsession"><label class="field">${t('name')}<input name="n" ${past.length ? '' : 'data-focus'} placeholder="${esc(t('sessionPh'))}" autocomplete="off" enterkeyhint="done"></label>
     <button class="btn p wide">${t('createSession')}</button></form>`);
 }
+
+// ---------- libreria esercizi (lib/data.js) ----------
+const LIB = window.EXDATA || [];
+const VAR = {};
+LIB.forEach(b => b.variants.forEach(v => { VAR[v.id] = {b, v}; }));
+const BASE = Object.fromEntries(LIB.map(b => [b.id, b]));
+const LBL = () => EXLIB.labels[lang] || EXLIB.labels.en;
+const tx = o => o ? (o[lang] || o.en || '') : '';
+const norm = x => String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const libState = {g: EXLIB.groups[0], q: ''};
+// collega un esercizio alla libreria: id salvato, altrimenti per nome in qualsiasi lingua
+function libFor(e) {
+  if (e.lib && VAR[e.lib]) return VAR[e.lib];
+  const k = norm(e.name);
+  for (const id in VAR) if (Object.values(VAR[id].v.name).some(n => norm(n) === k)) return VAR[id];
+  const b = LIB.find(x => Object.values(x.name).some(n => norm(n) === k));
+  return b ? {b, v: null} : null;
+}
+const muscleTxt = ks => ks.map(m => LBL().muscles[m] || m).join(', ');
+function libList(s) {
+  const have = new Set(s.exercises.map(e => key(e.name))), q = norm(libState.q);
+  const vrow = (b, v) => {
+    const inS = have.has(key(tx(v.name)));
+    return `<button class="row" data-act="libadd" data-id="${v.id}" ${inS ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
+      <div class="sub">${LBL().eq[v.eq] || v.eq} · ${muscleTxt(b.pri)}${inS ? ' · ' + t('inSession') : ''}</div></div><span class="addic">${icon('plus')}</span></button>`;
+  };
+  if (q) {
+    const hits = [];
+    LIB.forEach(b => b.variants.forEach(v => {
+      const hay = norm([tx(v.name), tx(b.name), LBL().eq[v.eq], LBL().groups[b.g], muscleTxt(b.pri), muscleTxt(b.sec)].join(' '));
+      if (q.split(/\s+/).every(w => hay.includes(w))) hits.push(vrow(b, v));
+    }));
+    return hits.length ? hits.slice(0, 60).join('') : `<p class="sub" style="padding:8px 2px">${t('noResults')}</p>`;
+  }
+  return LIB.filter(b => b.g === libState.g).map(b => `<button class="row" data-act="libbase" data-id="${b.id}"><div class="grow"><h3>${esc(tx(b.name))}</h3>
+    <div class="sub">${muscleTxt(b.pri)} · ${t('variantsN', b.variants.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('');
+}
 function sheetAddExercise() {
   const s = sess(view.id), have = new Set(s.exercises.map(e => key(e.name)));
   const known = exerciseNames().filter(x => !have.has(key(x.name)));
   sheet(`<h2>${t('addExercise')}</h2>
-    ${known.length ? `<div class="chips">${known.slice(0, 16).map(x => `<button class="chip" data-act="pickex" data-name="${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div><p class="sub h">${t('orNew')}</p>` : ''}
-    <form data-form="addex"><label class="field">${t('exName')}<input name="n" ${known.length ? '' : 'data-focus'} placeholder="${esc(t('exPh'))}" autocomplete="off" enterkeyhint="done"></label>
+    <label class="field"><input id="lib-q" type="search" placeholder="${esc(t('searchEx'))}" value="${esc(libState.q)}" autocomplete="off" enterkeyhint="search"></label>
+    ${known.length ? `<p class="sub h">${t('yourExercises')}</p><div class="chips">${known.slice(0, 12).map(x => `<button class="chip" data-act="pickex" data-name="${esc(x.name)}">${esc(x.name)}</button>`).join('')}</div>` : ''}
+    ${LIB.length ? `<p class="sub h">${t('library')}</p>
+    <div class="hscroll" role="tablist">${EXLIB.groups.filter(g => LIB.some(b => b.g === g)).map(g => `<button class="chip" role="tab" data-act="libgroup" data-g="${g}" aria-pressed="${g === libState.g}">${LBL().groups[g]}</button>`).join('')}</div>
+    <div class="list" id="lib-list">${libList(s)}</div>` : ''}
+    <p class="sub h">${t('customEx')}</p>
+    <form data-form="addex"><label class="field">${t('exName')}<input name="n" placeholder="${esc(t('exPh'))}" autocomplete="off" enterkeyhint="done"></label>
     <button class="btn p wide">${t('add')}</button></form>`);
+  const q = document.getElementById('lib-q');
+  q.oninput = () => { libState.q = q.value; const l = document.getElementById('lib-list'); if (l) l.innerHTML = libList(s);
+    document.querySelector('.hscroll').hidden = !!q.value.trim(); };
+  document.querySelector('.hscroll') && (document.querySelector('.hscroll').hidden = !!libState.q.trim());
+}
+// scheda di un movimento: a cosa serve, muscoli, esecuzione e varianti
+function sheetLibBase(id, current) {
+  const b = BASE[id], s = view.name === 'session' ? sess(view.id) : null, have = new Set(s ? s.exercises.map(e => key(e.name)) : []);
+  const chips = (ks, cls) => ks.map(m => `<span class="mchip ${cls}">${LBL().muscles[m] || m}</span>`).join('');
+  sheet(`<div class="item" style="justify-content:flex-start;gap:4px;margin:-6px 0 6px -10px">
+      ${current ? '' : `<button class="ib" data-act="addex" data-keep="1" aria-label="${t('back')}">${icon('back')}</button>`}<h2 style="margin:0">${esc(tx(b.name))}</h2></div>
+    <div class="chips"><span class="tag pr" style="animation:none">${LBL().lvl[b.lvl]}</span><span class="tag eq">${t('repsSuggested', b.reps)}</span></div>
+    <p class="sub h">${t('whatFor')}</p><p>${esc(tx(b.why))}</p>
+    <p class="sub h">${t('primaryM')}</p><div class="chips">${chips(b.pri, 'on')}</div>
+    ${b.sec.length ? `<p class="sub h">${t('secondaryM')}</p><div class="chips">${chips(b.sec, '')}</div>` : ''}
+    <p class="sub h">${t('howTo')}</p><p>${esc(tx(b.tip))}</p>
+    <p class="sub h">${current ? t('allVariants') : t('chooseVariant')}</p>
+    <div class="list">${b.variants.map(v => {
+      const inS = have.has(key(tx(v.name))), cur = current === v.id;
+      return `<button class="row${cur ? ' cur' : ''}" data-act="libadd" data-id="${v.id}" ${inS || current ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
+        <div class="sub">${LBL().eq[v.eq] || v.eq}${v.note ? ' · ' + esc(tx(v.note)) : ''}${inS ? ' · ' + t('inSession') : ''}</div></div>${current ? '' : `<span class="addic">${icon('plus')}</span>`}</button>`;
+    }).join('')}</div>`);
 }
 function sheetEditSession() {
   const s = sess(view.id);
@@ -812,6 +886,7 @@ function sheetExMenu(eid) {
     <form data-form="renameex" data-eid="${eid}"><label class="field">${t('name')}<input name="n" value="${esc(e.name)}" autocomplete="off"></label>
     <p class="sub">${t('sameName')}</p>
     <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
+    ${libFor(e) ? `<button class="btn s wide" data-act="libinfo" data-eid="${eid}">${t('guide')}</button><div class="gap"></div>` : ''}
     <button class="btn d wide" data-act="delex" data-eid="${eid}">${t('delExercise')}</button>`);
 }
 function sheetEditSet(eid, i) {
@@ -1077,8 +1152,13 @@ function createSession(name, from) {
   db.sessions.push(s); save(); closeSheet();
   go({name: 'session', id: s.id, open: s.exercises[0] && s.exercises[0].id});
 }
-function addExercise(name) {
+function addExercise(name, lib) {
+  if (lib) {
+    const used = db.sessions.flatMap(x => x.exercises).find(x => x.lib === lib);
+    name = used ? used.name : tx(VAR[lib].v.name);
+  }
   const s = sess(view.id), e = {id: uid(), name, sets: []};
+  if (lib) e.lib = lib;
   s.exercises.push(e); save(); closeSheet(); view.open = e.id; render();
   setTimeout(() => { const el = document.getElementById('ex-' + e.id); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }, 50);
 }
@@ -1095,8 +1175,14 @@ const acts = {
   import: () => document.getElementById('imp').click(),
   newsession: sheetNewSession,
   repeat: b => { const f = sess(b.dataset.sid); createSession(f.name, f); },
-  addex: sheetAddExercise,
+  addex: b => { if (!b.dataset.keep) libState.q = ''; sheetAddExercise(); },
   pickex: b => addExercise(b.dataset.name),
+  libgroup: b => { libState.g = b.dataset.g; const s = sess(view.id);
+    document.querySelectorAll('[data-act=libgroup]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    document.getElementById('lib-list').innerHTML = libList(s); },
+  libbase: b => sheetLibBase(b.dataset.id),
+  libadd: b => { addExercise(null, b.dataset.id); toast(t('addedX', esc(tx(VAR[b.dataset.id].v.name)))); },
+  libinfo: b => { const e = sess(view.id).exercises.find(x => x.id === b.dataset.eid), L = libFor(e); sheetLibBase(L.b.id, L.v ? L.v.id : '-'); },
   editsession: sheetEditSession,
   delsession: () => { const id = view.id, n = sess(id).name; closeSheet(); go({name: 'home', tab: 'sessions'});
     undoable(t('delSessDone', esc(n)), () => { db.sessions = db.sessions.filter(s => s.id !== id); }); },
@@ -1138,6 +1224,7 @@ const acts = {
     if (!document.getElementById('tour').hidden) openTour(tourIndex());
   },
   tour: () => openTour(),
+  theme: b => { db.settings = {...(db.settings || {}), theme: b.dataset.v}; save(); applyTheme(); render(); },
   tournext: () => { const box = document.getElementById('slides'), i = tourIndex();
     if (i >= box.children.length - 1) closeTour(); else box.scrollTo({left: (i + 1) * box.clientWidth, behavior: 'smooth'}); },
   tourend: closeTour,
@@ -1198,6 +1285,7 @@ document.addEventListener('input', ev => {
 });
 
 setLang();
+applyTheme();
 render();
 restore();
 loadPhotos();

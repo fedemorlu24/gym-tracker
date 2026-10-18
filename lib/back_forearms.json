@@ -1,0 +1,2313 @@
+[
+ {
+  "id": "back.pullUp",
+  "g": "back",
+  "pri": [
+   "lats"
+  ],
+  "sec": [
+   "upperBack",
+   "biceps",
+   "brachialis",
+   "forearms"
+  ],
+  "lvl": 1,
+  "reps": "5–10",
+  "name": {
+   "it": "Trazioni alla sbarra",
+   "en": "Pull-up",
+   "es": "Dominadas",
+   "fr": "Tractions",
+   "de": "Klimmzüge"
+  },
+  "why": {
+   "it": "Costruisce dorsali larghi e forza di trazione a corpo libero.",
+   "en": "Builds wide lats and bodyweight pulling strength.",
+   "es": "Desarrolla dorsales anchos y fuerza de tracción con tu peso.",
+   "fr": "Développe des dorsaux larges et la force de tirage au poids du corps.",
+   "de": "Baut einen breiten Latissimus und Zugkraft mit dem eigenen Körper auf."
+  },
+  "tip": {
+   "it": "Presa prona, parti a braccia tese, spingi i gomiti verso i fianchi e porta il petto alla sbarra. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Overhand grip, start from a dead hang, drive elbows to your hips and bring your chest to the bar. Log the added weight (0 if none).",
+   "es": "Agarre prono, empieza con brazos extendidos, lleva los codos a la cadera y el pecho a la barra. Registra el peso añadido (0 si no hay).",
+   "fr": "Prise pronation, partez bras tendus, tirez les coudes vers les hanches et amenez la poitrine à la barre. Notez la charge ajoutée (0 si aucune).",
+   "de": "Obergriff, starte im toten Hang, zieh die Ellbogen zur Hüfte und die Brust zur Stange. Trage das Zusatzgewicht ein (0, wenn keins)."
+  },
+  "variants": [
+   {
+    "id": "back.pullUp.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni presa prona",
+     "en": "Overhand pull-up",
+     "es": "Dominadas en pronación",
+     "fr": "Tractions en pronation",
+     "de": "Klimmzüge im Obergriff"
+    }
+   },
+   {
+    "id": "back.pullUp.wideGrip",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni presa larga",
+     "en": "Wide-grip pull-up",
+     "es": "Dominadas con agarre ancho",
+     "fr": "Tractions prise large",
+     "de": "Klimmzüge mit breitem Griff"
+    },
+    "note": {
+     "it": "Più enfasi sulla larghezza dei dorsali, ROM più corto. Registra il peso aggiunto (0 se nessuno).",
+     "en": "More lat-width focus, shorter range. Log the added weight (0 if none).",
+     "es": "Más énfasis en la anchura dorsal, recorrido menor. Registra el peso añadido (0 si no hay).",
+     "fr": "Plus d'accent sur la largeur du dos, amplitude réduite. Notez la charge ajoutée (0 si aucune).",
+     "de": "Mehr Fokus auf Rückenbreite, kürzerer Weg. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   },
+   {
+    "id": "back.pullUp.neutralGrip",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni presa neutra",
+     "en": "Neutral-grip pull-up",
+     "es": "Dominadas con agarre neutro",
+     "fr": "Tractions prise neutre",
+     "de": "Klimmzüge mit neutralem Griff"
+    },
+    "note": {
+     "it": "Palmi frontali tra loro, più comode per spalle e gomiti. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Palms facing, easier on shoulders and elbows. Log the added weight (0 if none).",
+     "es": "Palmas enfrentadas, más cómodas para hombros y codos. Registra el peso añadido (0 si no hay).",
+     "fr": "Paumes face à face, plus confortable pour épaules et coudes. Notez la charge ajoutée (0 si aucune).",
+     "de": "Handflächen zueinander, schonender für Schultern und Ellbogen. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   },
+   {
+    "id": "back.pullUp.weighted",
+    "eq": "plate",
+    "name": {
+     "it": "Trazioni zavorrate",
+     "en": "Weighted pull-up",
+     "es": "Dominadas lastradas",
+     "fr": "Tractions lestées",
+     "de": "Klimmzüge mit Zusatzgewicht"
+    },
+    "note": {
+     "it": "Aggiungi peso con cintura o giubbotto. Registra il peso aggiunto.",
+     "en": "Add load with a dip belt or vest. Log the added weight.",
+     "es": "Añade carga con cinturón o chaleco. Registra el peso añadido.",
+     "fr": "Ajoutez de la charge avec ceinture ou gilet. Notez la charge ajoutée.",
+     "de": "Mit Dip-Gürtel oder Weste beschweren. Trage das Zusatzgewicht ein."
+    }
+   },
+   {
+    "id": "back.pullUp.assistedMachine",
+    "eq": "machine",
+    "name": {
+     "it": "Trazioni alla macchina assistita",
+     "en": "Assisted pull-up machine",
+     "es": "Dominadas en máquina asistida",
+     "fr": "Tractions à la machine assistée",
+     "de": "Klimmzüge an der Assistenzmaschine"
+    },
+    "note": {
+     "it": "Il contrappeso ti aiuta: più peso = più facile. Registra il contrappeso.",
+     "en": "The counterweight helps: more weight = easier. Log the counterweight.",
+     "es": "El contrapeso te ayuda: más peso = más fácil. Registra el contrapeso.",
+     "fr": "Le contrepoids aide : plus de poids = plus facile. Notez le contrepoids.",
+     "de": "Das Gegengewicht hilft: mehr Gewicht = leichter. Trage das Gegengewicht ein."
+    }
+   },
+   {
+    "id": "back.pullUp.bandAssisted",
+    "eq": "band",
+    "name": {
+     "it": "Trazioni assistite con elastico",
+     "en": "Band-assisted pull-up",
+     "es": "Dominadas asistidas con banda",
+     "fr": "Tractions assistées avec élastique",
+     "de": "Klimmzüge mit Band-Unterstützung"
+    },
+    "note": {
+     "it": "Elastico sotto ginocchio o piede, l'aiuto cala in alto.",
+     "en": "Band under knee or foot, help drops near the top.",
+     "es": "Banda bajo la rodilla o el pie, ayuda menos arriba.",
+     "fr": "Élastique sous le genou ou le pied, l'aide diminue en haut.",
+     "de": "Band unter Knie oder Fuß, oben hilft es weniger."
+    }
+   },
+   {
+    "id": "back.pullUp.negative",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni negative",
+     "en": "Negative pull-up",
+     "es": "Dominadas negativas",
+     "fr": "Tractions négatives",
+     "de": "Negative Klimmzüge"
+    },
+    "note": {
+     "it": "Salta in alto e scendi lentamente in 3–5 s. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Jump to the top and lower slowly over 3–5 s. Log the added weight (0 if none).",
+     "es": "Sube de un salto y baja lento en 3–5 s. Registra el peso añadido (0 si no hay).",
+     "fr": "Montez en sautant et descendez lentement en 3–5 s. Notez la charge ajoutée (0 si aucune).",
+     "de": "Spring hoch und lass dich in 3–5 s langsam ab. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.chinUp",
+  "g": "back",
+  "pri": [
+   "lats",
+   "biceps"
+  ],
+  "sec": [
+   "upperBack",
+   "brachialis",
+   "forearms"
+  ],
+  "lvl": 1,
+  "reps": "5–10",
+  "name": {
+   "it": "Trazioni presa supina",
+   "en": "Chin-up",
+   "es": "Dominadas supinas",
+   "fr": "Tractions en supination",
+   "de": "Klimmzüge im Untergriff"
+  },
+  "why": {
+   "it": "Trazione verticale che allena dorsali e bicipiti insieme.",
+   "en": "Vertical pull that trains lats and biceps together.",
+   "es": "Tracción vertical que trabaja dorsales y bíceps a la vez.",
+   "fr": "Tirage vertical qui travaille dorsaux et biceps ensemble.",
+   "de": "Vertikaler Zug für Latissimus und Bizeps zugleich."
+  },
+  "tip": {
+   "it": "Palmi verso di te, mani alla larghezza delle spalle, mento sopra la sbarra senza slanci. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Palms toward you, hands shoulder-width, chin over the bar without kipping. Log the added weight (0 if none).",
+   "es": "Palmas hacia ti, manos al ancho de hombros, barbilla sobre la barra sin balanceo. Registra el peso añadido (0 si no hay).",
+   "fr": "Paumes vers vous, mains à largeur d'épaules, menton au-dessus de la barre sans élan. Notez la charge ajoutée (0 si aucune).",
+   "de": "Handflächen zu dir, Hände schulterbreit, Kinn über die Stange ohne Schwung. Trage das Zusatzgewicht ein (0, wenn keins)."
+  },
+  "variants": [
+   {
+    "id": "back.chinUp.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni presa supina a corpo libero",
+     "en": "Bodyweight chin-up",
+     "es": "Dominadas supinas con peso corporal",
+     "fr": "Tractions supination au poids du corps",
+     "de": "Klimmzüge im Untergriff mit Körpergewicht"
+    }
+   },
+   {
+    "id": "back.chinUp.weighted",
+    "eq": "plate",
+    "name": {
+     "it": "Trazioni presa supina zavorrate",
+     "en": "Weighted chin-up",
+     "es": "Dominadas supinas lastradas",
+     "fr": "Tractions supination lestées",
+     "de": "Klimmzüge im Untergriff mit Zusatzgewicht"
+    },
+    "note": {
+     "it": "Peso con cintura o giubbotto. Registra il peso aggiunto.",
+     "en": "Load with a dip belt or vest. Log the added weight.",
+     "es": "Carga con cinturón o chaleco. Registra el peso añadido.",
+     "fr": "Charge avec ceinture ou gilet. Notez la charge ajoutée.",
+     "de": "Mit Gürtel oder Weste beschweren. Trage das Zusatzgewicht ein."
+    }
+   },
+   {
+    "id": "back.chinUp.assistedMachine",
+    "eq": "machine",
+    "name": {
+     "it": "Trazioni supine alla macchina assistita",
+     "en": "Assisted chin-up machine",
+     "es": "Dominadas supinas en máquina asistida",
+     "fr": "Tractions supination à la machine assistée",
+     "de": "Untergriff-Klimmzüge an der Assistenzmaschine"
+    },
+    "note": {
+     "it": "Più contrappeso = più facile. Registra il contrappeso.",
+     "en": "More counterweight = easier. Log the counterweight.",
+     "es": "Más contrapeso = más fácil. Registra el contrapeso.",
+     "fr": "Plus de contrepoids = plus facile. Notez le contrepoids.",
+     "de": "Mehr Gegengewicht = leichter. Trage das Gegengewicht ein."
+    }
+   },
+   {
+    "id": "back.chinUp.bandAssisted",
+    "eq": "band",
+    "name": {
+     "it": "Trazioni supine assistite con elastico",
+     "en": "Band-assisted chin-up",
+     "es": "Dominadas supinas asistidas con banda",
+     "fr": "Tractions supination assistées avec élastique",
+     "de": "Untergriff-Klimmzüge mit Band-Unterstützung"
+    }
+   },
+   {
+    "id": "back.chinUp.negative",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Trazioni supine negative",
+     "en": "Negative chin-up",
+     "es": "Dominadas supinas negativas",
+     "fr": "Tractions supination négatives",
+     "de": "Negative Klimmzüge im Untergriff"
+    },
+    "note": {
+     "it": "Parti dall'alto e scendi in 3–5 s. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Start at the top and lower over 3–5 s. Log the added weight (0 if none).",
+     "es": "Empieza arriba y baja en 3–5 s. Registra el peso añadido (0 si no hay).",
+     "fr": "Partez en haut et descendez en 3–5 s. Notez la charge ajoutée (0 si aucune).",
+     "de": "Starte oben und lass dich in 3–5 s ab. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.latPulldown",
+  "g": "back",
+  "pri": [
+   "lats"
+  ],
+  "sec": [
+   "upperBack",
+   "biceps",
+   "rearDelt"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Lat machine",
+   "en": "Lat pulldown",
+   "es": "Jalón al pecho",
+   "fr": "Tirage vertical",
+   "de": "Latziehen"
+  },
+  "why": {
+   "it": "Allena i dorsali con carico regolabile, ottima base verso le trazioni.",
+   "en": "Trains the lats with adjustable load, a great step toward pull-ups.",
+   "es": "Trabaja los dorsales con carga regulable, ideal antes de las dominadas.",
+   "fr": "Travaille les dorsaux avec charge réglable, idéal pour préparer les tractions.",
+   "de": "Trainiert den Latissimus mit einstellbarem Gewicht, ideal als Vorstufe zu Klimmzügen."
+  },
+  "tip": {
+   "it": "Cosce bloccate, busto appena inclinato indietro, tira la barra al petto alto spingendo giù i gomiti.",
+   "en": "Thighs locked in, torso slightly back, pull the bar to your upper chest driving elbows down.",
+   "es": "Muslos fijos, torso un poco atrás, lleva la barra al pecho alto bajando los codos.",
+   "fr": "Cuisses calées, buste légèrement en arrière, tirez la barre au haut de la poitrine en abaissant les coudes.",
+   "de": "Oberschenkel fixiert, Oberkörper leicht zurück, zieh die Stange zur oberen Brust, Ellbogen nach unten."
+  },
+  "variants": [
+   {
+    "id": "back.latPulldown.wideGrip",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine presa larga",
+     "en": "Wide-grip lat pulldown",
+     "es": "Jalón al pecho agarre ancho",
+     "fr": "Tirage vertical prise large",
+     "de": "Latziehen mit breitem Griff"
+    }
+   },
+   {
+    "id": "back.latPulldown.closeGrip",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine presa stretta (triangolo)",
+     "en": "Close-grip V-handle lat pulldown",
+     "es": "Jalón al pecho agarre estrecho con triángulo",
+     "fr": "Tirage vertical prise serrée au triangle",
+     "de": "Latziehen eng mit V-Griff"
+    },
+    "note": {
+     "it": "Più ROM e lavoro sulla parte bassa dei dorsali.",
+     "en": "Longer range, more lower-lat work.",
+     "es": "Más recorrido y trabajo del dorsal bajo.",
+     "fr": "Plus d'amplitude, travail du bas des dorsaux.",
+     "de": "Mehr Bewegungsweg, mehr unterer Latissimus."
+    }
+   },
+   {
+    "id": "back.latPulldown.underhand",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine presa supina",
+     "en": "Underhand lat pulldown",
+     "es": "Jalón al pecho agarre supino",
+     "fr": "Tirage vertical prise supination",
+     "de": "Latziehen im Untergriff"
+    },
+    "note": {
+     "it": "Più bicipite, gomiti vicini al corpo.",
+     "en": "More biceps, elbows close to the body.",
+     "es": "Más bíceps, codos cerca del cuerpo.",
+     "fr": "Plus de biceps, coudes près du corps.",
+     "de": "Mehr Bizeps, Ellbogen nah am Körper."
+    }
+   },
+   {
+    "id": "back.latPulldown.neutralWide",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine presa neutra larga",
+     "en": "Wide neutral-grip lat pulldown",
+     "es": "Jalón al pecho agarre neutro ancho",
+     "fr": "Tirage vertical prise neutre large",
+     "de": "Latziehen mit breitem Neutralgriff"
+    },
+    "note": {
+     "it": "Maniglie parallele, comodo per le spalle.",
+     "en": "Parallel handles, shoulder-friendly.",
+     "es": "Agarres paralelos, cómodo para los hombros.",
+     "fr": "Poignées parallèles, ménage les épaules.",
+     "de": "Parallelgriffe, schulterfreundlich."
+    }
+   },
+   {
+    "id": "back.latPulldown.singleArm",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine a un braccio",
+     "en": "Single-arm lat pulldown",
+     "es": "Jalón a una mano",
+     "fr": "Tirage vertical unilatéral",
+     "de": "Einarmiges Latziehen"
+    },
+    "note": {
+     "it": "Lavora un lato alla volta per correggere squilibri.",
+     "en": "One side at a time to fix imbalances.",
+     "es": "Un lado cada vez para corregir desequilibrios.",
+     "fr": "Un côté à la fois pour corriger les déséquilibres.",
+     "de": "Eine Seite nach der anderen gegen Dysbalancen."
+    }
+   },
+   {
+    "id": "back.latPulldown.kneeling",
+    "eq": "cable",
+    "name": {
+     "it": "Lat machine in ginocchio al cavo alto",
+     "en": "Kneeling cable pulldown",
+     "es": "Jalón de rodillas en polea alta",
+     "fr": "Tirage vertical à genoux à la poulie haute",
+     "de": "Kniendes Latziehen am Kabelzug"
+    }
+   },
+   {
+    "id": "back.latPulldown.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Lat machine a leve (plate loaded)",
+     "en": "Machine lat pulldown",
+     "es": "Jalón en máquina de palancas",
+     "fr": "Tirage vertical à la machine à leviers",
+     "de": "Latziehen an der Hebelmaschine"
+    },
+    "note": {
+     "it": "Leve indipendenti e traiettoria guidata.",
+     "en": "Independent arms and a guided path.",
+     "es": "Brazos independientes y trayectoria guiada.",
+     "fr": "Bras indépendants et trajectoire guidée.",
+     "de": "Unabhängige Hebel und geführte Bahn."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.straightArmPulldown",
+  "g": "back",
+  "pri": [
+   "lats"
+  ],
+  "sec": [
+   "triceps",
+   "rearDelt",
+   "abs"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Pulldown a braccia tese",
+   "en": "Straight-arm pulldown",
+   "es": "Pullover en polea alta con brazos rectos",
+   "fr": "Tirage bras tendus à la poulie",
+   "de": "Überzüge am Kabel mit gestreckten Armen"
+  },
+  "why": {
+   "it": "Isola i dorsali senza l'aiuto dei bicipiti.",
+   "en": "Isolates the lats without help from the biceps.",
+   "es": "Aísla los dorsales sin ayuda de los bíceps.",
+   "fr": "Isole les dorsaux sans l'aide des biceps.",
+   "de": "Isoliert den Latissimus ohne Hilfe des Bizeps."
+  },
+  "tip": {
+   "it": "Busto inclinato, gomiti quasi tesi e fissi, porta la barra alle cosce spingendo con i dorsali.",
+   "en": "Hinge forward, elbows soft and fixed, sweep the bar to your thighs using your lats.",
+   "es": "Torso inclinado, codos casi rectos y fijos, lleva la barra a los muslos con los dorsales.",
+   "fr": "Buste incliné, coudes presque tendus et fixes, ramenez la barre aux cuisses avec les dorsaux.",
+   "de": "Oberkörper vorgeneigt, Ellbogen fast gestreckt und fix, führe die Stange mit dem Lat zu den Oberschenkeln."
+  },
+  "variants": [
+   {
+    "id": "back.straightArmPulldown.bar",
+    "eq": "cable",
+    "name": {
+     "it": "Pulldown a braccia tese con barra",
+     "en": "Straight-arm pulldown with bar",
+     "es": "Pullover en polea con barra",
+     "fr": "Tirage bras tendus à la barre",
+     "de": "Überzüge am Kabel mit Stange"
+    }
+   },
+   {
+    "id": "back.straightArmPulldown.rope",
+    "eq": "cable",
+    "name": {
+     "it": "Pulldown a braccia tese con corda",
+     "en": "Straight-arm pulldown with rope",
+     "es": "Pullover en polea con cuerda",
+     "fr": "Tirage bras tendus à la corde",
+     "de": "Überzüge am Kabel mit Seil"
+    },
+    "note": {
+     "it": "La corda permette di aprire le mani in fondo.",
+     "en": "The rope lets you spread your hands at the end.",
+     "es": "La cuerda permite separar las manos al final.",
+     "fr": "La corde permet d'écarter les mains en fin de mouvement.",
+     "de": "Mit dem Seil kannst du die Hände am Ende auseinanderziehen."
+    }
+   },
+   {
+    "id": "back.straightArmPulldown.singleArm",
+    "eq": "cable",
+    "name": {
+     "it": "Pulldown a braccio teso singolo",
+     "en": "Single-arm straight-arm pulldown",
+     "es": "Pullover en polea a una mano",
+     "fr": "Tirage bras tendu unilatéral",
+     "de": "Einarmige Überzüge am Kabel"
+    }
+   },
+   {
+    "id": "back.straightArmPulldown.band",
+    "eq": "band",
+    "name": {
+     "it": "Pulldown a braccia tese con elastico",
+     "en": "Band straight-arm pulldown",
+     "es": "Pullover con banda y brazos rectos",
+     "fr": "Tirage bras tendus à l'élastique",
+     "de": "Überzüge mit Band und gestreckten Armen"
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.bentOverRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps",
+   "lowerBack",
+   "hams"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "Rematore con bilanciere",
+   "en": "Bent-over row",
+   "es": "Remo inclinado",
+   "fr": "Rowing buste penché",
+   "de": "Vorgebeugtes Rudern"
+  },
+  "why": {
+   "it": "Costruisce spessore della schiena e forza di trazione orizzontale.",
+   "en": "Builds back thickness and horizontal pulling strength.",
+   "es": "Da grosor a la espalda y fuerza de tracción horizontal.",
+   "fr": "Donne de l'épaisseur au dos et de la force de tirage horizontal.",
+   "de": "Baut Rückendicke und horizontale Zugkraft auf."
+  },
+  "tip": {
+   "it": "Busto a 30–45° dal pavimento, schiena neutra, tira il bilanciere all'ombelico stringendo le scapole.",
+   "en": "Torso 30–45° from the floor, neutral spine, pull the bar to your navel squeezing your shoulder blades.",
+   "es": "Torso a 30–45° del suelo, espalda neutra, lleva la barra al ombligo juntando escápulas.",
+   "fr": "Buste à 30–45° du sol, dos neutre, tirez la barre au nombril en serrant les omoplates.",
+   "de": "Oberkörper 30–45° zum Boden, neutraler Rücken, zieh die Stange zum Bauchnabel und zieh die Schulterblätter zusammen."
+  },
+  "variants": [
+   {
+    "id": "back.bentOverRow.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Rematore con bilanciere presa prona",
+     "en": "Overhand barbell row",
+     "es": "Remo con barra agarre prono",
+     "fr": "Rowing barre prise pronation",
+     "de": "Langhantelrudern im Obergriff"
+    }
+   },
+   {
+    "id": "back.bentOverRow.yates",
+    "eq": "barbell",
+    "name": {
+     "it": "Rematore Yates (presa supina)",
+     "en": "Yates row (underhand)",
+     "es": "Remo Yates (agarre supino)",
+     "fr": "Rowing Yates (prise supination)",
+     "de": "Yates-Rudern (Untergriff)"
+    },
+    "note": {
+     "it": "Busto più alto, presa supina, più dorsali bassi e bicipiti.",
+     "en": "More upright, underhand grip, more lower lats and biceps.",
+     "es": "Torso más erguido, agarre supino, más dorsal bajo y bíceps.",
+     "fr": "Buste plus redressé, prise supination, plus de bas des dorsaux et de biceps.",
+     "de": "Aufrechter, Untergriff, mehr unterer Lat und Bizeps."
+    }
+   },
+   {
+    "id": "back.bentOverRow.pendlay",
+    "eq": "barbell",
+    "name": {
+     "it": "Pendlay row",
+     "en": "Pendlay row",
+     "es": "Remo Pendlay",
+     "fr": "Rowing Pendlay",
+     "de": "Pendlay-Rudern"
+    },
+    "note": {
+     "it": "Busto parallelo al suolo, ogni rip parte da terra.",
+     "en": "Torso parallel to the floor, each rep starts from the floor.",
+     "es": "Torso paralelo al suelo, cada rep parte del suelo.",
+     "fr": "Buste parallèle au sol, chaque répétition part du sol.",
+     "de": "Oberkörper parallel zum Boden, jede Wiederholung startet am Boden."
+    }
+   },
+   {
+    "id": "back.bentOverRow.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Rematore al Multipower",
+     "en": "Smith machine row",
+     "es": "Remo en máquina Smith",
+     "fr": "Rowing à la Smith machine",
+     "de": "Rudern an der Multipresse"
+    },
+    "note": {
+     "it": "Traiettoria guidata, più facile stabilizzare.",
+     "en": "Guided path, easier to stabilise.",
+     "es": "Trayectoria guiada, más fácil de estabilizar.",
+     "fr": "Trajectoire guidée, plus facile à stabiliser.",
+     "de": "Geführte Bahn, leichter zu stabilisieren."
+    }
+   },
+   {
+    "id": "back.bentOverRow.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Rematore con bilanciere EZ",
+     "en": "EZ-bar bent-over row",
+     "es": "Remo inclinado con barra Z",
+     "fr": "Rowing buste penché à la barre EZ",
+     "de": "Vorgebeugtes Rudern mit SZ-Stange"
+    }
+   },
+   {
+    "id": "back.bentOverRow.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Rematore con due manubri",
+     "en": "Two-arm dumbbell row",
+     "es": "Remo con dos mancuernas",
+     "fr": "Rowing buste penché aux haltères",
+     "de": "Vorgebeugtes Rudern mit Kurzhanteln"
+    },
+    "note": {
+     "it": "Ogni braccio lavora libero, presa neutra possibile.",
+     "en": "Each arm moves freely, neutral grip possible.",
+     "es": "Cada brazo se mueve libre, agarre neutro posible.",
+     "fr": "Chaque bras travaille librement, prise neutre possible.",
+     "de": "Jeder Arm frei, Neutralgriff möglich."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.oneArmRow",
+  "g": "back",
+  "pri": [
+   "lats",
+   "upperBack"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps",
+   "obliques"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Rematore con manubrio a un braccio",
+   "en": "One-arm dumbbell row",
+   "es": "Remo con mancuerna a una mano",
+   "fr": "Rowing unilatéral à l'haltère",
+   "de": "Einarmiges Kurzhantelrudern"
+  },
+  "why": {
+   "it": "Lavora un lato alla volta con ampio ROM e schiena protetta.",
+   "en": "Works one side at a time with long range and a supported back.",
+   "es": "Trabaja un lado cada vez con gran recorrido y espalda apoyada.",
+   "fr": "Travaille un côté à la fois avec grande amplitude et dos soutenu.",
+   "de": "Trainiert jede Seite einzeln mit großem Weg und gestütztem Rücken."
+  },
+  "tip": {
+   "it": "Mano e ginocchio sulla panca, schiena piatta, tira il manubrio verso l'anca senza ruotare il busto.",
+   "en": "Hand and knee on the bench, flat back, pull the dumbbell toward your hip without twisting.",
+   "es": "Mano y rodilla en el banco, espalda plana, lleva la mancuerna a la cadera sin girar.",
+   "fr": "Main et genou sur le banc, dos plat, tirez l'haltère vers la hanche sans pivoter.",
+   "de": "Hand und Knie auf der Bank, flacher Rücken, zieh die Hantel zur Hüfte ohne zu verdrehen."
+  },
+  "variants": [
+   {
+    "id": "back.oneArmRow.bench",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Rematore con manubrio in appoggio sulla panca",
+     "en": "Bench-supported one-arm dumbbell row",
+     "es": "Remo con mancuerna apoyado en banco",
+     "fr": "Rowing haltère appui sur banc",
+     "de": "Einarmiges Kurzhantelrudern an der Bank"
+    }
+   },
+   {
+    "id": "back.oneArmRow.standing",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Rematore con manubrio in piedi con appoggio",
+     "en": "Standing one-arm dumbbell row",
+     "es": "Remo con mancuerna de pie con apoyo",
+     "fr": "Rowing haltère debout avec appui",
+     "de": "Einarmiges Kurzhantelrudern stehend mit Abstützen"
+    },
+    "note": {
+     "it": "Mano su un supporto e piedi sfalsati, più carico possibile.",
+     "en": "Hand on a support, staggered feet, allows heavier loads.",
+     "es": "Mano en un soporte y pies escalonados, permite más carga.",
+     "fr": "Main sur un support, pieds décalés, permet plus de charge.",
+     "de": "Hand abgestützt, Schrittstellung, erlaubt mehr Gewicht."
+    }
+   },
+   {
+    "id": "back.oneArmRow.kettlebell",
+    "eq": "kettlebell",
+    "name": {
+     "it": "Rematore con kettlebell a un braccio",
+     "en": "One-arm kettlebell row",
+     "es": "Remo con kettlebell a una mano",
+     "fr": "Rowing unilatéral au kettlebell",
+     "de": "Einarmiges Kettlebell-Rudern"
+    }
+   },
+   {
+    "id": "back.oneArmRow.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Rematore al cavo a un braccio",
+     "en": "Single-arm cable row",
+     "es": "Remo en polea a una mano",
+     "fr": "Rowing unilatéral à la poulie",
+     "de": "Einarmiges Kabelrudern"
+    },
+    "note": {
+     "it": "Tensione costante, puoi ruotare leggermente il busto.",
+     "en": "Constant tension, slight torso rotation allowed.",
+     "es": "Tensión constante, puedes rotar un poco el torso.",
+     "fr": "Tension constante, légère rotation du buste possible.",
+     "de": "Konstante Spannung, leichte Rumpfrotation erlaubt."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.chestSupportedRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Rematore con petto in appoggio",
+   "en": "Chest-supported row",
+   "es": "Remo con pecho apoyado",
+   "fr": "Rowing poitrine appuyée",
+   "de": "Brustgestütztes Rudern"
+  },
+  "why": {
+   "it": "Allena la schiena alta senza stress lombare né slanci.",
+   "en": "Trains the upper back with no lower-back strain or cheating.",
+   "es": "Trabaja la espalda alta sin carga lumbar ni impulso.",
+   "fr": "Travaille le haut du dos sans contrainte lombaire ni élan.",
+   "de": "Trainiert den oberen Rücken ohne Belastung der Lendenwirbelsäule und ohne Schwung."
+  },
+  "tip": {
+   "it": "Petto ben appoggiato, collo neutro, tira i gomiti indietro e stringi le scapole in alto.",
+   "en": "Chest firmly on the pad, neutral neck, drive elbows back and squeeze your shoulder blades at the top.",
+   "es": "Pecho bien apoyado, cuello neutro, lleva los codos atrás y junta escápulas arriba.",
+   "fr": "Poitrine bien appuyée, nuque neutre, tirez les coudes en arrière et serrez les omoplates en haut.",
+   "de": "Brust fest am Polster, Nacken neutral, Ellbogen nach hinten und oben die Schulterblätter zusammenziehen."
+  },
+  "variants": [
+   {
+    "id": "back.chestSupportedRow.inclineDumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Rematore su panca inclinata con manubri",
+     "en": "Incline dumbbell row",
+     "es": "Remo en banco inclinado con mancuernas",
+     "fr": "Rowing haltères sur banc incliné",
+     "de": "Kurzhantelrudern auf der Schrägbank"
+    }
+   },
+   {
+    "id": "back.chestSupportedRow.sealRow",
+    "eq": "barbell",
+    "name": {
+     "it": "Seal row con bilanciere",
+     "en": "Barbell seal row",
+     "es": "Remo foca con barra",
+     "fr": "Seal row à la barre",
+     "de": "Seal Row mit Langhantel"
+    },
+    "note": {
+     "it": "Prono su panca alta, busto orizzontale, nessun aiuto delle gambe.",
+     "en": "Prone on a high bench, torso flat, zero leg drive.",
+     "es": "Tumbado en banco alto, torso horizontal, sin ayuda de piernas.",
+     "fr": "Allongé sur banc haut, buste à l'horizontale, aucun élan des jambes.",
+     "de": "Bauchlage auf hoher Bank, Oberkörper waagerecht, kein Beinschwung."
+    }
+   },
+   {
+    "id": "back.chestSupportedRow.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Rematore a petto appoggiato alla macchina",
+     "en": "Chest-supported machine row",
+     "es": "Remo en máquina con pecho apoyado",
+     "fr": "Rowing machine poitrine appuyée",
+     "de": "Brustgestütztes Rudern an der Maschine"
+    }
+   },
+   {
+    "id": "back.chestSupportedRow.tBarMachine",
+    "eq": "machine",
+    "name": {
+     "it": "T-bar row con appoggio al petto",
+     "en": "Chest-supported T-bar row",
+     "es": "Remo en T con pecho apoyado",
+     "fr": "Rowing T-bar poitrine appuyée",
+     "de": "Brustgestütztes T-Bar-Rudern"
+    },
+    "note": {
+     "it": "Più carico e diverse prese, schiena protetta.",
+     "en": "Heavier loading and several grips, back protected.",
+     "es": "Más carga y varios agarres, espalda protegida.",
+     "fr": "Plus de charge et plusieurs prises, dos protégé.",
+     "de": "Mehr Gewicht und mehrere Griffe, Rücken geschützt."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.tBarRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps",
+   "lowerBack"
+  ],
+  "lvl": 1,
+  "reps": "6–10",
+  "name": {
+   "it": "T-bar row",
+   "en": "T-bar row",
+   "es": "Remo en T",
+   "fr": "Rowing T-bar",
+   "de": "T-Bar-Rudern"
+  },
+  "why": {
+   "it": "Rematore pesante e stabile per lo spessore della schiena.",
+   "en": "A heavy, stable row for back thickness.",
+   "es": "Remo pesado y estable para dar grosor a la espalda.",
+   "fr": "Rowing lourd et stable pour l'épaisseur du dos.",
+   "de": "Schweres, stabiles Rudern für Rückendicke."
+  },
+  "tip": {
+   "it": "Gambe a cavallo della barra, anche indietro, schiena neutra, tira la maniglia al petto basso.",
+   "en": "Straddle the bar, hips back, neutral spine, pull the handle to your lower chest.",
+   "es": "Piernas a cada lado de la barra, cadera atrás, espalda neutra, lleva el agarre al pecho bajo.",
+   "fr": "Jambes de part et d'autre de la barre, hanches en arrière, dos neutre, tirez la poignée au bas de la poitrine.",
+   "de": "Über der Stange stehen, Hüfte zurück, neutraler Rücken, zieh den Griff zur unteren Brust."
+  },
+  "variants": [
+   {
+    "id": "back.tBarRow.landmine",
+    "eq": "landmine",
+    "name": {
+     "it": "T-bar row al landmine con triangolo",
+     "en": "Landmine T-bar row with V-handle",
+     "es": "Remo en T en landmine con triángulo",
+     "fr": "Rowing T-bar au landmine avec triangle",
+     "de": "T-Bar-Rudern an der Landmine mit V-Griff"
+    }
+   },
+   {
+    "id": "back.tBarRow.landmineWide",
+    "eq": "landmine",
+    "name": {
+     "it": "T-bar row al landmine presa larga",
+     "en": "Wide-grip landmine row",
+     "es": "Remo en landmine agarre ancho",
+     "fr": "Rowing landmine prise large",
+     "de": "Landmine-Rudern mit breitem Griff"
+    },
+    "note": {
+     "it": "Maniglia larga, più schiena alta e deltoidi posteriori.",
+     "en": "Wide handle, more upper back and rear delts.",
+     "es": "Agarre ancho, más espalda alta y deltoides posterior.",
+     "fr": "Poignée large, plus de haut du dos et de deltoïdes postérieurs.",
+     "de": "Breiter Griff, mehr oberer Rücken und hintere Schulter."
+    }
+   },
+   {
+    "id": "back.tBarRow.meadows",
+    "eq": "landmine",
+    "name": {
+     "it": "Meadows row",
+     "en": "Meadows row",
+     "es": "Remo Meadows",
+     "fr": "Rowing Meadows",
+     "de": "Meadows-Rudern"
+    },
+    "note": {
+     "it": "Un braccio, presa sull'estremità della barra, busto di lato.",
+     "en": "One arm, grip the end of the bar, stand side-on.",
+     "es": "Un brazo, agarre en el extremo de la barra, de lado.",
+     "fr": "Un bras, prise au bout de la barre, de profil.",
+     "de": "Einarmig, Griff am Stangenende, seitlich stehen."
+    }
+   },
+   {
+    "id": "back.tBarRow.machine",
+    "eq": "machine",
+    "name": {
+     "it": "T-bar row alla macchina",
+     "en": "T-bar row machine",
+     "es": "Remo en T en máquina",
+     "fr": "Rowing T-bar à la machine",
+     "de": "T-Bar-Rudern an der Maschine"
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.seatedCableRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Pulley basso",
+   "en": "Seated cable row",
+   "es": "Remo sentado en polea baja",
+   "fr": "Tirage horizontal à la poulie basse",
+   "de": "Rudern am Kabelzug sitzend"
+  },
+  "why": {
+   "it": "Rematore con tensione costante, facile da imparare e dosare.",
+   "en": "A row with constant tension, easy to learn and adjust.",
+   "es": "Remo con tensión constante, fácil de aprender y ajustar.",
+   "fr": "Rowing à tension constante, facile à apprendre et à doser.",
+   "de": "Rudern mit konstanter Spannung, leicht zu lernen und zu dosieren."
+  },
+  "tip": {
+   "it": "Piedi sulla pedana, ginocchia morbide, busto fermo e dritto, tira all'addome e stringi le scapole.",
+   "en": "Feet on the platform, knees soft, torso still and upright, pull to your stomach and squeeze your blades.",
+   "es": "Pies en la plataforma, rodillas flexionadas, torso quieto y recto, lleva al abdomen y junta escápulas.",
+   "fr": "Pieds sur la plateforme, genoux souples, buste fixe et droit, tirez vers le ventre et serrez les omoplates.",
+   "de": "Füße auf der Plattform, Knie leicht gebeugt, Oberkörper ruhig und aufrecht, zum Bauch ziehen, Schulterblätter zusammen."
+  },
+  "variants": [
+   {
+    "id": "back.seatedCableRow.vHandle",
+    "eq": "cable",
+    "name": {
+     "it": "Pulley basso con triangolo",
+     "en": "Seated cable row with V-handle",
+     "es": "Remo en polea baja con triángulo",
+     "fr": "Tirage poulie basse au triangle",
+     "de": "Kabelrudern mit V-Griff"
+    }
+   },
+   {
+    "id": "back.seatedCableRow.wideBar",
+    "eq": "cable",
+    "name": {
+     "it": "Pulley basso presa larga",
+     "en": "Wide-grip seated cable row",
+     "es": "Remo en polea baja agarre ancho",
+     "fr": "Tirage poulie basse prise large",
+     "de": "Kabelrudern mit breitem Griff"
+    },
+    "note": {
+     "it": "Gomiti più aperti, più schiena alta e deltoidi posteriori.",
+     "en": "Elbows wider, more upper back and rear delts.",
+     "es": "Codos más abiertos, más espalda alta y deltoides posterior.",
+     "fr": "Coudes plus écartés, plus de haut du dos et de deltoïdes postérieurs.",
+     "de": "Ellbogen weiter, mehr oberer Rücken und hintere Schulter."
+    }
+   },
+   {
+    "id": "back.seatedCableRow.underhandBar",
+    "eq": "cable",
+    "name": {
+     "it": "Pulley basso presa supina",
+     "en": "Underhand seated cable row",
+     "es": "Remo en polea baja agarre supino",
+     "fr": "Tirage poulie basse prise supination",
+     "de": "Kabelrudern im Untergriff"
+    },
+    "note": {
+     "it": "Gomiti stretti, più dorsali bassi e bicipiti.",
+     "en": "Elbows tight, more lower lats and biceps.",
+     "es": "Codos pegados, más dorsal bajo y bíceps.",
+     "fr": "Coudes serrés, plus de bas des dorsaux et de biceps.",
+     "de": "Ellbogen eng, mehr unterer Lat und Bizeps."
+    }
+   },
+   {
+    "id": "back.seatedCableRow.rope",
+    "eq": "cable",
+    "name": {
+     "it": "Pulley basso con corda",
+     "en": "Seated cable row with rope",
+     "es": "Remo en polea baja con cuerda",
+     "fr": "Tirage poulie basse à la corde",
+     "de": "Kabelrudern mit Seil"
+    }
+   },
+   {
+    "id": "back.seatedCableRow.singleArm",
+    "eq": "cable",
+    "name": {
+     "it": "Pulley basso a un braccio",
+     "en": "Single-arm seated cable row",
+     "es": "Remo en polea baja a una mano",
+     "fr": "Tirage poulie basse unilatéral",
+     "de": "Einarmiges Kabelrudern sitzend"
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.machineRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps"
+  ],
+  "lvl": 0,
+  "reps": "8–12",
+  "name": {
+   "it": "Rematore alla macchina",
+   "en": "Machine row",
+   "es": "Remo en máquina",
+   "fr": "Rowing à la machine",
+   "de": "Rudern an der Maschine"
+  },
+  "why": {
+   "it": "Rematore guidato e sicuro, ideale per spingere vicino al cedimento.",
+   "en": "A guided, safe row, ideal for training close to failure.",
+   "es": "Remo guiado y seguro, ideal para acercarte al fallo.",
+   "fr": "Rowing guidé et sûr, idéal pour aller près de l'échec.",
+   "de": "Geführtes, sicheres Rudern, ideal für Sätze nahe am Muskelversagen."
+  },
+  "tip": {
+   "it": "Regola il sedile così le maniglie sono a metà petto, tira i gomiti indietro senza staccare il petto.",
+   "en": "Set the seat so handles are mid-chest, drive elbows back without leaving the pad.",
+   "es": "Ajusta el asiento con los agarres a media altura del pecho, codos atrás sin despegar el pecho.",
+   "fr": "Réglez le siège pour avoir les poignées à mi-poitrine, tirez les coudes en arrière sans décoller du coussin.",
+   "de": "Sitz so einstellen, dass die Griffe auf Brustmitte sind, Ellbogen nach hinten, ohne vom Polster zu gehen."
+  },
+  "variants": [
+   {
+    "id": "back.machineRow.seated",
+    "eq": "machine",
+    "name": {
+     "it": "Rematore alla macchina seduto",
+     "en": "Seated row machine",
+     "es": "Remo sentado en máquina",
+     "fr": "Rowing assis à la machine",
+     "de": "Sitzendes Rudern an der Maschine"
+    }
+   },
+   {
+    "id": "back.machineRow.plateLoaded",
+    "eq": "machine",
+    "name": {
+     "it": "Rematore a leve plate loaded",
+     "en": "Plate-loaded row machine",
+     "es": "Remo en máquina de discos",
+     "fr": "Rowing machine à disques",
+     "de": "Rudermaschine mit Scheiben"
+    },
+    "note": {
+     "it": "Leve indipendenti, puoi lavorare un braccio alla volta.",
+     "en": "Independent arms, you can work one side at a time.",
+     "es": "Brazos independientes, puedes ir a una mano.",
+     "fr": "Bras indépendants, possible en unilatéral.",
+     "de": "Unabhängige Hebel, auch einarmig möglich."
+    }
+   },
+   {
+    "id": "back.machineRow.highRow",
+    "eq": "machine",
+    "name": {
+     "it": "High row alla macchina",
+     "en": "Machine high row",
+     "es": "Remo alto en máquina",
+     "fr": "Rowing haut à la machine",
+     "de": "High Row an der Maschine"
+    },
+    "note": {
+     "it": "Tiri dall'alto verso il basso, tra pulldown e rematore.",
+     "en": "Pull from high to low, between a pulldown and a row.",
+     "es": "Tiras de arriba abajo, entre jalón y remo.",
+     "fr": "Tirage de haut en bas, entre tirage vertical et rowing.",
+     "de": "Zug von oben nach unten, zwischen Latziehen und Rudern."
+    }
+   },
+   {
+    "id": "back.machineRow.lowRow",
+    "eq": "machine",
+    "name": {
+     "it": "Low row alla macchina",
+     "en": "Machine low row",
+     "es": "Remo bajo en máquina",
+     "fr": "Rowing bas à la machine",
+     "de": "Low Row an der Maschine"
+    },
+    "note": {
+     "it": "Tiri dal basso verso i fianchi, più dorsali bassi.",
+     "en": "Pull from low toward your hips, more lower lats.",
+     "es": "Tiras desde abajo hacia la cadera, más dorsal bajo.",
+     "fr": "Tirage du bas vers les hanches, plus de bas des dorsaux.",
+     "de": "Zug von unten zur Hüfte, mehr unterer Lat."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.invertedRow",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lats"
+  ],
+  "sec": [
+   "rearDelt",
+   "biceps",
+   "abs"
+  ],
+  "lvl": 0,
+  "reps": "8–15",
+  "name": {
+   "it": "Rematore inverso",
+   "en": "Inverted row",
+   "es": "Remo invertido",
+   "fr": "Rowing inversé",
+   "de": "Umgekehrtes Rudern"
+  },
+  "why": {
+   "it": "Rematore a corpo libero, scalabile e ottimo per le scapole.",
+   "en": "A bodyweight row, easy to scale and great for shoulder blades.",
+   "es": "Remo con peso corporal, escalable y muy bueno para las escápulas.",
+   "fr": "Rowing au poids du corps, modulable et excellent pour les omoplates.",
+   "de": "Rudern mit Körpergewicht, gut skalierbar und top für die Schulterblätter."
+  },
+  "tip": {
+   "it": "Corpo rigido dalla testa ai talloni, tira il petto alla sbarra; più sei orizzontale, più è difficile. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Body rigid from head to heels, pull your chest to the bar; the more horizontal, the harder. Log the added weight (0 if none).",
+   "es": "Cuerpo rígido de cabeza a talones, lleva el pecho a la barra; cuanto más horizontal, más difícil. Registra el peso añadido (0 si no hay).",
+   "fr": "Corps gainé de la tête aux talons, amenez la poitrine à la barre ; plus vous êtes à l'horizontale, plus c'est dur. Notez la charge ajoutée (0 si aucune).",
+   "de": "Körper steif von Kopf bis Ferse, Brust zur Stange; je waagerechter, desto schwerer. Trage das Zusatzgewicht ein (0, wenn keins)."
+  },
+  "variants": [
+   {
+    "id": "back.invertedRow.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Rematore inverso al Multipower",
+     "en": "Smith machine inverted row",
+     "es": "Remo invertido en máquina Smith",
+     "fr": "Rowing inversé à la Smith machine",
+     "de": "Umgekehrtes Rudern an der Multipresse"
+    }
+   },
+   {
+    "id": "back.invertedRow.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Rematore inverso con bilanciere al rack",
+     "en": "Barbell inverted row in a rack",
+     "es": "Remo invertido con barra en rack",
+     "fr": "Rowing inversé à la barre en rack",
+     "de": "Umgekehrtes Rudern mit Langhantel im Rack"
+    }
+   },
+   {
+    "id": "back.invertedRow.suspension",
+    "eq": "suspension",
+    "name": {
+     "it": "Rematore al TRX",
+     "en": "Suspension trainer row",
+     "es": "Remo en TRX",
+     "fr": "Rowing au TRX",
+     "de": "TRX-Rudern"
+    },
+    "note": {
+     "it": "Maniglie instabili, più lavoro del core. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Unstable handles, more core work. Log the added weight (0 if none).",
+     "es": "Agarres inestables, más trabajo de core. Registra el peso añadido (0 si no hay).",
+     "fr": "Poignées instables, plus de gainage. Notez la charge ajoutée (0 si aucune).",
+     "de": "Instabile Griffe, mehr Rumpfarbeit. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   },
+   {
+    "id": "back.invertedRow.feetElevated",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Rematore inverso a piedi rialzati",
+     "en": "Feet-elevated inverted row",
+     "es": "Remo invertido con pies elevados",
+     "fr": "Rowing inversé pieds surélevés",
+     "de": "Umgekehrtes Rudern mit erhöhten Füßen"
+    },
+    "note": {
+     "it": "Versione più difficile. Registra il peso aggiunto (0 se nessuno).",
+     "en": "Harder version. Log the added weight (0 if none).",
+     "es": "Versión más difícil. Registra el peso añadido (0 si no hay).",
+     "fr": "Version plus difficile. Notez la charge ajoutée (0 si aucune).",
+     "de": "Schwerere Variante. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.shrug",
+  "g": "back",
+  "pri": [
+   "traps"
+  ],
+  "sec": [
+   "upperBack",
+   "forearms"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Scrollate",
+   "en": "Shrug",
+   "es": "Encogimientos de hombros",
+   "fr": "Haussements d'épaules",
+   "de": "Shrugs"
+  },
+  "why": {
+   "it": "Sviluppa i trapezi superiori e la forza della presa.",
+   "en": "Builds the upper traps and grip strength.",
+   "es": "Desarrolla el trapecio superior y la fuerza de agarre.",
+   "fr": "Développe les trapèzes supérieurs et la force de préhension.",
+   "de": "Baut den oberen Trapezmuskel und Griffkraft auf."
+  },
+  "tip": {
+   "it": "Braccia tese, solleva le spalle verso le orecchie, pausa di 1 s in alto, niente rotazioni.",
+   "en": "Arms straight, lift your shoulders toward your ears, pause 1 s at the top, no rolling.",
+   "es": "Brazos rectos, sube los hombros hacia las orejas, pausa 1 s arriba, sin rotar.",
+   "fr": "Bras tendus, montez les épaules vers les oreilles, pause de 1 s en haut, sans rotation.",
+   "de": "Arme gestreckt, Schultern Richtung Ohren ziehen, oben 1 s halten, nicht kreisen."
+  },
+  "variants": [
+   {
+    "id": "back.shrug.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Scrollate con bilanciere",
+     "en": "Barbell shrug",
+     "es": "Encogimientos con barra",
+     "fr": "Haussements d'épaules à la barre",
+     "de": "Langhantel-Shrugs"
+    }
+   },
+   {
+    "id": "back.shrug.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Scrollate con manubri",
+     "en": "Dumbbell shrug",
+     "es": "Encogimientos con mancuernas",
+     "fr": "Haussements d'épaules aux haltères",
+     "de": "Kurzhantel-Shrugs"
+    },
+    "note": {
+     "it": "Manubri ai fianchi, traiettoria più naturale.",
+     "en": "Dumbbells at your sides, more natural path.",
+     "es": "Mancuernas a los lados, trayectoria más natural.",
+     "fr": "Haltères le long du corps, trajectoire plus naturelle.",
+     "de": "Hanteln seitlich, natürlichere Bahn."
+    }
+   },
+   {
+    "id": "back.shrug.trapbar",
+    "eq": "trapbar",
+    "name": {
+     "it": "Scrollate con trap bar",
+     "en": "Trap bar shrug",
+     "es": "Encogimientos con barra hexagonal",
+     "fr": "Haussements d'épaules à la trap bar",
+     "de": "Trap-Bar-Shrugs"
+    },
+    "note": {
+     "it": "Presa neutra ai fianchi, permette carichi alti.",
+     "en": "Neutral grip at your sides, allows heavy loads.",
+     "es": "Agarre neutro a los lados, permite mucha carga.",
+     "fr": "Prise neutre sur les côtés, permet de lourdes charges.",
+     "de": "Neutralgriff seitlich, erlaubt hohe Lasten."
+    }
+   },
+   {
+    "id": "back.shrug.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Scrollate al Multipower",
+     "en": "Smith machine shrug",
+     "es": "Encogimientos en máquina Smith",
+     "fr": "Haussements d'épaules à la Smith machine",
+     "de": "Shrugs an der Multipresse"
+    }
+   },
+   {
+    "id": "back.shrug.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Scrollate alla macchina",
+     "en": "Machine shrug",
+     "es": "Encogimientos en máquina",
+     "fr": "Haussements d'épaules à la machine",
+     "de": "Shrugs an der Maschine"
+    }
+   },
+   {
+    "id": "back.shrug.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Scrollate al cavo basso",
+     "en": "Cable shrug",
+     "es": "Encogimientos en polea baja",
+     "fr": "Haussements d'épaules à la poulie basse",
+     "de": "Shrugs am Kabelzug"
+    },
+    "note": {
+     "it": "Tensione costante anche in basso.",
+     "en": "Constant tension, even at the bottom.",
+     "es": "Tensión constante también abajo.",
+     "fr": "Tension constante, même en bas.",
+     "de": "Konstante Spannung auch unten."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.backExtension",
+  "g": "back",
+  "pri": [
+   "lowerBack"
+  ],
+  "sec": [
+   "glutes",
+   "hams"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Hyperextension",
+   "en": "Back extension",
+   "es": "Hiperextensiones",
+   "fr": "Extensions lombaires",
+   "de": "Rückenstrecken"
+  },
+  "why": {
+   "it": "Rinforza lombari, glutei e femorali per una schiena più solida.",
+   "en": "Strengthens lower back, glutes and hamstrings for a sturdier back.",
+   "es": "Fortalece lumbares, glúteos e isquios para una espalda más sólida.",
+   "fr": "Renforce lombaires, fessiers et ischios pour un dos plus solide.",
+   "de": "Stärkt unteren Rücken, Gesäß und Beinbeuger für einen stabileren Rücken."
+  },
+  "tip": {
+   "it": "Bacino appena sopra il cuscino, scendi controllato e risali fino ad allinearti, senza iperestendere. Registra il peso aggiunto (0 se nessuno).",
+   "en": "Hips just above the pad, lower under control and rise until in line, without overarching. Log the added weight (0 if none).",
+   "es": "Cadera justo sobre el cojín, baja controlado y sube hasta alinearte, sin hiperextender. Registra el peso añadido (0 si no hay).",
+   "fr": "Bassin juste au-dessus du coussin, descendez contrôlé et remontez jusqu'à l'alignement, sans cambrer. Notez la charge ajoutée (0 si aucune).",
+   "de": "Hüfte knapp über dem Polster, kontrolliert absenken und bis zur Linie hochkommen, nicht überstrecken. Trage das Zusatzgewicht ein (0, wenn keins)."
+  },
+  "variants": [
+   {
+    "id": "back.backExtension.deg45",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Hyperextension a 45°",
+     "en": "45° back extension",
+     "es": "Hiperextensiones a 45°",
+     "fr": "Extensions lombaires à 45°",
+     "de": "Rückenstrecken an der 45°-Bank"
+    }
+   },
+   {
+    "id": "back.backExtension.deg45Plate",
+    "eq": "plate",
+    "name": {
+     "it": "Hyperextension a 45° con disco",
+     "en": "Weighted 45° back extension",
+     "es": "Hiperextensiones a 45° con disco",
+     "fr": "Extensions lombaires à 45° lestées",
+     "de": "Rückenstrecken an der 45°-Bank mit Scheibe"
+    },
+    "note": {
+     "it": "Disco al petto. Registra il peso del disco.",
+     "en": "Hold a plate to your chest. Log the plate weight.",
+     "es": "Disco al pecho. Registra el peso del disco.",
+     "fr": "Disque contre la poitrine. Notez le poids du disque.",
+     "de": "Scheibe an der Brust. Trage das Scheibengewicht ein."
+    }
+   },
+   {
+    "id": "back.backExtension.deg90",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Hyperextension a 90° (orizzontale)",
+     "en": "90° back extension",
+     "es": "Hiperextensiones a 90°",
+     "fr": "Extensions lombaires à 90°",
+     "de": "Rückenstrecken am 90°-Gerät"
+    },
+    "note": {
+     "it": "Panca orizzontale, carico maggiore in alto.",
+     "en": "Horizontal bench, more load at the top.",
+     "es": "Banco horizontal, más carga arriba.",
+     "fr": "Banc horizontal, plus de charge en haut.",
+     "de": "Waagerechte Bank, oben mehr Belastung."
+    }
+   },
+   {
+    "id": "back.backExtension.glute",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Hyperextension a 45° per glutei",
+     "en": "Glute-focused 45° back extension",
+     "es": "Hiperextensiones a 45° para glúteos",
+     "fr": "Extensions à 45° orientées fessiers",
+     "de": "Rückenstrecken an der 45°-Bank für das Gesäß"
+    },
+    "note": {
+     "it": "Schiena arrotondata e piedi extraruotati, spingi con i glutei.",
+     "en": "Round your upper back, toes out, drive with your glutes.",
+     "es": "Espalda redondeada y pies hacia fuera, empuja con glúteos.",
+     "fr": "Haut du dos arrondi, pointes de pieds ouvertes, poussez avec les fessiers.",
+     "de": "Oberen Rücken runden, Füße nach außen, aus dem Gesäß strecken."
+    }
+   },
+   {
+    "id": "back.backExtension.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Lombari alla macchina",
+     "en": "Back extension machine",
+     "es": "Extensión lumbar en máquina",
+     "fr": "Extensions lombaires à la machine",
+     "de": "Rückenstrecker-Maschine"
+    },
+    "note": {
+     "it": "Seduto, carico a pacco pesi, movimento guidato.",
+     "en": "Seated, stack-loaded, guided movement.",
+     "es": "Sentado, con pila de pesas, movimiento guiado.",
+     "fr": "Assis, charge à plaques, mouvement guidé.",
+     "de": "Sitzend, mit Steckgewicht, geführte Bewegung."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.reverseHyper",
+  "g": "back",
+  "pri": [
+   "lowerBack",
+   "glutes"
+  ],
+  "sec": [
+   "hams"
+  ],
+  "lvl": 1,
+  "reps": "10–15",
+  "name": {
+   "it": "Reverse hyperextension",
+   "en": "Reverse hyperextension",
+   "es": "Hiperextensión inversa",
+   "fr": "Hyperextension inversée",
+   "de": "Reverse Hyperextension"
+  },
+  "why": {
+   "it": "Rinforza lombari e glutei decomprimendo la colonna.",
+   "en": "Strengthens lower back and glutes while decompressing the spine.",
+   "es": "Fortalece lumbares y glúteos descomprimiendo la columna.",
+   "fr": "Renforce lombaires et fessiers en décomprimant la colonne.",
+   "de": "Stärkt unteren Rücken und Gesäß und entlastet die Wirbelsäule."
+  },
+  "tip": {
+   "it": "Busto sul cuscino, anche sul bordo, solleva le gambe tese fino all'orizzontale con i glutei, senza slancio.",
+   "en": "Torso on the pad, hips at the edge, lift straight legs to horizontal with your glutes, no swinging.",
+   "es": "Torso en el cojín, cadera en el borde, sube las piernas rectas hasta la horizontal con glúteos, sin impulso.",
+   "fr": "Buste sur le coussin, hanches au bord, montez les jambes tendues à l'horizontale avec les fessiers, sans élan.",
+   "de": "Oberkörper auf dem Polster, Hüfte an der Kante, gestreckte Beine mit dem Gesäß bis waagerecht heben, ohne Schwung."
+  },
+  "variants": [
+   {
+    "id": "back.reverseHyper.machine",
+    "eq": "machine",
+    "name": {
+     "it": "Reverse hyper alla macchina",
+     "en": "Reverse hyper machine",
+     "es": "Hiperextensión inversa en máquina",
+     "fr": "Hyperextension inversée à la machine",
+     "de": "Reverse Hyper an der Maschine"
+    }
+   },
+   {
+    "id": "back.reverseHyper.bench",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Reverse hyper su panca",
+     "en": "Bench reverse hyperextension",
+     "es": "Hiperextensión inversa en banco",
+     "fr": "Hyperextension inversée sur banc",
+     "de": "Reverse Hyperextension auf der Bank"
+    },
+    "note": {
+     "it": "Su panca alta o inclinata, tieniti ai bordi. Registra il peso aggiunto (0 se nessuno).",
+     "en": "On a high or incline bench, hold the sides. Log the added weight (0 if none).",
+     "es": "En banco alto o inclinado, sujétate a los lados. Registra el peso añadido (0 si no hay).",
+     "fr": "Sur banc haut ou incliné, tenez les bords. Notez la charge ajoutée (0 si aucune).",
+     "de": "Auf hoher oder schräger Bank, halte dich seitlich fest. Trage das Zusatzgewicht ein (0, wenn keins)."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.goodMorning",
+  "g": "back",
+  "pri": [
+   "hams",
+   "lowerBack"
+  ],
+  "sec": [
+   "glutes",
+   "upperBack"
+  ],
+  "lvl": 2,
+  "reps": "6–10",
+  "name": {
+   "it": "Good morning",
+   "en": "Good morning",
+   "es": "Buenos días (good morning)",
+   "fr": "Good morning",
+   "de": "Good Morning"
+  },
+  "why": {
+   "it": "Rinforza catena posteriore e lombari per stacchi e squat.",
+   "en": "Strengthens the posterior chain and lower back for deadlifts and squats.",
+   "es": "Fortalece la cadena posterior y lumbares para peso muerto y sentadilla.",
+   "fr": "Renforce la chaîne postérieure et les lombaires pour soulevé de terre et squat.",
+   "de": "Stärkt hintere Kette und unteren Rücken für Kreuzheben und Kniebeugen."
+  },
+  "tip": {
+   "it": "Bilanciere sui trapezi, ginocchia morbide, porta le anche indietro con schiena neutra fino a sentire i femorali. Parti leggero.",
+   "en": "Bar on your traps, soft knees, push hips back with a neutral spine until hamstrings stretch. Start light.",
+   "es": "Barra sobre trapecios, rodillas flexionadas, lleva la cadera atrás con espalda neutra hasta estirar isquios. Empieza ligero.",
+   "fr": "Barre sur les trapèzes, genoux souples, reculez les hanches dos neutre jusqu'à l'étirement des ischios. Commencez léger.",
+   "de": "Stange auf dem Trapez, Knie leicht gebeugt, Hüfte mit neutralem Rücken nach hinten, bis die Beinbeuger dehnen. Leicht starten."
+  },
+  "variants": [
+   {
+    "id": "back.goodMorning.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Good morning con bilanciere",
+     "en": "Barbell good morning",
+     "es": "Good morning con barra",
+     "fr": "Good morning à la barre",
+     "de": "Good Morning mit Langhantel"
+    }
+   },
+   {
+    "id": "back.goodMorning.smith",
+    "eq": "smith",
+    "name": {
+     "it": "Good morning al Multipower",
+     "en": "Smith machine good morning",
+     "es": "Good morning en máquina Smith",
+     "fr": "Good morning à la Smith machine",
+     "de": "Good Morning an der Multipresse"
+    },
+    "note": {
+     "it": "Barra guidata, più facile controllare l'equilibrio.",
+     "en": "Guided bar, easier to keep balance.",
+     "es": "Barra guiada, más fácil mantener el equilibrio.",
+     "fr": "Barre guidée, équilibre plus facile.",
+     "de": "Geführte Stange, leichteres Gleichgewicht."
+    }
+   },
+   {
+    "id": "back.goodMorning.seated",
+    "eq": "barbell",
+    "name": {
+     "it": "Good morning da seduto",
+     "en": "Seated good morning",
+     "es": "Good morning sentado",
+     "fr": "Good morning assis",
+     "de": "Good Morning im Sitzen"
+    },
+    "note": {
+     "it": "Esclude le gambe, più lavoro lombare.",
+     "en": "Takes the legs out, more lower-back work.",
+     "es": "Sin piernas, más trabajo lumbar.",
+     "fr": "Sans les jambes, plus de travail lombaire.",
+     "de": "Ohne Beine, mehr Arbeit für den unteren Rücken."
+    }
+   },
+   {
+    "id": "back.goodMorning.band",
+    "eq": "band",
+    "name": {
+     "it": "Good morning con elastico",
+     "en": "Band good morning",
+     "es": "Good morning con banda",
+     "fr": "Good morning à l'élastique",
+     "de": "Good Morning mit Band"
+    },
+    "note": {
+     "it": "Elastico sotto i piedi e dietro il collo, ottimo per il riscaldamento.",
+     "en": "Band under feet and behind neck, great for warm-ups.",
+     "es": "Banda bajo los pies y tras el cuello, ideal para calentar.",
+     "fr": "Élastique sous les pieds et derrière la nuque, idéal en échauffement.",
+     "de": "Band unter den Füßen und hinter dem Nacken, ideal zum Aufwärmen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "back.rackPull",
+  "g": "back",
+  "pri": [
+   "upperBack",
+   "lowerBack",
+   "traps"
+  ],
+  "sec": [
+   "glutes",
+   "hams",
+   "forearms"
+  ],
+  "lvl": 1,
+  "reps": "3–8",
+  "name": {
+   "it": "Rack pull",
+   "en": "Rack pull",
+   "es": "Rack pull (peso muerto parcial)",
+   "fr": "Rack pull (soulevé partiel)",
+   "de": "Rack Pull"
+  },
+  "why": {
+   "it": "Stacco parziale per sovraccaricare schiena, trapezi e presa.",
+   "en": "A partial pull to overload back, traps and grip.",
+   "es": "Tirón parcial para sobrecargar espalda, trapecios y agarre.",
+   "fr": "Tirage partiel pour surcharger dos, trapèzes et préhension.",
+   "de": "Teilweises Heben, um Rücken, Trapez und Griff zu überlasten."
+  },
+  "tip": {
+   "it": "Barra sui fermi del rack, schiena neutra, spingi col pavimento e chiudi le anche; non iperestendere in alto.",
+   "en": "Bar on the rack pins, neutral spine, push the floor and lock out your hips; don't lean back at the top.",
+   "es": "Barra en los topes del rack, espalda neutra, empuja el suelo y bloquea la cadera; no te eches atrás arriba.",
+   "fr": "Barre sur les sécurités du rack, dos neutre, poussez le sol et verrouillez les hanches ; ne basculez pas en arrière en haut.",
+   "de": "Stange auf den Ablagen, neutraler Rücken, drück den Boden weg und streck die Hüfte; oben nicht nach hinten lehnen."
+  },
+  "variants": [
+   {
+    "id": "back.rackPull.aboveKnee",
+    "eq": "barbell",
+    "name": {
+     "it": "Rack pull sopra il ginocchio",
+     "en": "Above-knee rack pull",
+     "es": "Rack pull por encima de la rodilla",
+     "fr": "Rack pull au-dessus du genou",
+     "de": "Rack Pull über Kniehöhe"
+    },
+    "note": {
+     "it": "ROM corto, più trapezi e lockout.",
+     "en": "Short range, more traps and lockout.",
+     "es": "Recorrido corto, más trapecio y bloqueo.",
+     "fr": "Amplitude courte, plus de trapèzes et de verrouillage.",
+     "de": "Kurzer Weg, mehr Trapez und Lockout."
+    }
+   },
+   {
+    "id": "back.rackPull.belowKnee",
+    "eq": "barbell",
+    "name": {
+     "it": "Rack pull sotto il ginocchio",
+     "en": "Below-knee rack pull",
+     "es": "Rack pull por debajo de la rodilla",
+     "fr": "Rack pull sous le genou",
+     "de": "Rack Pull unter Kniehöhe"
+    },
+    "note": {
+     "it": "ROM più lungo, più lombari e femorali.",
+     "en": "Longer range, more lower back and hamstrings.",
+     "es": "Más recorrido, más lumbares e isquios.",
+     "fr": "Amplitude plus longue, plus de lombaires et d'ischios.",
+     "de": "Längerer Weg, mehr unterer Rücken und Beinbeuger."
+    }
+   },
+   {
+    "id": "back.rackPull.trapbar",
+    "eq": "trapbar",
+    "name": {
+     "it": "Rack pull con trap bar sui rialzi",
+     "en": "Trap bar block pull",
+     "es": "Rack pull con barra hexagonal sobre bloques",
+     "fr": "Rack pull à la trap bar sur blocs",
+     "de": "Trap-Bar-Blockziehen"
+    },
+    "note": {
+     "it": "Presa neutra, meno stress lombare.",
+     "en": "Neutral grip, less lower-back stress.",
+     "es": "Agarre neutro, menos estrés lumbar.",
+     "fr": "Prise neutre, moins de contrainte lombaire.",
+     "de": "Neutralgriff, weniger Belastung für den unteren Rücken."
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.wristCurl",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Curl di polso",
+   "en": "Wrist curl",
+   "es": "Curl de muñeca",
+   "fr": "Curl poignets",
+   "de": "Handgelenkcurls"
+  },
+  "why": {
+   "it": "Rinforza i flessori dell'avambraccio e la presa.",
+   "en": "Strengthens the forearm flexors and your grip.",
+   "es": "Fortalece los flexores del antebrazo y el agarre.",
+   "fr": "Renforce les fléchisseurs de l'avant-bras et la préhension.",
+   "de": "Stärkt die Unterarmbeuger und den Griff."
+  },
+  "tip": {
+   "it": "Avambracci appoggiati sulle cosce o su una panca, palmi in su, lascia rotolare il peso sulle dita e richiudi.",
+   "en": "Forearms resting on thighs or a bench, palms up, let the weight roll to your fingers and curl back up.",
+   "es": "Antebrazos apoyados en muslos o banco, palmas arriba, deja rodar el peso a los dedos y vuelve a cerrar.",
+   "fr": "Avant-bras posés sur les cuisses ou un banc, paumes vers le haut, laissez rouler la charge vers les doigts puis refermez.",
+   "de": "Unterarme auf Oberschenkeln oder Bank, Handflächen nach oben, Gewicht zu den Fingern rollen lassen und wieder einrollen."
+  },
+  "variants": [
+   {
+    "id": "forearms.wristCurl.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Curl di polso con bilanciere",
+     "en": "Barbell wrist curl",
+     "es": "Curl de muñeca con barra",
+     "fr": "Curl poignets à la barre",
+     "de": "Handgelenkcurls mit Langhantel"
+    }
+   },
+   {
+    "id": "forearms.wristCurl.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Curl di polso con manubrio",
+     "en": "Dumbbell wrist curl",
+     "es": "Curl de muñeca con mancuerna",
+     "fr": "Curl poignet à l'haltère",
+     "de": "Handgelenkcurls mit Kurzhantel"
+    },
+    "note": {
+     "it": "Un braccio alla volta, più libertà di movimento.",
+     "en": "One arm at a time, freer movement.",
+     "es": "Un brazo cada vez, movimiento más libre.",
+     "fr": "Un bras à la fois, mouvement plus libre.",
+     "de": "Einarmig, freiere Bewegung."
+    }
+   },
+   {
+    "id": "forearms.wristCurl.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Curl di polso al cavo basso",
+     "en": "Cable wrist curl",
+     "es": "Curl de muñeca en polea baja",
+     "fr": "Curl poignets à la poulie basse",
+     "de": "Handgelenkcurls am Kabelzug"
+    },
+    "note": {
+     "it": "Tensione costante per tutto il movimento.",
+     "en": "Constant tension throughout.",
+     "es": "Tensión constante en todo el recorrido.",
+     "fr": "Tension constante sur tout le mouvement.",
+     "de": "Konstante Spannung über den ganzen Weg."
+    }
+   },
+   {
+    "id": "forearms.wristCurl.behindBack",
+    "eq": "barbell",
+    "name": {
+     "it": "Curl di polso dietro la schiena",
+     "en": "Behind-the-back barbell wrist curl",
+     "es": "Curl de muñeca con barra tras la espalda",
+     "fr": "Curl poignets barre derrière le dos",
+     "de": "Handgelenkcurls hinter dem Rücken"
+    },
+    "note": {
+     "it": "In piedi, bilanciere dietro le cosce, permette carichi alti.",
+     "en": "Standing, bar behind your thighs, allows heavier loads.",
+     "es": "De pie, barra tras los muslos, permite más carga.",
+     "fr": "Debout, barre derrière les cuisses, permet plus de charge.",
+     "de": "Stehend, Stange hinter den Oberschenkeln, erlaubt mehr Gewicht."
+    }
+   },
+   {
+    "id": "forearms.wristCurl.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Curl di polso con bilanciere EZ",
+     "en": "EZ-bar wrist curl",
+     "es": "Curl de muñeca con barra Z",
+     "fr": "Curl poignets à la barre EZ",
+     "de": "Handgelenkcurls mit SZ-Stange"
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.reverseWristCurl",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–20",
+  "name": {
+   "it": "Curl di polso inverso",
+   "en": "Reverse wrist curl",
+   "es": "Curl de muñeca inverso",
+   "fr": "Curl poignets inversé",
+   "de": "Reverse Handgelenkcurls"
+  },
+  "why": {
+   "it": "Rinforza gli estensori dell'avambraccio e protegge il gomito.",
+   "en": "Strengthens the forearm extensors and helps protect your elbows.",
+   "es": "Fortalece los extensores del antebrazo y protege el codo.",
+   "fr": "Renforce les extenseurs de l'avant-bras et protège le coude.",
+   "de": "Stärkt die Unterarmstrecker und schützt den Ellbogen."
+  },
+  "tip": {
+   "it": "Avambracci in appoggio, palmi in giù, solleva il dorso della mano lentamente; usa carichi leggeri.",
+   "en": "Forearms supported, palms down, raise the back of your hand slowly; use light loads.",
+   "es": "Antebrazos apoyados, palmas abajo, sube el dorso de la mano despacio; usa poca carga.",
+   "fr": "Avant-bras en appui, paumes vers le bas, levez le dos de la main lentement ; charges légères.",
+   "de": "Unterarme abgestützt, Handflächen nach unten, Handrücken langsam heben; leichte Gewichte."
+  },
+  "variants": [
+   {
+    "id": "forearms.reverseWristCurl.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Curl di polso inverso con bilanciere",
+     "en": "Barbell reverse wrist curl",
+     "es": "Curl de muñeca inverso con barra",
+     "fr": "Curl poignets inversé à la barre",
+     "de": "Reverse Handgelenkcurls mit Langhantel"
+    }
+   },
+   {
+    "id": "forearms.reverseWristCurl.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Curl di polso inverso con manubrio",
+     "en": "Dumbbell reverse wrist curl",
+     "es": "Curl de muñeca inverso con mancuerna",
+     "fr": "Curl poignet inversé à l'haltère",
+     "de": "Reverse Handgelenkcurls mit Kurzhantel"
+    }
+   },
+   {
+    "id": "forearms.reverseWristCurl.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Curl di polso inverso al cavo",
+     "en": "Cable reverse wrist curl",
+     "es": "Curl de muñeca inverso en polea",
+     "fr": "Curl poignets inversé à la poulie",
+     "de": "Reverse Handgelenkcurls am Kabelzug"
+    }
+   },
+   {
+    "id": "forearms.reverseWristCurl.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Curl di polso inverso con bilanciere EZ",
+     "en": "EZ-bar reverse wrist curl",
+     "es": "Curl de muñeca inverso con barra Z",
+     "fr": "Curl poignets inversé à la barre EZ",
+     "de": "Reverse Handgelenkcurls mit SZ-Stange"
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.reverseCurl",
+  "g": "forearms",
+  "pri": [
+   "forearms",
+   "brachialis"
+  ],
+  "sec": [
+   "biceps"
+  ],
+  "lvl": 0,
+  "reps": "10–15",
+  "name": {
+   "it": "Curl inverso",
+   "en": "Reverse curl",
+   "es": "Curl inverso",
+   "fr": "Curl inversé",
+   "de": "Reverse Curls"
+  },
+  "why": {
+   "it": "Allena brachioradiale e brachiale per avambracci più spessi.",
+   "en": "Trains brachioradialis and brachialis for thicker forearms.",
+   "es": "Trabaja braquiorradial y braquial para antebrazos más gruesos.",
+   "fr": "Travaille brachio-radial et brachial pour des avant-bras plus épais.",
+   "de": "Trainiert Oberarmspeichenmuskel und Brachialis für kräftigere Unterarme."
+  },
+  "tip": {
+   "it": "Presa prona, gomiti fermi ai fianchi, polsi dritti, sali e scendi in controllo senza slanciare.",
+   "en": "Overhand grip, elbows pinned to your sides, wrists straight, curl up and down under control, no swinging.",
+   "es": "Agarre prono, codos fijos a los lados, muñecas rectas, sube y baja controlado sin impulso.",
+   "fr": "Prise pronation, coudes fixés le long du corps, poignets droits, montez et descendez contrôlé sans élan.",
+   "de": "Obergriff, Ellbogen fest am Körper, Handgelenke gerade, kontrolliert hoch und runter, ohne Schwung."
+  },
+  "variants": [
+   {
+    "id": "forearms.reverseCurl.ezbar",
+    "eq": "ezbar",
+    "name": {
+     "it": "Curl inverso con bilanciere EZ",
+     "en": "EZ-bar reverse curl",
+     "es": "Curl inverso con barra Z",
+     "fr": "Curl inversé à la barre EZ",
+     "de": "Reverse Curls mit SZ-Stange"
+    },
+    "note": {
+     "it": "Presa angolata, più comoda per i polsi.",
+     "en": "Angled grip, easier on the wrists.",
+     "es": "Agarre angulado, más cómodo para las muñecas.",
+     "fr": "Prise inclinée, plus confortable pour les poignets.",
+     "de": "Schräger Griff, schonender für die Handgelenke."
+    }
+   },
+   {
+    "id": "forearms.reverseCurl.barbell",
+    "eq": "barbell",
+    "name": {
+     "it": "Curl inverso con bilanciere",
+     "en": "Barbell reverse curl",
+     "es": "Curl inverso con barra",
+     "fr": "Curl inversé à la barre",
+     "de": "Reverse Curls mit Langhantel"
+    }
+   },
+   {
+    "id": "forearms.reverseCurl.cable",
+    "eq": "cable",
+    "name": {
+     "it": "Curl inverso al cavo basso",
+     "en": "Cable reverse curl",
+     "es": "Curl inverso en polea baja",
+     "fr": "Curl inversé à la poulie basse",
+     "de": "Reverse Curls am Kabelzug"
+    },
+    "note": {
+     "it": "Tensione costante, barra dritta o EZ.",
+     "en": "Constant tension, straight or EZ attachment.",
+     "es": "Tensión constante, barra recta o Z.",
+     "fr": "Tension constante, barre droite ou EZ.",
+     "de": "Konstante Spannung, gerade oder SZ-Stange."
+    }
+   },
+   {
+    "id": "forearms.reverseCurl.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Curl inverso con manubri",
+     "en": "Dumbbell reverse curl",
+     "es": "Curl inverso con mancuernas",
+     "fr": "Curl inversé aux haltères",
+     "de": "Reverse Curls mit Kurzhanteln"
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.pronationSupination",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "12–15",
+  "name": {
+   "it": "Pronosupinazione con manubrio",
+   "en": "Dumbbell pronation and supination",
+   "es": "Pronación y supinación con mancuerna",
+   "fr": "Pronation-supination à l'haltère",
+   "de": "Pronation und Supination mit Kurzhantel"
+  },
+  "why": {
+   "it": "Rinforza i rotatori dell'avambraccio, utile per gomiti e polsi.",
+   "en": "Strengthens the forearm rotators, good for elbows and wrists.",
+   "es": "Fortalece los rotadores del antebrazo, útil para codos y muñecas.",
+   "fr": "Renforce les rotateurs de l'avant-bras, utile pour coudes et poignets.",
+   "de": "Stärkt die Unterarmdreher, gut für Ellbogen und Handgelenke."
+  },
+  "tip": {
+   "it": "Avambraccio in appoggio, impugna il manubrio a un'estremità e ruota lentamente il palmo su e giù.",
+   "en": "Forearm supported, hold the dumbbell at one end and slowly rotate your palm up and down.",
+   "es": "Antebrazo apoyado, sujeta la mancuerna por un extremo y gira despacio la palma arriba y abajo.",
+   "fr": "Avant-bras en appui, tenez l'haltère par une extrémité et tournez lentement la paume vers le haut puis le bas.",
+   "de": "Unterarm abgestützt, Hantel an einem Ende greifen und die Handfläche langsam nach oben und unten drehen."
+  },
+  "variants": [
+   {
+    "id": "forearms.pronationSupination.dumbbell",
+    "eq": "dumbbell",
+    "name": {
+     "it": "Pronosupinazione con manubrio",
+     "en": "Dumbbell pronation and supination",
+     "es": "Pronación y supinación con mancuerna",
+     "fr": "Pronation-supination à l'haltère",
+     "de": "Pronation und Supination mit Kurzhantel"
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.wristRoller",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [
+   "frontDelt"
+  ],
+  "lvl": 1,
+  "reps": "2–4",
+  "name": {
+   "it": "Wrist roller",
+   "en": "Wrist roller",
+   "es": "Rodillo de muñeca",
+   "fr": "Rouleau à poignets",
+   "de": "Unterarmroller"
+  },
+  "why": {
+   "it": "Brucia flessori ed estensori insieme per avambracci e presa forti.",
+   "en": "Burns flexors and extensors together for strong forearms and grip.",
+   "es": "Quema flexores y extensores a la vez para antebrazos y agarre fuertes.",
+   "fr": "Sollicite fléchisseurs et extenseurs ensemble pour des avant-bras et une prise solides.",
+   "de": "Fordert Beuger und Strecker zugleich für starke Unterarme und Griff."
+  },
+  "tip": {
+   "it": "Braccia tese avanti, arrotola la corda fino al disco e srotolala lentamente. Ogni salita e discesa conta 1 rip.",
+   "en": "Arms straight out, roll the cord up to the plate and lower it slowly. Each up and down counts as 1 rep.",
+   "es": "Brazos al frente, enrolla la cuerda hasta el disco y desenróllala lento. Cada subida y bajada cuenta 1 rep.",
+   "fr": "Bras tendus devant, enroulez la corde jusqu'au disque puis déroulez lentement. Chaque montée-descente compte pour 1 rép.",
+   "de": "Arme nach vorn gestreckt, Seil bis zur Scheibe aufrollen und langsam abrollen. Jedes Auf und Ab zählt als 1 Wdh."
+  },
+  "variants": [
+   {
+    "id": "forearms.wristRoller.plate",
+    "eq": "plate",
+    "name": {
+     "it": "Wrist roller con disco",
+     "en": "Plate wrist roller",
+     "es": "Rodillo de muñeca con disco",
+     "fr": "Rouleau à poignets avec disque",
+     "de": "Unterarmroller mit Scheibe"
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.platePinch",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [],
+  "lvl": 1,
+  "reps": "20–40 s",
+  "name": {
+   "it": "Pinch grip con dischi",
+   "en": "Plate pinch",
+   "es": "Pinza con discos",
+   "fr": "Pince avec disques",
+   "de": "Scheiben-Pinchgriff"
+  },
+  "why": {
+   "it": "Allena la presa a pinza di dita e pollice.",
+   "en": "Trains your finger and thumb pinch grip.",
+   "es": "Entrena el agarre en pinza de dedos y pulgar.",
+   "fr": "Travaille la prise en pince des doigts et du pouce.",
+   "de": "Trainiert den Pinzettengriff von Fingern und Daumen."
+  },
+  "tip": {
+   "it": "Stringi due dischi lisci affiancati tra dita e pollice e tienili lungo il fianco. Registra i secondi come ripetizioni e il peso dei dischi.",
+   "en": "Pinch two smooth plates together between fingers and thumb and hold at your side. Log seconds as reps and the plates' weight.",
+   "es": "Pinza dos discos lisos juntos entre dedos y pulgar y sostenlos al costado. Registra los segundos como repeticiones y el peso de los discos.",
+   "fr": "Pincez deux disques lisses accolés entre doigts et pouce, bras le long du corps. Notez les secondes comme répétitions et le poids des disques.",
+   "de": "Zwei glatte Scheiben zwischen Fingern und Daumen klemmen und seitlich halten. Trage die Sekunden als Wiederholungen und das Scheibengewicht ein."
+  },
+  "variants": [
+   {
+    "id": "forearms.platePinch.twoPlates",
+    "eq": "plate",
+    "name": {
+     "it": "Pinch grip con due dischi",
+     "en": "Two-plate pinch hold",
+     "es": "Pinza con dos discos",
+     "fr": "Pince avec deux disques",
+     "de": "Pinchgriff mit zwei Scheiben"
+    }
+   },
+   {
+    "id": "forearms.platePinch.rimPinch",
+    "eq": "plate",
+    "name": {
+     "it": "Pinch grip con disco singolo (presa sul bordo)",
+     "en": "Single-plate rim pinch hold",
+     "es": "Pinza de un disco por el borde",
+     "fr": "Pince sur un disque par le rebord",
+     "de": "Pinchgriff einer Scheibe am Rand"
+    },
+    "note": {
+     "it": "Afferra un disco largo per il bordo superiore.",
+     "en": "Grip one wide plate by its top rim.",
+     "es": "Sujeta un disco ancho por el borde superior.",
+     "fr": "Saisissez un disque large par le rebord supérieur.",
+     "de": "Eine breite Scheibe am oberen Rand greifen."
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.deadHang",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [
+   "lats",
+   "upperBack"
+  ],
+  "lvl": 0,
+  "reps": "20–60 s",
+  "name": {
+   "it": "Dead hang (sospensione alla sbarra)",
+   "en": "Dead hang",
+   "es": "Colgarse de la barra",
+   "fr": "Suspension à la barre",
+   "de": "Passives Hängen"
+  },
+  "why": {
+   "it": "Costruisce resistenza della presa e decomprime spalle e schiena.",
+   "en": "Builds grip endurance and decompresses shoulders and spine.",
+   "es": "Desarrolla resistencia de agarre y descomprime hombros y espalda.",
+   "fr": "Développe l'endurance de la prise et décomprime épaules et colonne.",
+   "de": "Baut Griffausdauer auf und entlastet Schultern und Wirbelsäule."
+  },
+  "tip": {
+   "it": "Presa salda alla sbarra, braccia tese, spalle attive non incassate, respira con calma. Registra i secondi come ripetizioni e 0 kg.",
+   "en": "Firm grip on the bar, arms straight, shoulders engaged not shrugged, breathe calmly. Log seconds as reps and 0 kg.",
+   "es": "Agarre firme a la barra, brazos rectos, hombros activos sin encogerlos, respira con calma. Registra los segundos como repeticiones y 0 kg.",
+   "fr": "Prise ferme sur la barre, bras tendus, épaules engagées sans les hausser, respirez calmement. Notez les secondes comme répétitions et 0 kg.",
+   "de": "Fester Griff an der Stange, Arme gestreckt, Schultern aktiv, nicht hochgezogen, ruhig atmen. Trage die Sekunden als Wiederholungen und 0 kg ein."
+  },
+  "variants": [
+   {
+    "id": "forearms.deadHang.bodyweight",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Dead hang a corpo libero",
+     "en": "Bodyweight dead hang",
+     "es": "Colgarse de la barra con peso corporal",
+     "fr": "Suspension à la barre au poids du corps",
+     "de": "Passives Hängen mit Körpergewicht"
+    }
+   },
+   {
+    "id": "forearms.deadHang.oneArm",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Dead hang a un braccio",
+     "en": "One-arm dead hang",
+     "es": "Colgarse de la barra a una mano",
+     "fr": "Suspension à la barre à un bras",
+     "de": "Einarmiges passives Hängen"
+    },
+    "note": {
+     "it": "Versione avanzata, alterna i lati. Registra i secondi come ripetizioni e 0 kg.",
+     "en": "Advanced version, alternate sides. Log seconds as reps and 0 kg.",
+     "es": "Versión avanzada, alterna los lados. Registra los segundos como repeticiones y 0 kg.",
+     "fr": "Version avancée, alternez les côtés. Notez les secondes comme répétitions et 0 kg.",
+     "de": "Fortgeschrittene Variante, Seiten wechseln. Trage die Sekunden als Wiederholungen und 0 kg ein."
+    }
+   },
+   {
+    "id": "forearms.deadHang.towel",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Dead hang con asciugamani",
+     "en": "Towel dead hang",
+     "es": "Colgarse con toallas",
+     "fr": "Suspension aux serviettes",
+     "de": "Hängen an Handtüchern"
+    },
+    "note": {
+     "it": "Asciugamani sulla sbarra, presa molto più dura. Registra i secondi come ripetizioni e 0 kg.",
+     "en": "Towels over the bar, much harder grip. Log seconds as reps and 0 kg.",
+     "es": "Toallas sobre la barra, agarre mucho más duro. Registra los segundos como repeticiones y 0 kg.",
+     "fr": "Serviettes sur la barre, prise bien plus dure. Notez les secondes comme répétitions et 0 kg.",
+     "de": "Handtücher über der Stange, deutlich härterer Griff. Trage die Sekunden als Wiederholungen und 0 kg ein."
+    }
+   },
+   {
+    "id": "forearms.deadHang.weighted",
+    "eq": "plate",
+    "name": {
+     "it": "Dead hang zavorrato",
+     "en": "Weighted dead hang",
+     "es": "Colgarse de la barra con lastre",
+     "fr": "Suspension à la barre lestée",
+     "de": "Passives Hängen mit Zusatzgewicht"
+    },
+    "note": {
+     "it": "Peso alla cintura. Registra i secondi come ripetizioni e il peso aggiunto.",
+     "en": "Load on a dip belt. Log seconds as reps and the added weight.",
+     "es": "Carga en cinturón. Registra los segundos como repeticiones y el peso añadido.",
+     "fr": "Charge à la ceinture. Notez les secondes comme répétitions et la charge ajoutée.",
+     "de": "Gewicht am Gürtel. Trage die Sekunden als Wiederholungen und das Zusatzgewicht ein."
+    }
+   }
+  ]
+ },
+ {
+  "id": "forearms.gripper",
+  "g": "forearms",
+  "pri": [
+   "forearms"
+  ],
+  "sec": [],
+  "lvl": 0,
+  "reps": "10–20",
+  "name": {
+   "it": "Hand gripper",
+   "en": "Hand gripper",
+   "es": "Hand gripper (pinza de mano)",
+   "fr": "Hand gripper",
+   "de": "Handtrainer"
+  },
+  "why": {
+   "it": "Allena la forza di chiusura della mano, anche a casa.",
+   "en": "Trains crushing grip strength, even at home.",
+   "es": "Entrena la fuerza de cierre de la mano, incluso en casa.",
+   "fr": "Travaille la force de fermeture de la main, même à la maison.",
+   "de": "Trainiert die Schließkraft der Hand, auch zu Hause."
+  },
+  "tip": {
+   "it": "Chiudi la pinza fino a far toccare le maniglie, tieni 1 s e apri lentamente. Registra 0 kg o la durezza della molla.",
+   "en": "Squeeze until the handles touch, hold 1 s and open slowly. Log 0 kg or the spring rating.",
+   "es": "Cierra hasta que se toquen los mangos, mantén 1 s y abre despacio. Registra 0 kg o la dureza del muelle.",
+   "fr": "Serrez jusqu'au contact des poignées, tenez 1 s et relâchez lentement. Notez 0 kg ou la dureté du ressort.",
+   "de": "Zudrücken, bis sich die Griffe berühren, 1 s halten, langsam öffnen. Trage 0 kg oder die Federstärke ein."
+  },
+  "variants": [
+   {
+    "id": "forearms.gripper.gripper",
+    "eq": "bodyweight",
+    "name": {
+     "it": "Hand gripper a molla",
+     "en": "Spring hand gripper",
+     "es": "Hand gripper de muelle",
+     "fr": "Hand gripper à ressort",
+     "de": "Federhandtrainer"
+    }
+   }
+  ]
+ }
+]
