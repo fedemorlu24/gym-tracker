@@ -946,6 +946,7 @@ function settingsView() {
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
     <p class="glabel">${t('socialSettings')}</p>
     <div class="group"><button class="row" data-act="socialset"><div class="grow"><h3>${t('nickname')}</h3><div class="sub">${esc(nick()) || t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
+    <button class="row" data-act="invite"><div class="grow"><h3>${t('inviteBtn')}</h3><div class="sub">${t('inviteSub')}</div></div><span class="chev">${icon('chev')}</span></button>
     <button class="row" data-act="contacts"><div class="grow"><h3>${t('friendsWa')}</h3><div class="sub">${contacts().length ? t('friendsCount', contacts().length) : t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('restSetting')}</p>
     <div class="opts"><button class="chip" data-act="restpower" data-on="1" aria-pressed="${!!restDefault()}">${t('restOn')}</button><button class="chip" data-act="restpower" data-on="0" aria-pressed="${!restDefault()}">${t('restOff')}</button></div>
@@ -1659,7 +1660,8 @@ function addFriend(c) {
 }
 function friendsView() {
   const me = {...myChallenge(), n: nick() || t('you'), me: true}, fr = Object.values(db.friends || {});
-  let html = `<div class="opts" style="margin-bottom:12px"><button class="btn p" data-act="sendchallenge">${t('challengeSend')}</button>
+  let html = `<button class="btn p wide" data-act="invite" style="margin-bottom:10px">${icon('plus')} ${t('inviteBtn')}</button>
+    <div class="opts" style="margin-bottom:12px"><button class="btn s" data-act="sendchallenge">${t('challengeSend')}</button>
     <button class="btn s" data-act="pastechallenge">${t('challengePaste')}</button></div>`;
   if (!fr.length) return html + `<div class="empty" style="padding:28px 12px">${t('boardEmpty')}</div>`;
   const all = [me, ...fr];
@@ -1690,12 +1692,24 @@ let pendingNick = null;
 function sheetSendChallenge() {
   const link = challengeLink(), msg = t('challengeMsg', nick()) + '\n' + link;
   sheet(`<h2>${t('challengeSend')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('challengeMsg', nick()))}</p>
-    <button class="btn p wide" data-act="sharetext">${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
+    <button class="btn p wide" data-act="sharetext">${t('shareWord')}</button><div class="gap"></div>
     ${friendsToSend(msg, sheetSendChallenge)}<div class="gap"></div>
     <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
   shareText = msg;
 }
 let shareText = '';
+// invito: il link mostra su WhatsApp l'anteprima con logo e titolo (tag og: in index.html)
+const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
+function sheetInvite() {
+  const msg = t('inviteMsg', nick() || '🙂') + '\n' + INVITE_URL;
+  shareText = msg;
+  sheet(`<h2>${t('inviteBtn')}</h2>
+    <div class="invcard"><img src="icons/og.png" alt=""><div><b>${t('invitePreviewT')}</b><span>${t('invitePreviewD')}</span><small>fedemorlu24.github.io</small></div></div>
+    <p class="invmsg">${esc(t('inviteMsg', nick() || '🙂'))}<br><u>${INVITE_URL}</u></p>
+    <button class="btn p wide" data-act="sharetext">${icon('share')} ${t('shareWord')}</button><div class="gap"></div>
+    ${friendsToSend(msg, sheetInvite)}<div class="gap"></div>
+    <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
+}
 
 // ---------- amici su WhatsApp, uno per uno (nessun gruppo: gli amici non si conoscono tra loro) ----------
 // I numeri restano solo sul telefono (e nel file di backup). wa.me apre la chat con quella persona.
@@ -1951,6 +1965,8 @@ function planEditView() {
       <label class="field">${t('planNote')}${inp('note', p.note, '', 'textarea')}</label>
     </div>
     ${p.days.map((d, i) => `<div class="dcard"><label class="field">${t('dayName')} ${dayLetter(i)}<input data-pd="${i}" value="${esc(d.name || '')}" placeholder="${esc(t('dayNamePh'))}" autocomplete="off"></label>
+      <div class="opts"><label class="field">${t('minL')}<input data-pdm="${i}" inputmode="numeric" value="${d.min || ''}" maxlength="3" placeholder="60"></label>
+      <label class="field">${t('warmL')}<input data-pdw="${i}" value="${esc(d.warm || '')}" maxlength="240" autocomplete="off"></label></div>
       ${d.ex.map((x, j) => `<button class="dex" data-act="planex" data-i="${i}" data-j="${j}" style="width:100%;text-align:left"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div><span class="chev">${icon('chev')}</span></button>`).join('')}
       <div class="opts" style="margin-top:10px"><button class="btn s" data-act="planaddex" data-i="${i}" style="background:var(--fill)">${icon('plus')} ${t('exerciseBtn')}</button>
       <button class="btn d" data-act="plandelday" data-i="${i}" style="background:var(--fill)">${t('delDay')}</button></div></div>`).join('')}
@@ -1973,6 +1989,9 @@ function sheetPlanEx(i, j) {
     <div class="opts"><label class="field">${t('setsL')}<input name="s" inputmode="numeric" value="${x.sets}"></label>
     <label class="field">${t('repsRange')}<input name="r" value="${esc(x.reps)}" autocomplete="off"></label></div>
     <label class="field">${t('restL')}<input name="t" inputmode="numeric" value="${x.rest || ''}"></label>
+    <div class="opts"><label class="field">${t('bufferL')}<input name="rir" value="${esc(x.rir || '')}" maxlength="6" placeholder="1–2" autocomplete="off"></label>
+    <label class="field">${t('tempoL')}<input name="tp" value="${esc(x.tempo || '')}" maxlength="8" placeholder="3-1-X" autocomplete="off"></label></div>
+    <label class="field">${t('altL')}<input name="alt" value="${esc(x.alt || '')}" maxlength="40" autocomplete="off"></label>
     <label class="field">${t('noteL')}<input name="n" value="${esc(x.note || '')}" maxlength="120" autocomplete="off"></label>
     <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
     <button class="btn d wide" data-act="planexdel" data-i="${i}" data-j="${j}">${t('delPlanEx')}</button>`);
@@ -1995,17 +2014,17 @@ function nextPlanDay() {
 // condivisione: dati compatti nel link
 function planPayload(p) {
   return {v: 1, t: 'p', id: p.id, n: p.name.slice(0, 50), a: (p.author || '').slice(0, 30), r: (p.role || '').slice(0, 30), no: (p.note || '').slice(0, 600), f: (p.food || '').slice(0, 1200),
-    d: p.days.slice(0, 7).map(d => ({n: (d.name || '').slice(0, 40), e: d.ex.slice(0, 15).map(x => [x.lib || '', nameFor(x).slice(0, 50), x.sets, String(x.reps).slice(0, 12), x.rest || 0, (x.note || '').slice(0, 120)])}))};
+    d: p.days.slice(0, 7).map(d => ({n: (d.name || '').slice(0, 40), e: d.ex.slice(0, 15).map(x => [x.lib || '', nameFor(x).slice(0, 50), x.sets, String(x.reps).slice(0, 12), x.rest || 0, (x.note || '').slice(0, 120), String(x.rir || '').slice(0, 6), String(x.tempo || '').slice(0, 8), (x.alt || '').slice(0, 40)]), m: d.min || 0, w: (d.warm || '').slice(0, 240)}))};
 }
 function parsePlan(text) {
-  const m = String(text || '').match(/scheda=([A-Za-z0-9_-]{10,20000})/);
+  const m = String(text || '').match(/scheda=([A-Za-z0-9_-]{10,120000})/);
   if (!m) return null;
   try {
     const o = b64d(m[1]), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', nr = v => isFinite(v) ? +v : 0;
     if (o.v !== 1 || o.t !== 'p' || !Array.isArray(o.d)) return null;
     return {id: str(o.id, 40), name: str(o.n, 50) || '?', author: str(o.a, 30), role: str(o.r, 30), note: str(o.no, 600), food: str(o.f, 1200),
-      days: o.d.slice(0, 7).map(d => ({name: str(d.n, 40), ex: (Array.isArray(d.e) ? d.e : []).slice(0, 15).map(x => ({lib: VAR[str(x[0], 80)] ? str(x[0], 80) : '', n: str(x[1], 50),
-        sets: Math.min(20, Math.max(1, nr(x[2]) || 3)), reps: str(x[3], 12) || '8–12', rest: Math.min(900, nr(x[4])), note: str(x[5], 120)}))}))};
+      days: o.d.slice(0, 7).map(d => ({name: str(d.n, 40), min: Math.min(240, nr(d.m)), warm: str(d.w, 240), ex: (Array.isArray(d.e) ? d.e : []).slice(0, 15).map(x => ({lib: VAR[str(x[0], 80)] ? str(x[0], 80) : '', n: str(x[1], 50),
+        sets: Math.min(20, Math.max(1, nr(x[2]) || 3)), reps: str(x[3], 12) || '8–12', rest: Math.min(900, nr(x[4])), note: str(x[5], 120), rir: str(x[6], 6), tempo: str(x[7], 8), alt: str(x[8], 40)}))}))};
   } catch (e) { return null; }
 }
 function addPlan(p) {
@@ -2021,9 +2040,22 @@ function sheetSendPlan(id) {
   if (!p.days.some(d => d.ex.length)) { alert(t('planNeedsDay')); return; }
   shareText = t('planMsg', p.author || nick() || '🙂', p.name) + '\n' + APP_URL + '#scheda=' + b64e(planPayload(p));
   sheet(`<h2>${t('sendPlan')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('planMsg', p.author || nick() || '🙂', p.name))}</p>
-    <button class="btn p wide" data-act="sharetext">${icon('share')} ${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
+    <button class="btn p wide" id="pdf-btn" data-act="planpdf" data-id="${id}">${icon('share')} ${t('pdfBtn')}</button>
+    <p class="note" style="padding:6px 2px 14px">${t('pdfHint')}</p>
+    <button class="btn s wide" data-act="sharetext">${icon('share')} ${t('shareWord')} · ${t('pdfLinkOnly')}</button><div class="gap"></div>
     ${friendsToSend(shareText, () => sheetSendPlan(id))}<div class="gap"></div>
     <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
+}
+// la scheda in PDF con il logo: si allega dal menu di condivisione (WhatsApp non accetta allegati da un link)
+async function sharePlanPdf(id) {
+  const p = plans()[id], b = document.getElementById('pdf-btn');
+  if (b) { b.disabled = true; b.textContent = t('pdfMaking'); }
+  try {
+    const f = await planPdf(p);
+    if (navigator.canShare && navigator.canShare({files: [f]})) await navigator.share({files: [f], text: shareText}).catch(() => {});
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }
+  } catch (e) { alert(t('pdfFail')); }
+  if (b) { b.disabled = false; b.innerHTML = `${icon('share')} ${t('pdfBtn')}`; }
 }
 // incolla: riconosce sia le schede sia le sfide
 function pasteAny(x) { const pl = parsePlan(x); if (pl) return addPlan(pl); const c = parseChallenge(x); if (c) return addFriend(c); alert(t('pasteFailAny')); }
@@ -2190,6 +2222,7 @@ const acts = {
   recflip: b => { view.recSide = b.dataset.side; const sh = document.getElementById('sheet'); if (sh.contains(b)) sheetRecovery(recT || Date.now()); else { const y = window.scrollY; render(); window.scrollTo(0, y); } },
   editplan: b => go({name: 'planedit', id: b.dataset.id}),
   startday: b => startPlanDay(b.dataset.id, +b.dataset.i),
+  planpdf: b => sharePlanPdf(b.dataset.id),
   sendplan: b => needNick(() => sheetSendPlan(b.dataset.id)),
   delplan: b => { const id = b.dataset.id, n = plans()[id].name; go({name: 'home', tab: 'sessions'}); undoable(t('planDeleted', esc(n)), () => { delete db.plans[id]; }); },
   planaddex: b => { libState.target = {plan: view.id, day: +b.dataset.i}; libState.q = ''; sheetAddExercise(); },
@@ -2199,6 +2232,7 @@ const acts = {
   planexdel: b => { plans()[view.id].days[+b.dataset.i].ex.splice(+b.dataset.j, 1); save(); closeSheet(); render(); },
   friend: b => sheetFriend(b.dataset.id),
   delfriend: b => { const id = b.dataset.id, n = db.friends[id].n; closeSheet(); undoable(t('friendRemoved', esc(n)), () => { delete db.friends[id]; }); },
+  invite: sheetInvite,
   contacts: () => sheetContacts(),
   addcontact: () => sheetContact(),
   editcontact: b => sheetContact(b.dataset.id),
@@ -2221,7 +2255,8 @@ const forms = {
   paste: f => pasteAny(f.x.value),
   planex: f => { const x = plans()[view.id].days[+f.dataset.i].ex[+f.dataset.j];
     x.sets = Math.min(20, Math.max(1, parseInt(f.s.value, 10) || 3)); x.reps = f.r.value.trim().slice(0, 12) || x.reps;
-    x.rest = Math.min(900, Math.max(0, parseInt(f.t.value, 10) || 0)); x.note = f.n.value.trim().slice(0, 120); save(); closeSheet(); render(); },
+    x.rest = Math.min(900, Math.max(0, parseInt(f.t.value, 10) || 0)); x.note = f.n.value.trim().slice(0, 120);
+    x.rir = f.rir.value.trim().slice(0, 6); x.tempo = f.tp.value.trim().slice(0, 8); x.alt = f.alt.value.trim().slice(0, 40); save(); closeSheet(); render(); },
   contact: f => saveContact(f),
   social: f => {
     const n = f.n.value.trim();
@@ -2283,9 +2318,11 @@ document.addEventListener('submit', ev => {
 let planSaveT;
 document.addEventListener('input', ev => {
   const el = ev.target;
-  if ((el.dataset.pf || el.dataset.pd) && view.name === 'planedit') {
+  if ((el.dataset.pf || el.dataset.pd || el.dataset.pdm || el.dataset.pdw) && view.name === 'planedit') {
     const p = plans()[view.id];
     if (el.dataset.pf) p[el.dataset.pf] = el.value.slice(0, el.dataset.pf === 'food' ? 1200 : el.dataset.pf === 'note' ? 600 : 50);
+    else if (el.dataset.pdm !== undefined) p.days[+el.dataset.pdm].min = Math.min(240, parseInt(el.value, 10) || 0);
+    else if (el.dataset.pdw !== undefined) p.days[+el.dataset.pdw].warm = el.value.slice(0, 240);
     else p.days[+el.dataset.pd].name = el.value.slice(0, 40);
     clearTimeout(planSaveT); planSaveT = setTimeout(save, 400); return;
   }

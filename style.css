@@ -430,3 +430,11 @@ a.btn{text-decoration:none}
 .friendrow .ib{flex:none}
 .restchip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;background:var(--fill);font-weight:600;font-size:14px;color:var(--sub);margin:8px 0 2px}
 .restchip svg.i{width:18px;height:18px}
+.invcard{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:var(--fill);margin:0 0 10px}
+.invcard img{width:100%;aspect-ratio:1200/630;object-fit:cover;display:block}
+.invcard div{padding:10px 12px 12px}
+.invcard b{display:block;font-size:15px}
+.invcard span{display:block;font-size:13px;color:var(--sub);margin:2px 0 4px}
+.invcard small{color:var(--sub);font-size:12px}
+.invmsg{font-size:15px;line-height:1.45;margin:0 2px 14px;color:var(--text)}
+.invmsg u{color:var(--acc-ink);word-break:break-all}
