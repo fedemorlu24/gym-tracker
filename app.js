@@ -14,7 +14,7 @@ function clean(o) {
     ...s, id: s.id ? String(s.id) : Math.random().toString(36).slice(2, 10), name: String(s.name || '–'),
     exercises: (Array.isArray(s.exercises) ? s.exercises : []).filter(e => e && typeof e === 'object' && e.name).map(e => ({
       ...e, id: e.id ? String(e.id) : Math.random().toString(36).slice(2, 10), name: String(e.name),
-      sets: (Array.isArray(e.sets) ? e.sets : []).map(z => z && {reps: Math.round(n(z.reps)), kg: n(z.kg)}).filter(z => z && z.reps > 0 && z.kg >= 0)}))}));
+      sets: (Array.isArray(e.sets) ? e.sets : []).map(z => z && {reps: Math.round(n(z.reps)), kg: n(z.kg), ...(typeof z.at === 'number' ? {at: z.at} : {})}).filter(z => z && z.reps > 0 && z.kg >= 0)}))}));
   if (o.body != null && !Array.isArray(o.body)) delete o.body;
   if (o.body) o.body = o.body.filter(b => b && /^\d{4}-\d\d-\d\d$/.test(b.date));
   return o;
@@ -138,6 +138,7 @@ function rel(d) {
 }
 const I = {
   back: '<path d="M15 5l-7 7 7 7"/>',
+  flip: '<path d="M4 12a8 4 0 0 0 14 2.6"/><path d="M20 12a8 4 0 0 0-14-2.6"/><path d="M15 12.5l3 2.2-.6-3.6M9 11.5l-3-2.2.6 3.6"/>',
   chart: '<path d="M4 19h16"/><path d="M5 15l4-4 4 3 6-7"/>',
   more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -494,13 +495,14 @@ function todayView() {
     // l'ultima volta che si è fatta la stessa seduta, cosa è venuto subito dopo?
     const k = last.findIndex((s, i) => i > 0 && key(s.name) === lk && last[i - 1] && key(last[i - 1].name) !== lk);
     const sug = (k > 0 ? last[k - 1] : null) || last.find(s => dt(s.date).getDay() === wd && key(s.name) !== lk) || last[0];
-    html += `<div class="dcard"><p class="sub">${t(db.sessions.length ? 'restDayTxt' : 'firstRunTxt')}</p>
-      ${np ? `<button class="btn p wide" data-act="startday" data-id="${np.p.id}" data-i="${np.i}" style="margin-top:12px">${icon('plus')} ${esc(t('startDay', dayTitle(np.p, np.i)))}</button>
-        <p class="sub" style="margin-top:6px">${esc(np.p.name)}${np.p.author ? ' · ' + esc(t('planBy', np.p.author, np.p.role)) : ''}</p>` : ''}
+    html += programCard(np) + `<div class="dcard"><p class="sub">${t(db.sessions.length ? 'restDayTxt' : 'firstRunTxt')}</p>
       ${sug ? `<button class="btn ${np ? 's' : 'p'} wide" data-act="repeat" data-sid="${sug.id}" style="margin-top:12px${np ? ';background:var(--fill)' : ''}">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
       <button class="btn ${np || sug ? 's' : 'p'} wide" data-act="newsession" style="margin-top:${np || sug ? '8px;background:var(--fill)' : '12px'}">${t('startWorkout')}</button></div>`;
   } else html += `<div class="dcard"><p class="sub">${t('noWorkoutDay')}</p>
       <button class="btn s wide" data-act="newsession" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('addPastWorkout')}</button></div>`;
+
+  if (isToday && ss.length) html += programCard(nextPlanDay());
+  if (isToday) html += `<p class="glabel">${t('recTitle')}</p>` + recoveryPanel(Date.now(), {short: true});
 
   // corpo del giorno
   const bd = bodyOf(day), bw = bodyWeight(), ph = photos.filter(p => p.date === day);
@@ -521,6 +523,50 @@ function todayView() {
   // con un allenamento in corso il pulsante per riprenderlo resta a portata di pollice
   if (isToday && ss.length) html += `<div class="bar"><button class="btn p wide" data-act="open" data-sid="${ss[ss.length - 1].id}">${t('continueWorkout')}</button></div>`;
   return html;
+}
+
+// il programma dell'utente: tutti i giorni della scheda in uso, il prossimo in evidenza
+function activePlan(np) {
+  return np ? np.p : planList().find(p => p.own) || planList()[0] || null;
+}
+function programCard(np) {
+  const p = activePlan(np);
+  if (!p) return `<div class="dcard prog"><h3>${t('myProgram')}</h3><p class="sub" style="margin-top:4px">${t('programEmpty')}</p>
+      <div class="opts" style="margin-top:12px"><button class="btn p" data-act="starterplan">${t('starterPlanBtn')}</button><button class="btn s" data-act="newplan" style="background:var(--fill)">${t('newPlan')}</button></div></div>`;
+  const nextI = np && np.p === p ? np.i : p.days.findIndex(d => d.ex.length);
+  const lastOf = i => [...db.sessions].filter(s => s.plan && s.plan.id === p.id && s.plan.day === i && s.exercises.some(e => e.sets.length)).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const rows = p.days.map((d, i) => {
+    if (!d.ex.length) return '';
+    const l = lastOf(i), nx = i === nextI;
+    return `<button class="row${nx ? ' cur' : ''}" data-act="startday" data-id="${p.id}" data-i="${i}">
+      <div class="grow"><h3>${esc(dayTitle(p, i))}</h3><div class="sub">${t('exN', d.ex.length)} · ${l ? t('lastDone', rel(l.date)) : t('neverDone')}</div></div>
+      ${nx ? `<span class="tag pr" style="animation:none">${t('nextUp')}</span>` : `<span class="chev">${icon('chev')}</span>`}</button>`;
+  }).join('');
+  return `<div class="dcard prog"><div class="item"><h3>${t('myProgram')}</h3><button class="ib txt" data-act="plan" data-id="${p.id}">${t('edit')}</button></div>
+    <p class="sub" style="margin:2px 0 10px">${esc(p.name)}${p.author && !p.own ? ' · ' + esc(t('planBy', p.author, p.role)) : ''}</p>
+    ${rows ? `<div class="list">${rows}</div>` : `<p class="sub">${t('planEmptyDay')}</p>`}</div>`;
+}
+// scheda pronta per chi inizia: corpo intero in due giorni alternati, macchine e attrezzi semplici
+const STARTER = [
+  [['quads.legPress.incline45', 3, '10–12'], ['chest.chestPress.machine', 3, '10–12'], ['back.latPulldown.wideGrip', 3, '10–12'], ['hams.legCurl.seated', 2, '12–15'], ['core.plank.front', 3, '30–45 s']],
+  [['quads.gobletSquat.dumbbell', 3, '10–12'], ['shoulders.machineShoulderPress.machine', 3, '10–12'], ['back.seatedCableRow.vHandle', 3, '10–12'], ['hams.gluteBridge.bodyweight', 3, '12–15'], ['core.deadBug.bodyweight', 2, '8–12']],
+];
+function starterPlan() {
+  const p = {id: uid() + uid(), own: true, name: t('starterName'), author: nick(), role: t('roleDefault'), note: t('starterNote'), food: '', got: today(),
+    days: STARTER.map((d, i) => ({name: t('starterDay', i + 1), ex: d.filter(([id]) => VAR[id]).map(([lib, sets, reps]) => ({lib, n: tx(VAR[lib].v.name), sets, reps, rest: restFor(reps), note: ''}))}))};
+  plans()[p.id] = p; save(); toast(t('starterDone'));
+  // dal tutorial si resta sulla stessa schermata: il resto della guida serve proprio a chi inizia
+  if (!document.getElementById('tour').hidden) openTour(tourIndex()); else go({name: 'home', tab: 'today'});
+}
+// andamento compatto di un esercizio: forza stimata delle ultime sedute
+function miniProgress(name) {
+  const st = exStats(name).filter(x => x.date <= today()).slice(-8);
+  if (st.length < 2) return '';
+  const vs = st.map(x => x.e), lo = Math.min(...vs), hi = Math.max(...vs), W = 64, H = 22;
+  const pts = vs.map((v, i) => `${(i * W / (vs.length - 1)).toFixed(1)},${(H - 3 - (hi > lo ? (v - lo) / (hi - lo) : .5) * (H - 6)).toFixed(1)}`).join(' ');
+  const d = st[st.length - 1].e - st[0].e;
+  return `<div class="mini"><svg viewBox="-2 0 ${W + 4} ${H}" aria-hidden="true"><polyline points="${pts}"/></svg>
+    <span>${t('e1rmTitle')} <b>${fmtKg(st[st.length - 1].e)} kg</b> <em class="${d > 0 ? 'up' : ''}">${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${sign(d)} kg</em></span></div>`;
 }
 
 // ---------- home ----------
@@ -704,7 +750,7 @@ function sessionView() {
       <div class="t small"><h1>${esc(s.name)}</h1><p>${fmtDate(s.date)}</p></div>
       ${s.exercises.some(e => e.sets.length) ? `<button class="ib" data-act="share" data-k="session" data-a="${s.id}" aria-label="${t('shareSession')}">${icon('share')}</button>` : ''}
       <button class="ib txt" data-act="editsession">${t('edit')}</button>
-    </header>` +
+    </header>` + recoveryLine(s.date === today() ? Date.now() : Math.max(...s.exercises.flatMap(e => e.sets.map(z => setTime(s, z))), dt(s.date).getTime())) +
     (s.exercises.length ? s.exercises.map(e => e.id === open ? exOpen(s, e) : exClosed(s, e)).join('') : `<div class="empty">${t('emptySession')}</div>`) +
     `<div class="bar two"><button class="btn s" data-act="addex">${icon('plus')} ${t('exerciseBtn')}</button>
       <button class="btn s" data-act="summary" ${s.exercises.some(e => e.sets.length) ? '' : 'disabled'}>${t('finish')}</button></div>`;
@@ -715,7 +761,7 @@ function exClosed(s, e) {
   return `<section class="ex closed"><div class="ex-head">
       <h2>${esc(e.name)}</h2>
       <button class="ib" data-act="toggle" data-eid="${e.id}" aria-label="${esc(t('openX', e.name))}">${icon('down')}</button></div>
-      <div class="ex-body sum" data-act="toggle" data-eid="${e.id}">${sum}</div></section>`;
+      <div class="ex-body sum" data-act="toggle" data-eid="${e.id}">${e.target && !e.sets.length ? `<b>${exLine(e.target)}</b> · ` : ''}${sum}${miniProgress(e.name)}</div></section>`;
 }
 function exOpen(s, e) {
   const prior = priorOf(s, e), prev = prior[prior.length - 1];
@@ -741,6 +787,7 @@ function exOpen(s, e) {
       <button class="ib" data-act="exmenu" data-eid="${e.id}" aria-label="${esc(t('optionsX', e.name))}">${icon('more')}</button></div>
     <div class="ex-body">
       ${e.target ? `<p class="ptarget"><b>${t('planTarget')}:</b> ${exLine(e.target)}${e.target.note ? `<br>${e.target.by ? esc(e.target.by) + ': ' : ''}${esc(e.target.note)}` : ''}</p>` : ''}
+      ${miniProgress(e.name)}
       <p class="last">${prev ? t('lastTime', fmtShort(prev.date), prev.sets.map(setTxt).join(' · ')) : e.target ? '' : t('firstTime')}</p>
       ${rows ? `<ol class="sets">${rows}</ol>` : ''}
       ${goal}${stepper(e.id)}
@@ -950,7 +997,7 @@ function toast(msg, action, fn) {
   el.innerHTML = `<span>${msg}</span>${action ? `<button>${action}</button>` : ''}`;
   if (action) el.querySelector('button').onclick = () => { el.classList.remove('on'); fn(); };
   el.classList.add('on');
-  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), action ? 5000 : 2600);
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), action ? 8000 : 2600);
 }
 // eliminazione con possibilità di annullare
 function undoable(msg, fn) {
@@ -1031,10 +1078,108 @@ function sheetAddExercise() {
   document.querySelector('.hscroll') && (document.querySelector('.hscroll').hidden = !!libState.q.trim());
 }
 
+// ---------- recupero muscolare ----------
+// Stima, non misura. Fasce di tempo dalla letteratura: sintesi proteica alta ~24 h e quasi normale a ~36 h
+// (MacDougall 1995); multiarticolari pesanti 48–72 h; il cedimento aggiunge 24–48 h (Morán-Navarro 2017).
+// [gruppo, muscoli della libreria, ore di base, lato della figura]
+const RG = [
+  ['chest', ['chest', 'upperChest'], 72, 'f'], ['shoulders', ['frontDelt', 'sideDelt', 'rearDelt'], 48, 'f'],
+  ['triceps', ['triceps'], 48, 'b'], ['biceps', ['biceps', 'brachialis'], 48, 'f'], ['forearms', ['forearms'], 36, 'f'],
+  ['lats', ['lats'], 60, 'b'], ['traps', ['traps', 'upperBack'], 48, 'b'], ['lowerBack', ['lowerBack'], 72, 'b'],
+  ['abs', ['abs', 'obliques', 'hipFlexors'], 36, 'f'], ['quads', ['quads'], 72, 'f'], ['hams', ['hams'], 72, 'b'],
+  ['glutes', ['glutes', 'abductors'], 72, 'b'], ['adductors', ['adductors'], 48, 'f'], ['calves', ['calves', 'tibialis'], 36, 'b'],
+];
+const M2G = Object.fromEntries(RG.flatMap(([g, ms]) => ms.map(m => [m, g])));
+const setTime = (s, z) => z.at || dt(s.date).getTime() + 6 * 3600e3;  // serie senza orario: le 18 del giorno
+// contributi di fatica per gruppo: {D0 = calo iniziale, T = ore per tornare al 100%, end = fine seduta}
+function recoveryLoad(until) {
+  const age = profile().age || 0, af = age > 55 ? 1.2 : age > 40 ? 1.1 : 1, best = {}, libs = new Map(), out = {};
+  RG.forEach(([g]) => out[g] = []);
+  [...db.sessions].sort((a, b) => a.date.localeCompare(b.date) || order(a) - order(b)).forEach(s => {
+    const dose = {}, fail = {}, n = {}; let end = 0;
+    s.exercises.forEach(e => {
+      const lk = (e.lib || '') + '|' + key(e.name);
+      if (!libs.has(lk)) libs.set(lk, libFor(e));
+      const L = libs.get(lk), g = gk(e);
+      e.sets.forEach(z => {
+        const ts = setTime(s, z), E = best[g] || 0;
+        best[g] = Math.max(E, e1rm(z));
+        if (!L || ts > until) return;
+        end = Math.max(end, ts);
+        // ripetizioni rimaste "in canna": dalla forza stimata prima di questa serie (Epley invertita)
+        const rir = z.kg > 0 && E ? 30 * (E / z.kg - 1) - z.reps : 2;
+        const eff = rir <= 1 ? 1 : rir <= 3 ? .8 : rir <= 5 ? .6 : .4;
+        // ogni gruppo conta una volta per serie (es. deltoide anteriore + laterale = spalle × 1)
+        const gw = {};
+        L.b.sec.forEach(m => { const k = M2G[m]; if (k) gw[k] = Math.max(gw[k] || 0, .5); });
+        L.b.pri.forEach(m => { const k = M2G[m]; if (k) gw[k] = 1; });
+        Object.entries(gw).forEach(([k, w]) => { dose[k] = (dose[k] || 0) + w * eff; n[k] = (n[k] || 0) + w; if (rir <= 1) fail[k] = (fail[k] || 0) + w; });
+      });
+    });
+    RG.forEach(([g, , base]) => {
+      const F = dose[g]; if (!F) return;
+      const T = base * Math.min(1.4, Math.max(.6, .55 + .075 * F)) * (1 + .3 * (fail[g] || 0) / n[g]) * af;
+      out[g].push({D0: Math.min(.8, .12 + .07 * F), T, end});
+    });
+  });
+  return out;
+}
+function recAt(list, t) {
+  const keep = list.reduce((a, c) => { const h = (t - c.end) / 3600e3; return h < 0 ? a : a * (1 - c.D0 * Math.pow(Math.max(0, 1 - h / c.T), 1.6)); }, 1);
+  return keep;
+}
+// stato di ogni gruppo al momento t: % recuperata, ore per arrivare al 90%, allenato di recente
+function recovery(t = Date.now()) {
+  const load = recoveryLoad(t);
+  return RG.map(([g, ms, , side]) => {
+    const l = load[g], rec = Math.round(recAt(l, t) * 100);
+    let h = 0; while (h < 240 && recAt(l, t + h * 3600e3) < .9) h++;
+    const last = l.length ? l[l.length - 1].end : 0;
+    return {g, ms, side, rec, h, worked: last && t - last < 7 * 86400e3 && rec < 95};
+  });
+}
+const recCls = r => r < 50 ? 'r3' : r < 75 ? 'r2' : r < 100 ? 'r1' : '';
+const recEta = h => !h ? t('recReady') : h < 24 ? t('recInH', h) : t('recInD', Math.floor(h / 24), h % 24);
+// figura (fronte o retro) colorata per recupero; con only = muscoli da evidenziare (miniatura)
+function bodyFig(side, clsOf, opts = {}) {
+  const parts = side === 'b' ? MM_BACK : MM_FRONT, f = profile().sex === 'f';
+  const half = Object.entries(parts).map(([k, d]) => `<g class="m ${clsOf(k)}">${d}</g>`).join('');
+  const bd = f ? MM_BODY_F : MM_BODY;
+  return `<svg class="mm ${opts.cls || ''}" viewBox="${opts.vb || '0 0 100 210'}" role="img" aria-label="${opts.label || ''}"><g class="mm-body">${bd}<g transform="translate(100 0) scale(-1 1)">${bd}</g></g>
+    ${half}<g transform="translate(100 0) scale(-1 1)">${half}</g></svg>`;
+}
+const RG_VB = {chest: '18 24 64 50', shoulders: '14 24 72 50', triceps: '10 30 80 60', biceps: '10 36 80 54', forearms: '6 60 88 50', lats: '18 34 64 60',
+  traps: '18 22 64 50', lowerBack: '24 62 52 44', abs: '22 50 56 56', quads: '20 92 60 64', hams: '20 104 60 52', glutes: '20 88 60 40', adductors: '20 96 60 50', calves: '20 140 60 50'};
+function recoveryPanel(t0, opts = {}) {
+  const st = recovery(t0), worked = st.filter(x => x.worked).sort((a, b) => a.rec - b.rec);
+  const side = opts.side || view.recSide || (worked.length && worked.every(x => x.side === 'b') ? 'b' : 'f'), cls = {};
+  st.forEach(x => x.ms.forEach(m => cls[m] = x.worked ? recCls(x.rec) : ''));
+  const names = t('rgroups');
+  const row = x => `<div class="rec-row"><span class="rec-th">${bodyFig(x.side, k => x.ms.includes(k) ? 'pri' : '', {vb: RG_VB[x.g]})}</span>
+    <div class="grow"><div class="rec-top"><b>${names[x.g]}</b><em class="${recCls(x.rec)}">${x.rec}%</em></div><span>${recEta(x.h)}</span></div></div>`;
+  const others = st.filter(x => !x.worked);
+  return `<div class="panel-c rec"><div class="hd"><div><h2>${t('recTitle')}</h2><p class="sub">${opts.sub || t('recSub')}</p></div>
+      ${worked.length ? `<button class="chip" data-act="recflip" data-side="${side === 'f' ? 'b' : 'f'}" aria-label="${t('recFlip')}">${icon('flip')} ${side === 'f' ? t('backPose') : t('front')}</button>` : ''}</div>
+    <div class="rec-grid"><div class="rec-fig">${bodyFig(side, k => cls[k] || '', {label: t('recTitle')})}</div>
+      <div class="rec-list">${worked.length ? worked.map(row).join('') : `<p class="sub">${t('recAll')}</p>`}
+        ${worked.length && others.length ? `<p class="sub rec-more">${t('recOthers', others.map(x => lang === 'de' ? names[x.g] : names[x.g].toLowerCase()).slice(0, 4).join(', ') + (others.length > 4 ? '…' : ''))}</p>` : ''}</div></div>
+    ${opts.short ? '' : `<p class="note">${t('recNote')} <a href="https://pubmed.ncbi.nlm.nih.gov/28965198/" target="_blank" rel="noopener">Morán-Navarro 2017</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/8563679/" target="_blank" rel="noopener">MacDougall 1995</a></p>`}</div>`;
+}
+// riga compatta in testa alla seduta
+function recoveryLine(t0) {
+  const w = recovery(t0).filter(x => x.worked).sort((a, b) => a.rec - b.rec), names = t('rgroups');
+  return `<button class="recline" data-act="recovery" data-t="${t0}"><span class="sub">${t('recShort')}</span>
+    <span class="grow">${w.length ? w.slice(0, 3).map(x => `${names[x.g]} <em class="${recCls(x.rec)}">${x.rec}%</em>`).join(' · ') : t('recAllShort')}</span><span class="chev">${icon('chev')}</span></button>`;
+}
+let recT = 0;
+function sheetRecovery(t0) { recT = t0; sheet(`<h2 class="sr">${t('recTitle')}</h2>` + recoveryPanel(t0, {sub: t0 < Date.now() - 6e4 ? t('recAtEnd') : t('recSub')}).replace('panel-c rec', 'panel-c rec flat')); }
+
 // ---------- mappa dei muscoli (fronte e retro) ----------
 // metà sinistra di ogni figura, specchiata per la destra; chiavi = muscoli della libreria
 const MM_BODY = `<circle cx="50" cy="16" r="10"/><path d="M45 25h10v7h-10z"/>
   <path d="M50 31c-9 0-17 2-21 6-3 3-4 8-4 13l-3 22-3 22c-1 4 0 7 2 7s3-2 4-6l4-20 2-14 2 18c-2 8-3 16-3 24l1 18-1 26c0 10 1 22 3 31 1 3 6 3 6 0l2-30 2-24 2-20h4z"/>`;
+const MM_BODY_F = `<path d="M50 4c-8 0-12 6-12 13 0 6 1 12-1 17l6-3c-2-4-3-9-3-14 0-6 4-10 10-10z"/><circle cx="50" cy="16" r="9.5"/><path d="M45.5 25h9v7h-9z"/>
+  <path d="M50 31c-8 0-15 2-19 6-3 3-3.5 8-3.5 13l-2.5 22-2.5 22c-1 4 0 7 2 7s3-2 4-6l3.5-20 1.5-13c1 4 1.5 9 1 14-3 7-5 14-5 23l1 20-1 24c0 10 1 22 3 31 1 3 6 3 6 0l2-30 2-24 2.5-20h4z"/>`;
 const MM_FRONT = {
   traps: '<path d="M44 31l-9 6 9 2z"/>',
   sideDelt: '<ellipse cx="27.5" cy="43" rx="5" ry="7"/>',
@@ -1268,6 +1413,7 @@ function sheetSummary() {
     ${recs.length ? `<p class="sub h">${t('todayRecords')}</p><div class="chips">${recs.map(r => `<span class="tag pr">${r}</span>`).join('')}</div>` : ''}
     ${goalsToday.length ? `<p class="sub h">${t('goalsReached')}</p>${goalsToday.map(g => `<p>★ ${esc(goalState(g).title)}</p>`).join('')}` : ''}
     ${badgesToday.length ? `<p class="sub h">${t('badgesUnlocked')}</p><div class="badges">${badgesToday.map(b => `<div class="badge on"><span class="medal">${b.g}</span><b>${b.t}</b></div>`).join('')}</div>` : ''}
+    ${recoveryPanel(Date.now(), {short: true})}
     <p class="sub h">${t('week')}</p><p>${t('weekStatus', st.week, st.t, st.n)}</p>
     <p class="note" style="padding:12px 0 0">${improved && compared ? t('beatNote', improved, compared) : ''}${t('nextNote')}</p>
     <div class="gap"></div><button class="btn s wide" data-act="share" data-k="session" data-a="${s.id}" style="background:var(--card)">${icon('share')} ${t('shareSession')}</button>
@@ -1283,7 +1429,15 @@ function tourSlides() {
     [`<img class="logo-big" src="icons/icon-512.png" alt="">`, t('t1h'), t('t1p') +
       `<div class="chips">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>`],
     ['', t('t7h'), t('t7p') + `<form data-form="profile" data-tour="1">${profileFields(profile())}<button class="btn s wide" style="background:var(--fill)">${t('saveProfile')}</button></form>`],
+    [`<div class="mock"><div class="words"><div><b>3</b><span>${t('twSets')}</span></div><i>×</i><div><b>10</b><span>${t('twReps')}</span></div><i>·</i><div><b>20</b><span>kg</span></div></div>
+      <p class="sub" style="text-align:center;margin-top:8px">${t('twEx')}</p></div>`, t('twH'), t('twP')],
+    [`<div class="mock"><h4>${t('myProgram')}</h4><div class="row cur" style="margin-top:8px"><div class="grow"><h3>${t('starterDay', 1)}</h3><div class="sub">${t('exN', 5)}</div></div><span class="tag pr" style="animation:none">${t('nextUp')}</span></div>
+      <div class="row" style="margin-top:6px"><div class="grow"><h3>${t('starterDay', 2)}</h3><div class="sub">${t('exN', 5)}</div></div></div></div>`, t('tpH'), t('tpP') +
+      (planList().length ? '' : `<button class="btn s wide" data-act="starterplan" style="margin-top:12px;background:var(--fill)">${t('starterPlanBtn')}</button>`)],
     [`<div class="mock"><h4>${bench}</h4><div class="entry">${mockStep(8, t('repsShort'))}${mockStep(70, 'kg')}</div><div class="btn p wide">${t('logSet', 1)}</div></div>`, t('t2h'), t('t2p')],
+    [`<div class="mock rec"><div class="rec-grid" style="grid-template-columns:40% 1fr;align-items:center">${bodyFig('f', k => k === 'chest' || k === 'upperChest' ? 'r3' : k === 'frontDelt' ? 'r2' : '')}
+      <div class="rec-list"><div class="rec-row"><div class="grow"><b>${t('rgroups').chest}</b></div><em class="r3">35%</em></div><div class="rec-row"><div class="grow"><b>${t('rgroups').shoulders}</b></div><em class="r2">62%</em></div><div class="rec-row"><div class="grow"><b>${t('rgroups').quads}</b></div><em>100%</em></div></div></div></div>`, t('trH'), t('trP')],
+    [`<div class="mock"><div class="words"><div><b>12</b><span>✓</span></div><div><b>12</b><span>✓</span></div><div><b>12</b><span>✓</span></div><i>→</i><div><b class="up">+2${DEC}5</b><span>kg</span></div></div></div>`, t('tsH'), t('tsP')],
     [`<div class="mock"><h4>${bench}</h4><p class="last">${t('lastTime', fmtShort(addDays(today(), -7)), `8 × 70 · 7 × 70`)}</p>
       <div class="setrow"><span class="n">1</span><span class="f">9 <small>${rs} ×</small> 70</span><span class="tag pr">${t('record')}</span></div>
       <div class="goal"><span class="chip" aria-pressed="true" style="display:inline-flex;align-items:center">8 × 70 kg</span><span class="chip" style="display:inline-flex;align-items:center">7 × 72${DEC}5 kg</span></div></div>`, t('t3h'), t('t3p')],
@@ -1803,7 +1957,7 @@ function addSet(eid) {
   const prior = priorOf(s, e), prev = prior[prior.length - 1], i = e.sets.length;
   if (!plausible(e, prior, kg)) return;
   const best = Math.max(0, ...prior.flatMap(x => x.sets.map(e1rm)), ...e.sets.map(e1rm));
-  const set = {reps, kg}, v = e1rm(set), ref = prev && prev.sets[i];
+  const set = {reps, kg, at: Date.now()}, v = e1rm(set), ref = prev && prev.sets[i];
   e.sets.push(set); delete drafts[eid]; save();
   const y = window.scrollY; render(); window.scrollTo(0, y);
   startRest(e.name, e.sets.length + 1, e.target && e.target.rest);
@@ -1842,6 +1996,12 @@ function addExercise(name, lib) {
   const s = sess(view.id), e = {id: uid(), name, sets: []};
   if (lib) e.lib = lib;
   s.exercises.push(e); save(); closeSheet(); view.open = e.id; render();
+  const p = s.plan && plans()[s.plan.id], day = p && p.own && p.days[s.plan.day];
+  if (day && !day.ex.some(x => (lib && x.lib === lib) || key(nameFor(x)) === key(name)))
+    setTimeout(() => toast(t('addToPlanQ', esc(name)), t('addToPlanBtn'), () => {
+      const reps = lib && VAR[lib] ? VAR[lib].b.reps.replace(/\s*s$/, '') : '8–12';
+      day.ex.push({lib: lib || '', n: name, sets: 3, reps, rest: restFor(reps), note: ''}); save(); toast(t('addedToPlan', esc(dayTitle(p, s.plan.day))));
+    }), 0);
   setTimeout(() => { const el = document.getElementById('ex-' + e.id); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }, 50);
 }
 
@@ -1926,6 +2086,9 @@ const acts = {
   pasteplan: () => sheetPasteAny(t('pastePlan')),
   plan: b => go({name: 'plan', id: b.dataset.id, from: view.name === 'home' ? view.tab : 'sessions'}),
   newplan: newPlan,
+  starterplan: starterPlan,
+  recovery: b => sheetRecovery(+b.dataset.t),
+  recflip: b => { view.recSide = b.dataset.side; const sh = document.getElementById('sheet'); if (sh.contains(b)) sheetRecovery(recT || Date.now()); else { const y = window.scrollY; render(); window.scrollTo(0, y); } },
   editplan: b => go({name: 'planedit', id: b.dataset.id}),
   startday: b => startPlanDay(b.dataset.id, +b.dataset.i),
   sendplan: b => needNick(() => sheetSendPlan(b.dataset.id)),
@@ -1966,7 +2129,7 @@ const forms = {
     save(); closeSheet(); render(); },
   editset: f => { const r = parseInt(f.r.value, 10), k = num(f.k.value); if (!(r > 0 && r <= MAX_REPS) || !(k >= 0 && k <= MAX_KG)) return alert(t('invalidSet'));
     { const s = sess(view.id), e = s.exercises.find(x => x.id === f.dataset.eid); if (!plausible(e, priorOf(s, e), k)) return; }
-    sess(view.id).exercises.find(e => e.id === f.dataset.eid).sets[+f.dataset.i] = {reps: r, kg: k};
+    { const z = sess(view.id).exercises.find(e => e.id === f.dataset.eid).sets; z[+f.dataset.i] = {...z[+f.dataset.i], reps: r, kg: k}; }
     save(); closeSheet(); const y = window.scrollY; render(); window.scrollTo(0, y); },
   bodylog: f => {
     const w = num(f.w.value), k = num(f.k.value), pr = num(f.p.value), d = f.d.value || today();
