@@ -289,11 +289,25 @@ function chatView() {
       <input type="file" id="cfile" accept="image/*" hidden></div>`;
 }
 // aggiorna senza ridisegnare tutto: lista messaggi o elenco chat
-function chatRefresh() {
+// aggiorna la conversazione aperta senza ridisegnarla: i messaggi nuovi si aggiungono in fondo, la posizione resta
+function chatRefresh(toBottom) {
   if (view.name === 'chat' && chat().friends[view.id]) {
     const el = document.getElementById('chat-list'); if (!el) return;
-    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
-    el.innerHTML = chatList(view.id); chatImgs(); if (near) el.scrollTop = el.scrollHeight;
+    const l = chat().msgs[view.id] || [], vis = l.filter(m => m.k !== 'rx'), rxN = l.length - vis.length;
+    const shown = [...el.querySelectorAll('.cm[data-mid]')].map(x => x.dataset.mid);
+    const near = toBottom || el.scrollHeight - el.scrollTop - el.clientHeight < 160, top = el.scrollTop;
+    const prefix = shown.length && shown.length <= vis.length && shown.every((id, i) => vis[i].id === id) && el._rx === rxN;
+    if (prefix && shown.length < vis.length) {
+      let day = new Date(vis[shown.length - 1].t * 1000).toDateString(), out = '';
+      vis.slice(shown.length).forEach(m => {
+        const dk = new Date(m.t * 1000).toDateString();
+        if (dk !== day) { day = dk; out += `<div class="cday">${t('chatToday')}</div>`; }
+        out += bubbleHtml(view.id, m, l).replace('class="cm ', 'class="cm cnew ');
+      });
+      el.insertAdjacentHTML('beforeend', out); chatImgs();
+    } else if (!prefix) { el.innerHTML = chatList(view.id); el._rx = rxN; chatImgs(); }
+    vis.forEach(m => { if (m.from === 'me' && m.ok) { const ct = el.querySelector(`.cm[data-mid="${m.id}"] > .ct`); if (ct && ct.textContent.endsWith(' …')) ct.textContent = ct.textContent.slice(0, -2) + ' ✓'; } });
+    requestAnimationFrame(() => { if (near) el.scrollTo({top: el.scrollHeight, behavior: toBottom ? 'smooth' : 'auto'}); else el.scrollTop = top; });
     const st = document.getElementById('chat-status'); if (st) st.textContent = chatStatus();
     if (chat().friends[view.id].unread) { chat().friends[view.id].unread = 0; save(); }
   } else if (view.name === 'home') render();
@@ -304,17 +318,21 @@ function chatImgs() { document.querySelectorAll('img[data-imgid]').forEach(i => 
 function chatEnter(pk) {
   const f = chat().friends[pk]; if (f && f.unread) { f.unread = 0; save(); }
   chatImgs();
-  const el = document.getElementById('chat-list'); if (el) el.scrollTop = el.scrollHeight;
+  const el = document.getElementById('chat-list'); if (el) { el._rx = (chat().msgs[pk] || []).filter(m => m.k === 'rx').length; el.scrollTop = el.scrollHeight; }
   chatConnect();
   const file = document.getElementById('cfile');
   if (file) file.onchange = async () => {
     const x = file.files[0]; file.value = ''; if (!x) return;
-    try { const r = await chatShrink(x); await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); chatRefresh(); } catch (e) { alert(t('chatPhotoFail')); }
+    try { const r = await chatShrink(x); await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); chatRefresh(true); } catch (e) { alert(t('chatPhotoFail')); }
   };
 }
 // tastiera su iPhone: la barra sale sopra la tastiera
 if (window.visualViewport) {
-  const kb = () => { const v = window.visualViewport; document.documentElement.style.setProperty('--kb', Math.max(0, window.innerHeight - v.height - v.offsetTop) + 'px'); };
+  const kb = () => {
+    const v = window.visualViewport, h = document.documentElement.clientHeight, k = Math.max(0, Math.round(h - v.height - v.offsetTop));
+    document.documentElement.style.setProperty('--kb', k + 'px'); document.documentElement.classList.toggle('kbopen', k > 60);
+    if (k > 60) { const el = document.getElementById('chat-list'); if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 220) el.scrollTop = el.scrollHeight; }
+  };
   window.visualViewport.addEventListener('resize', kb); window.visualViewport.addEventListener('scroll', kb);
 }
 
@@ -433,7 +451,7 @@ Object.assign(acts, {
   chatemoji: b => {
     const i = document.getElementById('cinput'), v = i.value.trim();
     // emoji da sola con campo vuoto = emoji grande; altrimenti si aggiunge al testo
-    if (!v) chatSend(view.id, {k: 'em', x: b.dataset.e}).then(chatRefresh); else { i.value += b.dataset.e; i.focus(); }
+    if (!v) chatSend(view.id, {k: 'em', x: b.dataset.e}).then(() => chatRefresh(true)); else { i.value += b.dataset.e; i.focus(); }
   },
   chatpick: () => document.getElementById('cfile').click(),
   chatimg: b => { const d = imgCache[b.dataset.imgid]; if (d) sheet(`<img class="big-img" src="${d}" alt="">`); },
@@ -457,7 +475,8 @@ Object.assign(forms, {
     const x = f.x.value.trim(), pk = f.dataset.pk; if (!x) return;
     f.x.value = '';
     const only = /^(\p{Extended_Pictographic}|‍|️|\s){1,8}$/u.test(x) && [...x.matchAll(/\p{Extended_Pictographic}/gu)].length <= 3;
-    chatSend(pk, only ? {k: 'em', x} : {k: 't', x}).then(() => { chatRefresh(); const el = document.getElementById('chat-list'); if (el) el.scrollTop = el.scrollHeight; });
+    chatSend(pk, only ? {k: 'em', x} : {k: 't', x}).then(() => chatRefresh(true));
+    f.x.focus();
     const tr = document.getElementById('ctray'); if (tr) tr.hidden = true;
   },
   chatfriend: f => {
