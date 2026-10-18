@@ -540,7 +540,7 @@ function activePlan(np) {
 function programCard(np) {
   const p = activePlan(np);
   if (!p) return `<div class="dcard prog"><h3>${t('myProgram')}</h3><p class="sub" style="margin-top:4px">${t('programEmpty')}</p>
-      <div class="opts" style="margin-top:12px"><button class="btn p" data-act="starterplan">${t('starterPlanBtn')}</button><button class="btn s" data-act="newplan" style="background:var(--fill)">${t('newPlan')}</button></div>
+      <div class="opts" style="margin-top:12px"><button class="btn p" data-act="newplan">${t('newPlan')}</button></div>
       <button class="btn s wide" data-act="impplan" style="margin-top:8px;background:var(--fill)">${icon('camera')} ${t('impPlanBtn')}</button></div>`;
   const nextI = np && np.p === p ? np.i : p.days.findIndex(d => d.ex.length);
   const lastOf = i => [...db.sessions].filter(s => s.plan && s.plan.id === p.id && s.plan.day === i && s.exercises.some(e => e.sets.length)).sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -554,18 +554,6 @@ function programCard(np) {
   return `<div class="dcard prog"><div class="item"><h3>${t('myProgram')}</h3><button class="ib txt" data-act="plan" data-id="${p.id}">${t('edit')}</button></div>
     <p class="sub" style="margin:2px 0 10px">${esc(p.name)}${p.author && !p.own ? ' · ' + esc(t('planBy', p.author, p.role)) : ''}</p>
     ${rows ? `<div class="list">${rows}</div>` : `<p class="sub">${t('planEmptyDay')}</p>`}</div>`;
-}
-// scheda pronta per chi inizia: corpo intero in due giorni alternati, macchine e attrezzi semplici
-const STARTER = [
-  [['quads.legPress.incline45', 3, '10–12'], ['chest.chestPress.machine', 3, '10–12'], ['back.latPulldown.wideGrip', 3, '10–12'], ['hams.legCurl.seated', 2, '12–15'], ['core.plank.front', 3, '30–45 s']],
-  [['quads.gobletSquat.dumbbell', 3, '10–12'], ['shoulders.machineShoulderPress.machine', 3, '10–12'], ['back.seatedCableRow.vHandle', 3, '10–12'], ['hams.gluteBridge.bodyweight', 3, '12–15'], ['core.deadBug.bodyweight', 2, '8–12']],
-];
-function starterPlan() {
-  const p = {id: uid() + uid(), own: true, name: t('starterName'), author: nick(), role: t('roleDefault'), note: t('starterNote'), food: '', got: today(),
-    days: STARTER.map((d, i) => ({name: t('starterDay', i + 1), ex: d.filter(([id]) => VAR[id]).map(([lib, sets, reps]) => ({lib, n: tx(VAR[lib].v.name), sets, reps, rest: restFor(reps), note: ''}))}))};
-  plans()[p.id] = p; save(); toast(t('starterDone'));
-  // dal tutorial si resta sulla stessa schermata: il resto della guida serve proprio a chi inizia
-  if (!document.getElementById('tour').hidden) openTour(tourIndex()); else go({name: 'home', tab: 'today'});
 }
 // andamento compatto di un esercizio: forza stimata delle ultime sedute
 function miniProgress(name) {
@@ -999,10 +987,30 @@ function saveProfile(f) {
 // ---------- fogli (bottom sheet) e avvisi ----------
 function sheet(html) {
   const el = document.getElementById('sheet');
-  el.innerHTML = `<div class="scrim" data-act="close"></div><div class="pane" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  el.innerHTML = `<div class="scrim" data-act="close"></div><div class="pane" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheetx" data-act="close" aria-label="${t('close')}">✕</button>${html}</div>`;
   el.hidden = false;
+  dragDismiss(el.querySelector('.pane'));
   const f = el.querySelector('[data-focus]'); if (f) f.focus();
   requestAnimationFrame(() => el.classList.add('on'));
+}
+// trascinare la tendina verso il basso la chiude (dalla maniglia, o da ovunque se è scorsa fino in cima)
+function dragDismiss(pane) {
+  let y0 = null, dy = 0, fromGrab = false;
+  pane.addEventListener('touchstart', e => {
+    fromGrab = !!e.target.closest('.grab') || e.touches[0].clientY - pane.getBoundingClientRect().top < 44;
+    y0 = (fromGrab || pane.scrollTop <= 0) ? e.touches[0].clientY : null; dy = 0;
+  }, {passive: true});
+  pane.addEventListener('touchmove', e => {
+    if (y0 == null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy > 0 && (fromGrab || pane.scrollTop <= 0)) { pane.style.transition = 'none'; pane.style.transform = `translateY(${dy}px)`; }
+  }, {passive: true});
+  pane.addEventListener('touchend', () => {
+    if (y0 == null) return;
+    pane.style.transition = ''; pane.style.transform = '';
+    if (dy > 80) closeSheet();
+    y0 = null; dy = 0;
+  });
 }
 function closeSheet() {
   const el = document.getElementById('sheet');
@@ -1508,8 +1516,7 @@ function tourSlides() {
     [`<div class="mock"><div class="words"><div><b>3</b><span>${t('twSets')}</span></div><i>×</i><div><b>10</b><span>${t('twReps')}</span></div><i>·</i><div><b>20</b><span>kg</span></div></div>
       <p class="sub" style="text-align:center;margin-top:8px">${t('twEx')}</p></div>`, t('twH'), t('twP')],
     [`<div class="mock"><h4>${t('myProgram')}</h4><div class="row cur" style="margin-top:8px"><div class="grow"><h3>${t('starterDay', 1)}</h3><div class="sub">${t('exN', 5)}</div></div><span class="tag pr" style="animation:none">${t('nextUp')}</span></div>
-      <div class="row" style="margin-top:6px"><div class="grow"><h3>${t('starterDay', 2)}</h3><div class="sub">${t('exN', 5)}</div></div></div></div>`, t('tpH'), t('tpP') +
-      (planList().length ? '' : `<button class="btn s wide" data-act="starterplan" style="margin-top:12px;background:var(--fill)">${t('starterPlanBtn')}</button>`)],
+      <div class="row" style="margin-top:6px"><div class="grow"><h3>${t('starterDay', 2)}</h3><div class="sub">${t('exN', 5)}</div></div></div></div>`, t('tpH'), t('tpP')],
     [`<div class="mock"><h4>${bench}</h4><div class="entry">${mockStep(8, t('repsShort'))}${mockStep(70, 'kg')}</div><div class="btn p wide">${t('logSet', 1)}</div></div>`, t('t2h'), t('t2p')],
     [`<div class="mock rec"><div class="rec-grid" style="grid-template-columns:40% 1fr;align-items:center">${bodyFig('f', k => k === 'chest' || k === 'upperChest' ? 'r3' : k === 'frontDelt' ? 'r2' : '')}
       <div class="rec-list"><div class="rec-row"><div class="grow"><b>${t('rgroups').chest}</b></div><em class="r3">35%</em></div><div class="rec-row"><div class="grow"><b>${t('rgroups').shoulders}</b></div><em class="r2">62%</em></div><div class="rec-row"><div class="grow"><b>${t('rgroups').quads}</b></div><em>100%</em></div></div></div></div>`, t('trH'), t('trP')],
@@ -2297,7 +2304,6 @@ const acts = {
   pasteplan: () => sheetPasteAny(t('pastePlan')),
   plan: b => go({name: 'plan', id: b.dataset.id, from: view.name === 'home' ? view.tab : 'sessions'}),
   newplan: newPlan,
-  starterplan: starterPlan,
   recovery: b => sheetRecovery(+b.dataset.t),
   recflip: b => { view.recSide = b.dataset.side; const sh = document.getElementById('sheet'); if (sh.contains(b)) sheetRecovery(recT || Date.now()); else { const y = window.scrollY; render(); window.scrollTo(0, y); } },
   editplan: b => go({name: 'planedit', id: b.dataset.id}),
