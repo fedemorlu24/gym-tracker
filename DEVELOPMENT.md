@@ -36,7 +36,7 @@ Open it on your phone and use *Add to Home Screen*. There is no account, no serv
   - Large multi-joint lifts typically need 48–72 h, small muscles ~36–48 h.
 
 ### Body
-- Body weight, calories and protein with trend and forecast; progress photos (stored on the device) with side-by-side comparison.
+- Body weight and calories with trend and forecast; progress photos (stored on the device) with side-by-side comparison.
 
 ### Exercise library
 - 131 movements and 485 variants in 5 languages, with target muscles, a muscle map, execution tips and suggested rep ranges.
@@ -69,10 +69,11 @@ All data lives in your browser (`localStorage` + `IndexedDB`; photos only in `In
 | `exlib.js` | Exercise library labels |
 | `lib/*.json`, `lib/data.js` | Exercise library sources and the generated bundle |
 | `lib/BRIEF.md`, `lib/build.py` | Library schema and validator/builder |
+| `guide3d.js`, `3d/` | 3D exercise guide: renderer and kit (`guide3d.js`), movements (`3d/moves.js`), body model, three.js, Draco decoder |
 | `sw.js` | Service worker (offline copy) |
 | `manifest.json`, `icons/` | PWA manifest and icons |
 
-No build step and no dependencies: plain HTML, CSS and JavaScript.
+No build step for the app: plain HTML, CSS and JavaScript. The 3D files in `3d/` are prebuilt (see below).
 
 ## Development
 
@@ -86,6 +87,8 @@ Release rule: bump `VERSION` in `sw.js` and every `?v=` in `index.html` to the s
 Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Profile photo is a 112 px JPEG sent to friends.
 
 Exercise animations (`guide.js`): `A.<scheme>` functions give keyframes + scenery/props; `GMAP` maps every library base id to a scheme; the variant's equipment (`eq`) changes the prop. Shown the first time a library exercise is added (`db.guide`), always in the exercise guide.
+
+3D guide (`guide3d.js`, `3d/moves.js`): when WebGL works, the SVG figure is replaced by a 3D body loaded on demand (three.js bundle + `3d/man.glb` ≈ 1.5 MB in all, cached by the service worker at first use). Every library base id has a movement in `MOVES3D.MAP` → `M.<scheme>(options)` with `pose(k, u)` (u = 0 start → 1 end, or a cycle when `cyc`) and optional `build(k, g)` for benches and machines. Poses are written in 3D from gym-manual checkpoints (for example bar over mid-foot, bar to mid-chest, forearms vertical) using the kit: `torso`, `leg`, `arm` (IK + palm direction + closed grip), `armDir`/`legDir`, `onBone` body landmarks. Worked muscles are painted on the skin from vertex colours (R = muscle group, G = proximity, B = shorts). The body model is derived from Z-Anatomy (CC BY-SA 4.0, credit shown under the 3D view, details in `3d/LICENSE.md`); it was built in Blender from the Z-Anatomy atlas (skin regions welded and smoothed, simple rig with finger bones). The bundle `3d/three.min.js` is three@0.160.0 + GLTFLoader + DRACOLoader + RoomEnvironment built with esbuild.
 
 Backup: `gym-tracker-backup.json`, optional AES-GCM/PBKDF2 password (`encryptBackup`), reminder after 7 days (`backupNudge`). `DONATE_URL` in `app.js` enables the donation button in Settings (empty = hidden).
 

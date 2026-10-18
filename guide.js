@@ -406,6 +406,7 @@ function guideStart() {
   if (window.G3D && G3D.supported()) G3D.load().then(() => {
     if (document.getElementById('gf-stage') !== st || el.dataset.eq !== eq) return;
     gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); el.classList.add('gf3'); draw(gfMs);
+    if (!el.querySelector('.gf-cred')) el.insertAdjacentHTML('beforeend', '<a class="gf-cred" href="3d/LICENSE.md" target="_blank" rel="noopener">3D: Z-Anatomy · CC BY-SA 4.0</a>');
   }).catch(() => {});
 }
 // la prima volta che si aggiunge un movimento dalla libreria
