@@ -20,8 +20,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   page.on('response', r => { if (r.status() >= 400) responses.push({url: r.url(), status: r.status()}); });
   try {
     await page.goto(url);
+    await page.evaluate(() => window.gymDataReady);
     await page.evaluate(() => { document.getElementById('tour').hidden = true; document.getElementById('install').hidden = true; sheetLibBase('fullbody.deadlift'); });
     await page.waitForSelector('.gf-3d');
+    await page.waitForFunction(() => gf3 !== null);
     const manifest = await page.evaluate(async () => {
       const m = await (await fetch(document.querySelector('link[rel=manifest]').href)).json();
       return {name: m.name, short: m.short_name, apple: document.querySelector('meta[name=apple-mobile-web-app-title]').content};

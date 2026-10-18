@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "file": "3d/three.min.js",
+      "package": "three",
+      "version": "0.160.0",
+      "source": "3d/src/three-entry.js",
+      "license": "MIT",
+      "bytes": 719177,
+      "sha256": "6685cc7c5a1fa3cfa6c663564345d7e53dc6a25ee1867141d2f7037ae63cc6c4",
+      "upstream": "https://github.com/mrdoob/three.js/tree/r160",
+      "provenance": "Same three@0.160.0 sources rebuilt with esbuild@0.28.2 to remove the development-server advisory in the historical compiler."
+    },
+    {
+      "file": "3d/draco/draco_wasm_wrapper.js",
+      "package": "three",
+      "version": "0.160.0",
+      "source": "examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js",
+      "license": "Apache-2.0",
+      "bytes": 58456,
+      "sha256": "8bb2952d2ba7d67e1414f8df819410cb0434a666be53f671fff75f68843d76f6",
+      "upstream": "https://github.com/mrdoob/three.js/tree/r160",
+      "component": "Draco glTF decoder distributed with three@0.160.0",
+      "componentVersion": "not independently established; exact distribution and binary hashes pinned"
+    },
+    {
+      "file": "3d/draco/draco_decoder.wasm",
+      "package": "three",
+      "version": "0.160.0",
+      "source": "examples/jsm/libs/draco/gltf/draco_decoder.wasm",
+      "license": "Apache-2.0",
+      "bytes": 192420,
+      "sha256": "a680d927bed9cb864ddbd63521868891af2bfbe755092761b4837487618df8ac",
+      "upstream": "https://github.com/mrdoob/three.js/tree/r160",
+      "component": "Draco glTF decoder distributed with three@0.160.0",
+      "componentVersion": "not independently established; exact distribution and binary hashes pinned"
+    },
+    {
+      "file": "nostr-tools.js",
+      "package": "nostr-tools",
+      "version": "2.10.3",
+      "source": "lib/nostr.bundle.js",
+      "license": "Unlicense",
+      "bytes": 212239,
+      "sha256": "dd2acfb3214496e719aaa284bbf2c24866aee1856eb88e99b6eae533d4a38eeb",
+      "upstream": "https://github.com/nbd-wtf/nostr-tools/tree/v2.10.3",
+      "provenance": "npm nostr-tools@2.10.3 lib/nostr.bundle.js byte-identical to the shipped file; verified locally on 2026-10-18"
+    }
+  ],
+  "buildTools": {
+    "esbuild": "0.28.2"
+  }
+}

@@ -93,7 +93,7 @@ let imp = null;  // import in corso: {name, days, hist, map: {nome scritto → i
 function impStart(txt) {
   const r = impParse(txt);
   if (!r) return alert(t('impBad'));
-  const map = {};
+  const map = Object.create(null);
   [...r.days.flatMap(d => d.ex), ...r.hist.flatMap(h => h.ex)].forEach(e => { const k = norm(e.orig); if (!(k in map)) map[k] = impAuto(e.orig); });
   imp = {...r, map};
   sheetImportPreview();
@@ -103,16 +103,16 @@ function impSelect(orig, cur, attr) {
   const opts = impMatch(orig, 6).filter(m => m.s > .15);
   if (cur && !opts.some(m => m.id === cur)) opts.unshift({id: cur});
   return `<select ${attr}><option value="">${esc(t('impAsWritten'))}</option>${opts.map(m =>
-    `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${esc(tx(VAR[m.id].v.name))}</option>`).join('')}</select>`;
+    `<option value="${esc(m.id)}" ${m.id === cur ? 'selected' : ''}>${esc(tx(VAR[m.id].v.name))}</option>`).join('')}</select>`;
 }
 function sheetImportPreview() {
   const r = imp, undated = r.hist.filter(h => !h.date), weeks = Math.max(1, ...r.hist.map(h => h.week));
   const start = addDays(weekOf(today()), -7 * weeks);
   const exRow = (e, i, j) => `<div class="improw"><div class="sub">${esc(e.orig)}</div>
     ${impSelect(e.orig, r.map[norm(e.orig)], `data-impmap="${esc(norm(e.orig))}"`)}
-    <div class="opts three"><label class="field">${t('setsL')}<input data-imp="sets" data-i="${i}" data-j="${j}" inputmode="numeric" value="${e.sets}"></label>
+    <div class="opts three"><label class="field">${t('setsL')}<input data-imp="sets" data-i="${i}" data-j="${j}" inputmode="numeric" value="${esc(e.sets)}"></label>
       <label class="field">${t('repsRange')}<input data-imp="reps" data-i="${i}" data-j="${j}" value="${esc(e.reps)}"></label>
-      <label class="field">${t('restL')}<input data-imp="rest" data-i="${i}" data-j="${j}" inputmode="numeric" value="${e.rest || ''}"></label></div></div>`;
+      <label class="field">${t('restL')}<input data-imp="rest" data-i="${i}" data-j="${j}" inputmode="numeric" value="${esc(e.rest || '')}"></label></div></div>`;
   const histOnly = [...new Set(r.hist.flatMap(h => h.ex.map(e => norm(e.orig))))].filter(k => !r.days.some(d => d.ex.some(e => norm(e.orig) === k)));
   const nSets = r.hist.reduce((a, h) => a + h.ex.reduce((b, e) => b + e.sets.length, 0), 0);
   sheet(`<h2>${t('impCheck')}</h2><p class="sub" style="margin-bottom:10px">${t('impCheckSub')}</p>
@@ -122,7 +122,7 @@ function sheetImportPreview() {
       ${d.ex.map((e, j) => exRow(e, i, j)).join('')}</div>`).join('')}
     ${r.hist.length ? `<p class="glabel">${t('impHistory')}</p><div class="dcard"><p>${t('impHistN', r.hist.length, nSets)}</p>
       ${undated.length ? `<p class="sub" style="margin:6px 0 8px">${t('impNoDates', undated.length)}</p>
-        <div class="opts"><label class="field">${t('impStartDate')}<input type="date" name="sd" value="${start}" max="${today()}"></label>
+        <div class="opts"><label class="field">${t('impStartDate')}<input type="date" name="sd" value="${esc(start)}" max="${today()}"></label>
         <label class="field">${t('impPerWeek')}<select name="pw">${[2, 3, 4, 5, 6].map(k => `<option ${k === Math.min(6, Math.max(2, r.days.length)) ? 'selected' : ''}>${k}</option>`).join('')}</select></label></div>` : ''}
       ${histOnly.map(k => { const e = r.hist.flatMap(h => h.ex).find(x => norm(x.orig) === k);
         return `<div class="improw"><div class="sub">${esc(e.orig)}</div>${impSelect(e.orig, r.map[k], `data-impmap="${esc(k)}"`)}</div>`; }).join('')}</div>` : ''}
@@ -228,7 +228,7 @@ function csvStart(inp) {
   f.text().then(txt => {
     const r = csvParse(txt);
     if (!r) return alert(t('impCsvBad'));
-    const map = {};
+    const map = Object.create(null);
     r.sessions.forEach(s => s.ex.forEach((_, n) => { const k = norm(n); if (!(k in map)) map[k] = impAuto(n); }));
     csvImp = {...r, map}; sheetCsvPreview();
   }).catch(() => alert(t('impCsvBad')));

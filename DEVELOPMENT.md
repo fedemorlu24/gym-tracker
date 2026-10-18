@@ -58,7 +58,7 @@ Open it on your phone and use *Add to Home Screen*. There is no account, no serv
 
 ## Privacy and data
 
-All data lives in your browser (`localStorage` + `IndexedDB`; photos only in `IndexedDB`). Nothing is uploaded. Data is bound to the app's origin, so **never change the URL or the repository name**, and always *Export* before removing the app from the Home Screen.
+Workout data lives in your browser (`localStorage` + `IndexedDB`; photos only in `IndexedDB`). Chat sends encrypted messages and selected attachments through public Nostr relays after you activate it. Sharing and exports send only what you choose. Data is bound to the app's origin, so **never change the URL or the repository name**, and always *Export* before removing the app from the Home Screen.
 
 ## Project structure
 
@@ -66,6 +66,9 @@ All data lives in your browser (`localStorage` + `IndexedDB`; photos only in `In
 |---|---|
 | `index.html` | Page shell |
 | `app.js` | Application logic and views |
+| `security-data.js` | Normalization of shared, imported and stored records before rendering |
+| `secure-media.js` | Offline validation and decoding of inline raster images |
+| `chat.js`, `nostr-tools.js` | Encrypted contact chat and the pinned upstream crypto bundle |
 | `import.js` | Plan import (via the user's own AI app) and CSV history import |
 | `i18n.js` | Translations (all 5 languages must stay in sync) |
 | `style.css` | Styles |
@@ -75,6 +78,7 @@ All data lives in your browser (`localStorage` + `IndexedDB`; photos only in `In
 | `guide3d.js`, `3d/` | 3D exercise guide: renderer and kit (`guide3d.js`), movements (`3d/moves.js`), body model, three.js, Draco decoder |
 | `sw.js` | Service worker (offline copy) |
 | `manifest.json`, `icons/` | PWA manifest and icons |
+| `vendor/`, `tools/vendor-build.mjs` | Pinned upstream packages, licenses, asset hashes and reproducible build |
 
 No build step for the app: plain HTML, CSS and JavaScript. The 3D files in `3d/` are prebuilt (see below).
 
@@ -98,17 +102,24 @@ npx playwright install chromium
 npm run test:donation
 npm run test:guides
 npm run test:update   # starts its own isolated release fixture
+npm run test:security # isolated origin, synthetic keys, no relay traffic
 ```
 
-The update fixture pins the released v65 commit and verifies v65 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data.
+The update fixture pins the released v66 commit and verifies v66 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
 
-Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Profile photo is a 112 px JPEG sent to friends.
+Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Contacts display initials; profile photos, including legacy avatars, are no longer displayed, sent or accepted. Photos in messages from added contacts remain visible immediately and can be sent, enlarged and backed up. Normal messages from unknown or blocked keys are ignored; possession of your invite link can allow a new contact to join, so share it privately and rotate it if needed. Raster validation prevents malformed attachments; it does not classify sexual content. There is no automatic pornography detector or new photo restriction for known friends.
 
 Exercise animations (`guide.js`): `A.<scheme>` functions give keyframes + scenery/props; `GMAP` maps every library base id to a scheme; the variant's equipment (`eq`) changes the prop. Shown the first time a library exercise is added (`db.guide`), always in the exercise guide.
 
 3D guide (`guide3d.js`, `3d/moves.js`): when WebGL works, the SVG figure is replaced by a 3D body loaded on demand (three.js bundle + `3d/man.glb` ≈ 1.5 MB in all, cached by the service worker at first use). Every library base id has a movement in `MOVES3D.MAP` → `M.<scheme>(options)` with `pose(k, u)` (u = 0 start → 1 end, or a cycle when `cyc`) and optional `build(k, g)` for benches and machines. Poses are written in 3D from gym-manual checkpoints (for example bar over mid-foot, bar to mid-chest, forearms vertical) using the kit: `torso`, `leg`, `arm` (IK + palm direction + closed grip), `armDir`/`legDir`, `onBone` body landmarks. Worked muscles are painted on the skin from vertex colours (R = muscle group, G = proximity, B = shorts). The body model is derived from Z-Anatomy (CC BY-SA 4.0, credit shown under the 3D view, details in `3d/LICENSE.md`); it was built in Blender from the Z-Anatomy atlas (skin regions welded and smoothed, simple rig with finger bones). The bundle `3d/three.min.js` is three@0.160.0 + GLTFLoader + DRACOLoader + RoomEnvironment built with esbuild. Rebuild scripts: `3d/src/` (Blender script for the model, esbuild entry for three.js).
 
-Backup: `gym-tracker-backup.json`, optional AES-GCM/PBKDF2 password (`encryptBackup`), reminder after 7 days (`backupNudge`). `DONATE_URL` in `app.js` enables optional donation cards in Today and Settings (empty = hidden).
+Backup: `gym-tracker-backup.json`, optional AES-GCM/PBKDF2 password (`encryptBackup`), reminder after 7 days (`backupNudge`). The export includes the chat private key, with an explicit warning in all five languages, and referenced chat attachments. The entire import is parsed, normalized and decoded before confirmation/commit; remote image URLs are rejected without a fetch. A single IndexedDB transaction commits JSON and photos and retains the previous snapshot in `restore-rollback`. After the first such restore, IndexedDB is authoritative and localStorage is a recoverable cache. A generation check rejects writes from stale tabs running the new code; an already-open v66 tab does not implement this protocol. See `SECURITY_REMEDIATION.md` for tested failure cases and remaining limits.
+
+The CSP in `index.html` restricts scripts to this origin, blocks inline handlers, and allows the WebAssembly decoder and configured secure WebSocket relays. Framing protection requires a hosting response header (`Content-Security-Policy: frame-ancestors 'none'`); it cannot be supplied by a meta tag. Do not change the origin to obtain this header without a separate data-migration plan.
+
+For dependency maintenance run `npm ci --prefix vendor`, `npm run check:vendor`, `npm audit`, and `npm audit --prefix vendor`. The exact inventory and build/update procedure are in `vendor/README.md`; npm audit alone does not certify the browser bundles or WASM.
+
+`DONATE_URL` in `app.js` enables the optional donation card at the bottom of Settings and once in the third recorded workout summary (empty = hidden).
 
 Deploy: push to the `main` branch; GitHub Pages serves the repository root.
 

@@ -4,7 +4,13 @@
   "scripts": {
     "test:guides": "node tests/guides.cjs",
     "test:donation": "node tests/donation.cjs",
-    "test:update": "node tests/update.cjs"
+    "test:update": "node tests/update.cjs",
+    "test:security": "node tests/security.cjs",
+    "build:vendor": "node tools/vendor-build.mjs",
+    "check:vendor": "node tools/vendor-build.mjs --check",
+    "check:vendor-inventory": "node tools/vendor-build.mjs --inventory"
   },
-  "devDependencies": { "playwright": "1.62.1" }
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
 }

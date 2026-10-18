@@ -7,22 +7,18 @@ function load() {
   try { return clean(JSON.parse(localStorage.getItem(KEY))) || {sessions: []}; }
   catch (e) { return {sessions: []}; }
 }
-// ripulisce un archivio (salvato o importato): scarta sedute, esercizi e serie malformati; null se non è un archivio
-function clean(o) {
-  if (!o || typeof o !== 'object' || !Array.isArray(o.sessions)) return null;
-  const n = v => typeof v === 'number' ? v : parseFloat(v);
-  o.sessions = o.sessions.filter(s => s && typeof s === 'object' && /^\d{4}-\d\d-\d\d$/.test(s.date)).map(s => ({
-    ...s, id: s.id ? String(s.id) : Math.random().toString(36).slice(2, 10), name: String(s.name || '–'),
-    exercises: (Array.isArray(s.exercises) ? s.exercises : []).filter(e => e && typeof e === 'object' && e.name).map(e => ({
-      ...e, id: e.id ? String(e.id) : Math.random().toString(36).slice(2, 10), name: String(e.name),
-      sets: (Array.isArray(e.sets) ? e.sets : []).map(z => z && {reps: Math.round(n(z.reps)), kg: n(z.kg), ...(typeof z.at === 'number' ? {at: z.at} : {})}).filter(z => z && z.reps > 0 && z.kg >= 0)}))}));
-  if (o.body != null && !Array.isArray(o.body)) delete o.body;
-  if (o.body) o.body = o.body.filter(b => b && /^\d{4}-\d\d-\d\d$/.test(b.date));
-  return o;
-}
-// doppia copia: localStorage + IndexedDB, vince la più recente
+// All storage and backup entry points share the same schema boundary.
+function clean(o) { return window.GymData.clean(o); }
 const IDB = 'gym-tracker', STORE = 'kv', PHOTOS = 'photos';
-// Updates wait for durable writes, including photos which only live in IndexedDB.
+const STORAGE_META = 'restore-generation', STORAGE_ROLLBACK = 'restore-rollback';
+let storageGeneration = null, storageBusy = true;
+window.gymStorageBusy = () => storageBusy;
+// Capture before per-element handlers, including forms inside open sheets.
+for (const type of ['click', 'input', 'change', 'submit', 'keydown']) {
+  document.addEventListener(type, e => {
+    if (storageBusy) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+}
 const pendingWrites = new Set();
 function trackWrite(promise) {
   pendingWrites.add(promise);
@@ -37,62 +33,112 @@ function idb() {
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
       if (!d.objectStoreNames.contains(PHOTOS)) d.createObjectStore(PHOTOS, {keyPath: 'id'});
     };
-    r.onsuccess = () => res(r.result);
+    r.onsuccess = () => { r.result.onversionchange = () => r.result.close(); res(r.result); };
     r.onerror = () => rej(r.error);
+    r.onblocked = () => rej(new Error('storage blocked'));
   });
 }
-function idbGet() {
+function storageSnapshot() {
   return idb().then(d => new Promise((res, rej) => {
-    const q = d.transaction(STORE).objectStore(STORE).get(KEY);
-    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    const tx = d.transaction([STORE, PHOTOS]), kv = tx.objectStore(STORE);
+    const data = kv.get(KEY), meta = kv.get(STORAGE_META), ph = tx.objectStore(PHOTOS).getAll();
+    tx.oncomplete = () => { d.close(); res({json: data.result, generation: meta.result || null, photos: ph.result || []}); };
+    tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('storage read')); };
   }));
 }
-function idbPut(v) {
+function idbGet() { return storageSnapshot().then(s => s.json); }
+// Compare the restore generation inside EVERY write transaction. An older tab
+// must not overwrite an archive restored by another tab.
+function storageWrite(stores, fn, expected = storageGeneration) {
   return trackWrite(idb().then(d => new Promise((res, rej) => {
-    const t = d.transaction(STORE, 'readwrite');
-    t.objectStore(STORE).put(v, KEY);
-    t.oncomplete = res; t.onerror = () => rej(t.error);
+    const tx = d.transaction(stores, 'readwrite'); let result, failure;
+    tx.oncomplete = () => { d.close(); res(result); };
+    tx.onabort = tx.onerror = () => { d.close(); rej(failure || tx.error || new Error('storage aborted')); };
+    const q = tx.objectStore(STORE).get(STORAGE_META);
+    q.onsuccess = () => {
+      try {
+        if ((q.result || null) !== expected) throw new Error('stale storage generation');
+        result = fn(tx);
+      } catch (e) { failure = e; tx.abort(); }
+    };
   })));
 }
+function idbPut(v) { return storageWrite([STORE], tx => tx.objectStore(STORE).put(v, KEY)); }
 let backupFile = null;
 function save() {
+  if (storageBusy) return;
   db.ts = Date.now(); backupFile = null; libByName = null;
   const json = JSON.stringify(db);
+  // Legacy users retain the existing mirrored format until their first restore.
   let ok = false;
-  try { localStorage.setItem(KEY, json); ok = true; } catch (e) {}
-  idbPut(json).then(() => {}, () => { if (!ok) alert(t('saveFail')); });
+  if (!storageGeneration) try { localStorage.setItem(KEY, json); ok = true; } catch (e) {}
+  idbPut(json).then(() => { try { localStorage.setItem(KEY, json); } catch (e) {} }, () => {
+    if (!ok) alert(t('saveFail'));
+    restore().catch(() => {});
+  });
 }
-// foto del fisico: solo in IndexedDB (troppo grandi per localStorage)
-let photos = [];  // {id, date, pose, blob, url}
+let photos = [];
 function photoTx(mode, fn) {
-  const promise = idb().then(d => new Promise((res, rej) => {
-    const tx = d.transaction(PHOTOS, mode), st = tx.objectStore(PHOTOS), out = fn(st);
-    tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error);
+  if (mode === 'readwrite') {
+    if (storageBusy) return Promise.reject(new Error('storage busy'));
+    return storageWrite([STORE, PHOTOS], tx => fn(tx.objectStore(PHOTOS)));
+  }
+  return idb().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(PHOTOS), out = fn(tx.objectStore(PHOTOS));
+    tx.oncomplete = () => { d.close(); res(out && out.result); };
+    tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('photo read')); };
   }));
-  return mode === 'readwrite' ? trackWrite(promise) : promise;
 }
+function photoViews(list) {
+  const next = [];
+  try {
+    for (const p of list) if (POSES.includes(p.pose) && p.blob instanceof Blob && GymData.validDate(p.date))
+      next.push({...p, url: URL.createObjectURL(p.blob)});
+    return next.sort((a, b) => a.date.localeCompare(b.date));
+  } catch (e) { next.forEach(p => URL.revokeObjectURL(p.url)); throw e; }
+}
+function replacePhotos(next) { photos.forEach(p => URL.revokeObjectURL(p.url)); photos = next; }
 function loadPhotos() {
   return photoTx('readonly', st => st.getAll()).then(list => {
-    photos.forEach(p => URL.revokeObjectURL(p.url));
-    photos = (list || []).filter(p => p.pose !== 'chat').map(p => ({...p, url: URL.createObjectURL(p.blob)})).sort((a, b) => a.date.localeCompare(b.date));
+    if (storageBusy) return;
+    replacePhotos(photoViews(list || []));
     if (!db.badges) { checkBadges(); save(); }
     render();
-  }).catch(() => {});
+  });
 }
-// all'avvio e al ritorno in primo piano riallinea le due copie
-function restore() {
-  idbGet().then(v => {
-    if (!v) { if (db.sessions.length) save(); return; }
-    const o = clean(JSON.parse(v));
-    if (!o) return;
-    if ((o.ts || 0) > (db.ts || 0)) {
-      db = o; libByName = null;
-      try { localStorage.setItem(KEY, v); } catch (e) {}
-      setLang(); applyTheme(); render();
-    } else if ((db.ts || 0) > (o.ts || 0)) idbPut(JSON.stringify(db)).catch(() => {});
-  }).catch(() => {});
+async function restore(initial = false) {
+  if (storageBusy && !initial) return;
+  storageBusy = true;
+  let paused = false;
+  try {
+    await Promise.allSettled([...pendingWrites]);
+    const snap = await storageSnapshot();
+    const o = snap.json ? clean(JSON.parse(snap.json)) : null;
+    if (snap.generation && !o) throw new Error('invalid authoritative archive');
+    const switched = storageGeneration !== snap.generation;
+    if (switched && window.gymChatPause) { paused = true; await window.gymChatPause(); }
+    if (o && (snap.generation || (o.ts || 0) > (db.ts || 0))) {
+      db = o;
+      try { localStorage.setItem(KEY, snap.json); } catch (e) {}
+    }
+    storageGeneration = snap.generation;
+    replacePhotos(photoViews(snap.photos));
+    if (!snap.generation && (!o || (db.ts || 0) > (o.ts || 0)) && db.sessions.length)
+      await idbPut(JSON.stringify(db));
+    libByName = null;
+  } catch (e) {
+    // An inaccessible IDB must never be replaced with an empty/fallback archive.
+    // Keep this session's validated local copy; a restore itself requires IDB.
+    if (!initial) throw e;
+  } finally {
+    storageBusy = false;
+    if (paused && window.gymChatResume) window.gymChatResume();
+  }
+  setLang(); applyTheme(); render();
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') restore(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') restore().catch(() => {});
+});
 // chiede al browser di non eliminare mai questi dati
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
@@ -229,7 +275,7 @@ function deltaTag(cur, prev, f, u) {
   return `<span class="tag ${d === 'up' ? 'up' : 'eq'}">${d === 'up' ? '▲' : d === 'down' ? '▼' : '='} ${sign(v)} ${u}</span>`;
 }
 // bozza della serie in compilazione, per esercizio
-const drafts = {};
+const drafts = Object.create(null);
 function draftFor(s, e) {
   if (drafts[e.id]) return drafts[e.id];
   const prev = prevFor(s, e), i = e.sets.length;
@@ -381,7 +427,7 @@ function checkGoals() {
 }
 function goalCard(g, tag = 'button') {
   const s = goalState(g);
-  return `<${tag} class="goalc${g.done ? ' done' : ''}" data-act="goalmenu" data-id="${g.id}">
+  return `<${tag} class="goalc${g.done ? ' done' : ''}" data-act="goalmenu" data-id="${esc(g.id)}">
     <div class="item"><h3>${esc(s.title)}</h3><span class="${g.done ? 'up' : 'sub'}" style="font-weight:600">${g.done ? '✓ ' + fmtShort(g.done) : Math.round(s.pct * 100) + '%'}</span></div>
     <div class="meter" role="progressbar" aria-valuenow="${Math.round(s.pct * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${s.pct * 100}%"></i></div>
     <div class="sub">${g.done ? t('goalDone') : s.cur}</div>${s.eta ? `<div class="sub eta">${s.eta}</div>` : ''}</${tag}>`;
@@ -502,7 +548,7 @@ function todayView() {
         : prev && top > Math.max(...prev.sets.map(e1rm)) + 1e-9 ? '<span class="tag up">▲</span>' : '';
       return `<div class="dex"><div class="grow"><b>${esc(e.name)}</b><span>${e.sets.map(z => `<i>${setTxt(z)}</i>`).join(' · ') || '–'}</span></div>${tag}</div>`;
     }).join('');
-    return `<button class="dcard" data-act="open" data-sid="${s.id}"><div class="item"><h3>${esc(s.name)}</h3><span class="chev">${icon('chev')}</span></div>
+    return `<button class="dcard" data-act="open" data-sid="${esc(s.id)}"><div class="item"><h3>${esc(s.name)}</h3><span class="chev">${icon('chev')}</span></div>
       <p class="sub">${t('setsDone', sets, v >= 1000 ? fmt1(v / 1000) + ' t' : fmtInt(v) + ' kg')}</p>${lines}</button>`;
   }).join('');
   else if (isToday) {
@@ -514,7 +560,7 @@ function todayView() {
     const k = last.findIndex((s, i) => i > 0 && key(s.name) === lk && last[i - 1] && key(last[i - 1].name) !== lk);
     const sug = (k > 0 ? last[k - 1] : null) || last.find(s => dt(s.date).getDay() === wd && key(s.name) !== lk) || last[0];
     html += programCard(np) + `<div class="dcard"><p class="sub">${t(db.sessions.length ? 'restDayTxt' : 'firstRunTxt')}</p>
-      ${sug ? `<button class="btn ${np ? 's' : 'p'} wide" data-act="repeat" data-sid="${sug.id}" style="margin-top:12px${np ? ';background:var(--fill)' : ''}">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
+      ${sug ? `<button class="btn ${np ? 's' : 'p'} wide" data-act="repeat" data-sid="${esc(sug.id)}" style="margin-top:12px${np ? ';background:var(--fill)' : ''}">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
       <button class="btn ${np || sug ? 's' : 'p'} wide" data-act="newsession" style="margin-top:${np || sug ? '8px;background:var(--fill)' : '12px'}">${t('startWorkout')}</button></div>`;
   } else html += `<div class="dcard"><p class="sub">${t('noWorkoutDay')}</p>
       <button class="btn s wide" data-act="newsession" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('addPastWorkout')}</button></div>`;
@@ -527,7 +573,7 @@ function todayView() {
   html += `<p class="glabel">${t('bodyCard')}</p><div class="dcard">`;
   if (bd && (bd.weight || bd.kcal)) html += `<div class="dbody">${bd.weight ? `<div><b>${fmtKg(bd.weight)}</b><span>kg</span></div>` : ''}${bd.kcal ? `<div><b>${fmtInt(bd.kcal)}</b><span>kcal</span></div>` : ''}</div>`;
   else html += `<p class="sub">${t('noBodyDay')}</p>`;
-  if (ph.length) html += `<div class="grid" style="padding:10px 0 0">${ph.map(p => `<button data-act="photo" data-id="${p.id}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}"><img src="${p.url}" alt=""><span>${poseName(p.pose)}</span></button>`).join('')}</div>`;
+  if (ph.length) html += `<div class="grid" style="padding:10px 0 0">${ph.map(p => `<button data-act="photo" data-id="${esc(p.id)}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}"><img src="${p.url}" alt=""><span>${poseName(p.pose)}</span></button>`).join('')}</div>`;
   html += `<button class="btn s wide" data-act="bodylog" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('logBody')}</button></div>`;
 
   // settimana e obiettivi
@@ -536,7 +582,7 @@ function todayView() {
   if (close.length) html += `<p class="glabel">${t('goalsClose')}</p><div class="list">${close.map(([g]) => goalCard(g)).join('')}</div>`;
 
   // con un allenamento in corso il pulsante per riprenderlo resta a portata di pollice
-  if (isToday && ss.length) html += `<div class="bar"><button class="btn p wide" data-act="open" data-sid="${ss[ss.length - 1].id}">${t('continueWorkout')}</button></div>`;
+  if (isToday && ss.length) html += `<div class="bar"><button class="btn p wide" data-act="open" data-sid="${esc(ss[ss.length - 1].id)}">${t('continueWorkout')}</button></div>`;
   return html;
 }
 
@@ -554,11 +600,11 @@ function programCard(np) {
   const rows = p.days.map((d, i) => {
     if (!d.ex.length) return '';
     const l = lastOf(i), nx = i === nextI;
-    return `<button class="row${nx ? ' cur' : ''}" data-act="startday" data-id="${p.id}" data-i="${i}">
+    return `<button class="row${nx ? ' cur' : ''}" data-act="startday" data-id="${esc(p.id)}" data-i="${i}">
       <div class="grow"><h3>${esc(dayTitle(p, i))}</h3><div class="sub">${t('exN', d.ex.length)} · ${l ? t('lastDone', rel(l.date)) : t('neverDone')}</div></div>
       ${nx ? `<span class="tag pr" style="animation:none">${t('nextUp')}</span>` : `<span class="chev">${icon('chev')}</span>`}</button>`;
   }).join('');
-  return `<div class="dcard prog"><div class="item"><h3>${t('myProgram')}</h3><button class="ib txt" data-act="plan" data-id="${p.id}">${t('edit')}</button></div>
+  return `<div class="dcard prog"><div class="item"><h3>${t('myProgram')}</h3><button class="ib txt" data-act="plan" data-id="${esc(p.id)}">${t('edit')}</button></div>
     <p class="sub" style="margin:2px 0 10px">${esc(p.name)}${p.author && !p.own ? ' · ' + esc(t('planBy', p.author, p.role)) : ''}</p>
     ${rows ? `<div class="list">${rows}</div>` : `<p class="sub">${t('planEmptyDay')}</p>`}</div>`;
 }
@@ -582,7 +628,7 @@ function home() {
       ${tab === 'chat' ? `<button class="ib" data-act="chatsettings" aria-label="${t('chatSettings')}">${icon('more')}</button>` : ''}<button class="ib" data-act="settings" aria-label="${t('settings')}">${icon('gear')}</button></header>`;
   if (tab === 'sessions') {
     const td = [...db.sessions].reverse().find(s => s.date === today());
-    html += (td ? `<button class="today" data-act="open" data-sid="${td.id}"><div class="grow"><div class="sub">${t('continueToday')}</div><h3>${esc(td.name)}</h3></div><span class="chev">${icon('chev')}</span></button>` : '') +
+    html += (td ? `<button class="today" data-act="open" data-sid="${esc(td.id)}"><div class="grow"><div class="sub">${t('continueToday')}</div><h3>${esc(td.name)}</h3></div><span class="chev">${icon('chev')}</span></button>` : '') +
       (doneSessions().length ? streakCard() : '') + plansSection() + sessionsList() +
       `<div class="bar"><button class="btn p wide" data-act="newsession">${icon('plus')} ${t('newSession')}</button></div>`;
   } else if (tab === 'chat') html += chatInbox();
@@ -595,7 +641,7 @@ function sessionsList() {
   if (!list.length) return `<div class="empty">${t('noSessions')}</div>`;
   return `<div class="list">` + list.map(s => {
     const n = s.exercises.reduce((a, e) => a + e.sets.length, 0), d = dt(s.date);
-    return `<button class="row" data-act="open" data-sid="${s.id}">
+    return `<button class="row" data-act="open" data-sid="${esc(s.id)}">
       <div class="cal"><b>${d.getDate()}</b><span>${d.toLocaleDateString(locale, {month: 'short'})}</span></div>
       <div class="grow"><h3>${esc(s.name)}</h3><div class="sub">${t('sessMeta', s.exercises.length, n, rel(s.date))}</div></div>
       <span class="chev">${icon('chev')}</span></button>`;
@@ -632,8 +678,8 @@ function weeksView() {
       const cls = prevBest ? (best > prevBest + 1e-9 ? 'up' : best < prevBest - 1e-9 ? 'down' : 'eq') : 'eq';
       prevBest = best;
       const body = en.map(x => (en.length > 1 ? `<i>${dt(x.s.date).toLocaleDateString(locale, {weekday: 'short'})}</i>` : '') +
-        x.sets.map(z => `<span${z === bs ? ' class="b"' : ''}>${fmtKg(z.kg)}×${z.reps}</span>`).join('')).join('<hr>');
-      return `<td class="${cls}" data-act="open" data-sid="${en[en.length - 1].s.id}" tabindex="0">${body}</td>`;
+        x.sets.map(z => `<span${z === bs ? ' class="b"' : ''}>${fmtKg(z.kg)}×${esc(z.reps)}</span>`).join('')).join('<hr>');
+      return `<td class="${cls}" data-act="open" data-sid="${esc(en[en.length - 1].s.id)}" tabindex="0">${body}</td>`;
     }).join('');
     return `<tr><th class="sticky" data-act="ex" data-name="${esc(name)}" tabindex="0">${esc(name)}</th>${cells}</tr>`;
   }).join('');
@@ -711,7 +757,7 @@ function photoPanel() {
     <div class="chips" style="padding:12px 4px 6px">${POSES.map(k => `<button class="chip" data-act="addphoto" data-pose="${k}">${icon('plus')} ${poseName(k)}</button>`).join('')}</div>
     <input type="file" id="photo-in" accept="image/*" hidden>
     ${cmp ? `<div class="list" style="margin:8px 0">${cmp}</div>` : ''}
-    ${recent.length ? `<div class="grid">${recent.map(p => `<button data-act="photo" data-id="${p.id}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}">
+    ${recent.length ? `<div class="grid">${recent.map(p => `<button data-act="photo" data-id="${esc(p.id)}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}">
       <img src="${p.url}" alt=""><span>${fmtShort(p.date)}</span></button>`).join('')}</div>` : ''}</div>`;
 }
 function shrink(file) {
@@ -746,7 +792,7 @@ function sessionView() {
   return `<header>
       <button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${esc(s.name)}</h1><p>${fmtDate(s.date)}</p></div>
-      ${s.exercises.some(e => e.sets.length) ? `<button class="ib" data-act="share" data-k="session" data-a="${s.id}" aria-label="${t('shareSession')}">${icon('share')}</button>` : ''}
+      ${s.exercises.some(e => e.sets.length) ? `<button class="ib" data-act="share" data-k="session" data-a="${esc(s.id)}" aria-label="${t('shareSession')}">${icon('share')}</button>` : ''}
       <button class="ib txt" data-act="editsession">${t('edit')}</button>
     </header>` + recoveryLine(s.date === today() ? Date.now() : Math.max(...s.exercises.flatMap(e => e.sets.map(z => setTime(s, z))), dt(s.date).getTime())) +
     (s.exercises.length ? s.exercises.map(e => e.id === open ? exOpen(s, e) : exClosed(s, e)).join('') : `<div class="empty">${t('emptySession')}</div>`) +
@@ -758,8 +804,8 @@ function exClosed(s, e) {
   const sum = e.sets.length ? t('sumDone', e.sets.length, setTxt(b) + ' kg') : prev ? t('todoLast', prev.sets.length) : t('todo');
   return `<section class="ex closed"><div class="ex-head">
       <h2>${esc(e.name)}</h2>
-      <button class="ib" data-act="toggle" data-eid="${e.id}" aria-label="${esc(t('openX', e.name))}">${icon('down')}</button></div>
-      <div class="ex-body sum" data-act="toggle" data-eid="${e.id}">${e.target && !e.sets.length ? `<b>${exLine(e.target)}</b> · ` : ''}${sum}${miniProgress(e.name)}</div></section>`;
+      <button class="ib" data-act="toggle" data-eid="${esc(e.id)}" aria-label="${esc(t('openX', e.name))}">${icon('down')}</button></div>
+      <div class="ex-body sum" data-act="toggle" data-eid="${esc(e.id)}">${e.target && !e.sets.length ? `<b>${exLine(e.target)}</b> · ` : ''}${sum}${miniProgress(e.name)}</div></section>`;
 }
 function exOpen(s, e) {
   const prior = priorOf(s, e), prev = prior[prior.length - 1];
@@ -771,36 +817,36 @@ function exOpen(s, e) {
     else if (ref && v > e1rm(ref) + 1e-9) tag = `<span class="tag up" aria-label="${t('betterAria')}">▲ ${setTxt(ref)}</span>`;
     else if (ref) tag = `<span class="tag eq">${t('vs')} ${setTxt(ref)}</span>`;
     best = Math.max(best, v);
-    return `<li><button class="setrow" data-act="editset" data-eid="${e.id}" data-i="${i}" aria-label="${esc(t('setAria', i + 1, x.reps, fmtKg(x.kg)))}">
-      <span class="n">${i + 1}</span><span class="f">${x.reps} <small>${t('repsShort')} ×</small> ${fmtKg(x.kg)} <small>kg</small></span>${tag}</button></li>`;
+    return `<li><button class="setrow" data-act="editset" data-eid="${esc(e.id)}" data-i="${i}" aria-label="${esc(t('setAria', i + 1, x.reps, fmtKg(x.kg)))}">
+      <span class="n">${i + 1}</span><span class="f">${esc(x.reps)} <small>${t('repsShort')} ×</small> ${fmtKg(x.kg)} <small>kg</small></span>${tag}</button></li>`;
   }).join('');
   const i = e.sets.length, d = draftFor(s, e);
   const ps = prev && (prev.sets[i] || (!i && prev.sets[prev.sets.length - 1]));
   const goal = ps ? `<div class="goal"><span class="sub">${t('goalHint', i + 1, setTxt(ps) + ' kg')}</span>` +
-    suggest(ps).map(g => `<button class="chip" data-act="goal" data-eid="${e.id}" data-reps="${g.reps}" data-kg="${g.kg}"
+    suggest(ps).map(g => `<button class="chip" data-act="goal" data-eid="${esc(e.id)}" data-reps="${g.reps}" data-kg="${g.kg}"
       aria-pressed="${+d.reps === g.reps && num(d.kg) === g.kg}">${setTxt(g)} kg</button>`).join('') + `</div>` : '';
-  return `<section class="ex" id="ex-${e.id}"><div class="ex-head">
+  return `<section class="ex" id="ex-${esc(e.id)}"><div class="ex-head">
       <h2>${esc(e.name)}</h2>
       <button class="ib" data-act="ex" data-name="${esc(e.name)}" aria-label="${esc(t('progressX', e.name))}">${icon('chart')}</button>
-      <button class="ib" data-act="exmenu" data-eid="${e.id}" aria-label="${esc(t('optionsX', e.name))}">${icon('more')}</button></div>
+      <button class="ib" data-act="exmenu" data-eid="${esc(e.id)}" aria-label="${esc(t('optionsX', e.name))}">${icon('more')}</button></div>
     <div class="ex-body">
       ${e.target ? `<p class="ptarget"><b>${t('planTarget')}:</b> ${exLine(e.target)}${e.target.note ? `<br>${e.target.by ? esc(e.target.by) + ': ' : ''}${esc(e.target.note)}` : ''}</p>` : ''}
       ${miniProgress(e.name)}
       <p class="last">${prev ? t('lastTime', fmtShort(prev.date), prev.sets.map(setTxt).join(' · ')) : e.target ? '' : t('firstTime')}</p>
       ${rows ? `<ol class="sets">${rows}</ol>` : ''}
       ${goal}${stepper(e.id)}
-      <button class="restchip" data-act="exrest" data-eid="${e.id}">${icon('timer')} ${t('exRestBtn', exRestTxt(e))}</button>
-      <div class="err" id="err-${e.id}" aria-live="polite"></div>
-      <button class="btn p wide" data-act="addset" data-eid="${e.id}">${t('logSet', i + 1)}</button>
+      <button class="restchip" data-act="exrest" data-eid="${esc(e.id)}">${icon('timer')} ${t('exRestBtn', exRestTxt(e))}</button>
+      <div class="err" id="err-${esc(e.id)}" aria-live="polite"></div>
+      <button class="btn p wide" data-act="addset" data-eid="${esc(e.id)}">${t('logSet', i + 1)}</button>
     </div></section>`;
 }
 function stepper(eid) {
   const d = drafts[eid];
   const one = (f, val, u, mode, label) => `<div class="step">
-      <button data-act="step" data-eid="${eid}" data-f="${f}" data-d="-1" aria-label="${t('less', label)}">${icon('minus')}</button>
-      <label><input id="${f}-${eid}" data-eid="${eid}" data-f="${f}" type="text" inputmode="${mode}" autocomplete="off" value="${val === '' ? '' : f === 'kg' ? fmtKg(val) : val}" placeholder="–" aria-label="${label}"><span class="u">${u}</span></label>
-      <button data-act="step" data-eid="${eid}" data-f="${f}" data-d="1" aria-label="${t('more', label)}">${icon('plus')}</button></div>`;
-  return `<div class="entry" id="entry-${eid}">${one('reps', d.reps, t('repsShort'), 'numeric', t('reps'))}${one('kg', d.kg, 'kg', 'decimal', t('kgWord'))}</div>`;
+      <button data-act="step" data-eid="${esc(eid)}" data-f="${f}" data-d="-1" aria-label="${t('less', label)}">${icon('minus')}</button>
+      <label><input id="${esc(f)}-${esc(eid)}" data-eid="${esc(eid)}" data-f="${f}" type="text" inputmode="${mode}" autocomplete="off" value="${esc(val === '' ? '' : f === 'kg' ? fmtKg(val) : val)}" placeholder="–" aria-label="${label}"><span class="u">${u}</span></label>
+      <button data-act="step" data-eid="${esc(eid)}" data-f="${f}" data-d="1" aria-label="${t('more', label)}">${icon('plus')}</button></div>`;
+  return `<div class="entry" id="entry-${esc(eid)}">${one('reps', d.reps, t('repsShort'), 'numeric', t('reps'))}${one('kg', d.kg, 'kg', 'decimal', t('kgWord'))}</div>`;
 }
 
 // ---------- progressi esercizio ----------
@@ -829,7 +875,7 @@ function exView() {
     ${forecastPanel(name, st)}
     ${levelPanel(name)}
     ${(() => { const L = libFor({name}); return L ? `<div class="panel-c"><h2>${t('primaryM')}</h2><p class="sub">${esc(muscleTxt(L.b.pri))}${L.b.sec.length ? ' · ' + esc(muscleTxt(L.b.sec)) : ''}</p><div class="mm-wrap">${muscleMap(L.b.pri, L.b.sec)}</div>
-      <button class="btn s wide" data-act="libguide" data-id="${L.b.id}" data-v="${L.v ? L.v.id : '-'}" style="background:var(--fill)">${t('guide')}</button><div class="gap"></div></div>` : ''; })()}
+      <button class="btn s wide" data-act="libguide" data-id="${esc(L.b.id)}" data-v="${L.v ? L.v.id : '-'}" style="background:var(--fill)">${t('guide')}</button><div class="gap"></div></div>` : ''; })()}
     <div class="hero">
       <div class="sub">${t('bestSet')}</div>
       <div class="big">${setTxt(rec.b)} <small>kg · ${fmtShort(rec.date)}</small></div>
@@ -968,9 +1014,9 @@ function profileFields(p) {
   return `<div class="field">${t('sex')}<div class="opts">
       <button type="button" class="chip" data-act="sex" data-v="m" aria-pressed="${p.sex === 'm'}">${t('male')}</button>
       <button type="button" class="chip" data-act="sex" data-v="f" aria-pressed="${p.sex === 'f'}">${t('female')}</button></div></div>
-    <input type="hidden" name="sex" value="${p.sex || ''}">
-    <label class="field">${t('age')}<input name="age" inputmode="numeric" value="${p.age || ''}" autocomplete="off"></label>
-    <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${w ? fmtKg(w) : ''}" autocomplete="off"></label>`;
+    <input type="hidden" name="sex" value="${esc(p.sex || '')}">
+    <label class="field">${t('age')}<input name="age" inputmode="numeric" value="${esc(p.age || '')}" autocomplete="off"></label>
+    <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${esc(w ? fmtKg(w) : '')}" autocomplete="off"></label>`;
 }
 function saveProfile(f) {
   const age = parseInt(f.age.value, 10), w = num(f.w.value), sex = f.sex.value;
@@ -1043,12 +1089,12 @@ function sheetNewSession() {
   const seen = new Set(), past = [...db.sessions].sort((a, b) => b.date.localeCompare(a.date))
     .filter(s => s.exercises.length && !seen.has(key(s.name)) && seen.add(key(s.name))).slice(0, 6);
   // se c'è uno storico, ripetere è l'azione principale: niente tastiera aperta
-  const pdays = planList().flatMap(p => p.days.map((d, i) => d.ex.length ? `<button class="row" data-act="startday" data-id="${p.id}" data-i="${i}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
+  const pdays = planList().flatMap(p => p.days.map((d, i) => d.ex.length ? `<button class="row" data-act="startday" data-id="${esc(p.id)}" data-i="${i}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
     <div class="grow"><h3>${esc(dayTitle(p, i))}</h3><div class="sub">${esc(p.name)}${p.author ? ' · ' + esc(t('planBy', p.author, '')) : ''}</div></div></button>` : '')).filter(Boolean);
   sheet(`<h2>${t('newSession')}</h2>
     ${pdays.length ? `<p class="sub h" style="margin-top:0">${t('fromPlan')}</p><div class="list">${pdays.join('')}</div><p class="sub h">${t('orRepeat')}</p>` : ''}
     ${past.length ? `<div class="list">${past.map(s => `
-      <button class="row" data-act="repeat" data-sid="${s.id}"><div class="grow"><h3>${esc(s.name)}</h3>
+      <button class="row" data-act="repeat" data-sid="${esc(s.id)}"><div class="grow"><h3>${esc(s.name)}</h3>
       <div class="sub">${s.exercises.map(e => esc(e.name)).join(', ')}</div></div><span class="sub">${fmtShort(s.date)}</span></button>`).join('')}</div>
       <p class="sub h">${t('orNew')}</p>` : ''}
     <form data-form="newsession"><label class="field">${t('name')}<input name="n" maxlength="60" ${past.length ? '' : 'data-focus'} placeholder="${esc(t('sessionPh'))}" autocomplete="off" enterkeyhint="done"></label>
@@ -1057,7 +1103,7 @@ function sheetNewSession() {
 
 // ---------- libreria esercizi (lib/data.js) ----------
 const LIB = window.EXDATA || [];
-const VAR = {};
+const VAR = Object.create(null);
 LIB.forEach(b => b.variants.forEach(v => { VAR[v.id] = {b, v}; }));
 const BASE = Object.fromEntries(LIB.map(b => [b.id, b]));
 const LBL = () => EXLIB.labels[lang] || EXLIB.labels.en;
@@ -1077,7 +1123,7 @@ function libList(s) {
   const have = new Set(s.exercises.map(e => key(e.name))), q = norm(libState.q);
   const vrow = (b, v) => {
     const inS = have.has(key(tx(v.name)));
-    return `<button class="row" data-act="libadd" data-id="${v.id}" ${inS ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
+    return `<button class="row" data-act="libadd" data-id="${esc(v.id)}" ${inS ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
       <div class="sub">${LBL().eq[v.eq] || v.eq} · ${muscleTxt(b.pri)}${inS ? ' · ' + t('inSession') : ''}</div></div><span class="addic">${icon('plus')}</span></button>`;
   };
   if (q) {
@@ -1088,7 +1134,7 @@ function libList(s) {
     }));
     return hits.length ? hits.slice(0, 60).join('') : `<p class="sub" style="padding:8px 2px">${t('noResults')}</p>`;
   }
-  return LIB.filter(b => b.g === libState.g).map(b => `<button class="row" data-act="libbase" data-id="${b.id}"><div class="grow"><h3>${esc(tx(b.name))}</h3>
+  return LIB.filter(b => b.g === libState.g).map(b => `<button class="row" data-act="libbase" data-id="${esc(b.id)}"><div class="grow"><h3>${esc(tx(b.name))}</h3>
     <div class="sub">${muscleTxt(b.pri)} · ${t('variantsN', b.variants.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('');
 }
 // esercizi già presenti dove si sta aggiungendo: seduta o giorno della scheda
@@ -1126,10 +1172,10 @@ const M2G = Object.fromEntries(RG.flatMap(([g, ms]) => ms.map(m => [m, g])));
 const setTime = (s, z) => z.at || dt(s.date).getTime() + 6 * 3600e3;  // serie senza orario: le 18 del giorno
 // contributi di fatica per gruppo: {D0 = calo iniziale, T = ore per tornare al 100%, end = fine seduta}
 function recoveryLoad(until) {
-  const age = profile().age || 0, af = age > 55 ? 1.2 : age > 40 ? 1.1 : 1, best = {}, libs = new Map(), out = {};
+  const age = profile().age || 0, af = age > 55 ? 1.2 : age > 40 ? 1.1 : 1, best = Object.create(null), libs = new Map(), out = Object.create(null);
   RG.forEach(([g]) => out[g] = []);
   [...db.sessions].sort((a, b) => a.date.localeCompare(b.date) || order(a) - order(b)).forEach(s => {
-    const dose = {}, fail = {}, n = {}; let end = 0;
+    const dose = Object.create(null), fail = Object.create(null), n = Object.create(null); let end = 0;
     s.exercises.forEach(e => {
       const lk = (e.lib || '') + '|' + key(e.name);
       if (!libs.has(lk)) libs.set(lk, libFor(e));
@@ -1274,7 +1320,7 @@ function sheetLibBase(id, current, first) {
     <p class="sub h">${current ? t('allVariants') : t('chooseVariant')}</p>
     <div class="list">${b.variants.map(v => {
       const inS = have.has(key(tx(v.name))), cur = current === v.id;
-      return `<button class="row${cur ? ' cur' : ''}" data-act="libadd" data-id="${v.id}" ${inS || current ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
+      return `<button class="row${cur ? ' cur' : ''}" data-act="libadd" data-id="${esc(v.id)}" ${inS || current ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
         <div class="sub">${LBL().eq[v.eq] || v.eq}${v.note ? ' · ' + esc(tx(v.note)) : ''}${inS ? ' · ' + t('inSession') : ''}</div></div>${current ? '' : `<span class="addic">${icon('plus')}</span>`}</button>`;
     }).join('')}</div>
     ${first ? `<div class="gap"></div><div class="opts"><button class="chip" data-act="gfskip">${t('guideSkip')}</button><button class="chip" data-act="gfnever">${t('guideNever')}</button></div>` : ''}`);
@@ -1284,29 +1330,29 @@ function sheetEditSession() {
   const s = sess(view.id);
   sheet(`<h2>${t('editSession')}</h2>
     <form data-form="editsession"><label class="field">${t('name')}<input name="n" maxlength="60" value="${esc(s.name)}" autocomplete="off"></label>
-    <label class="field">${t('date')}<input name="d" type="date" value="${s.date}"></label>
+    <label class="field">${t('date')}<input name="d" type="date" value="${esc(s.date)}"></label>
     <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
     <button class="btn d wide" data-act="delsession">${t('delSession')}</button>`);
 }
 function sheetExMenu(eid) {
   const e = sess(view.id).exercises.find(x => x.id === eid);
   sheet(`<h2>${esc(e.name)}</h2>
-    <form data-form="renameex" data-eid="${eid}"><label class="field">${t('name')}<input name="n" maxlength="60" value="${esc(e.name)}" autocomplete="off"></label>
+    <form data-form="renameex" data-eid="${esc(eid)}"><label class="field">${t('name')}<input name="n" maxlength="60" value="${esc(e.name)}" autocomplete="off"></label>
     <p class="sub">${t('sameName')}</p>
     <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
-    ${libFor(e) ? `<button class="btn s wide" data-act="libinfo" data-eid="${eid}">${t('guide')}</button><div class="gap"></div>` : ''}
-    <button class="btn d wide" data-act="delex" data-eid="${eid}">${t('delExercise')}</button>`);
+    ${libFor(e) ? `<button class="btn s wide" data-act="libinfo" data-eid="${esc(eid)}">${t('guide')}</button><div class="gap"></div>` : ''}
+    <button class="btn d wide" data-act="delex" data-eid="${esc(eid)}">${t('delExercise')}</button>`);
 }
 function sheetEditSet(eid, i) {
   const x = sess(view.id).exercises.find(e => e.id === eid).sets[i];
   sheet(`<h2>${t('setN', i + 1)}</h2>
-    <form data-form="editset" data-eid="${eid}" data-i="${i}">
-      <label class="field">${t('repsTitle')}<input name="r" inputmode="numeric" value="${x.reps}" autocomplete="off"></label>
-      <label class="field">${t('kg')}<input name="k" inputmode="decimal" value="${fmtKg(x.kg)}" autocomplete="off"></label>
+    <form data-form="editset" data-eid="${esc(eid)}" data-i="${i}">
+      <label class="field">${t('repsTitle')}<input name="r" inputmode="numeric" value="${esc(x.reps)}" autocomplete="off"></label>
+      <label class="field">${t('kg')}<input name="k" inputmode="decimal" value="${esc(fmtKg(x.kg))}" autocomplete="off"></label>
       <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
-    <button class="btn d wide" data-act="delset" data-eid="${eid}" data-i="${i}">${t('delSet')}</button>`);
+    <button class="btn d wide" data-act="delset" data-eid="${esc(eid)}" data-i="${i}">${t('delSet')}</button>`);
 }
-const toDataURL = blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+const toDataURL = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.onabort = () => rej(new Error('read aborted')); r.readAsDataURL(blob); });
 // il file è preparato in anticipo: iOS apre il foglio Condividi solo subito dopo il tocco
 // cifratura facoltativa: password → chiave (PBKDF2) → AES-GCM; senza password il file resta in chiaro
 const b64of = async buf => (await toDataURL(new Blob([buf]))).split(',')[1];
@@ -1320,16 +1366,35 @@ async function encryptBackup(text, pwd) {
   const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await bkKey(pwd, salt, BK_IT, 'encrypt'), new TextEncoder().encode(text));
   return JSON.stringify({gym: 1, enc: 'AES-GCM', kdf: 'PBKDF2-SHA256', it: BK_IT, salt: await b64of(salt), iv: await b64of(iv), data: await b64of(ct)});
 }
+const BACKUP_MAX = 96 * 1024 * 1024, BACKUP_BYTES = 48 * 1024 * 1024, BACKUP_PHOTOS = 1000;
+function backupBase64(s, max) {
+  if (typeof s !== 'string' || s.length > Math.ceil(max / 3) * 4 || s.length % 4 !== 0 || /[^A-Za-z0-9+/=]/.test(s) || !/^[^=]*={0,2}$/.test(s)) throw new Error('base64');
+  const bytes = unb64(s);
+  if (bytes.length > max) throw new Error('size');
+  return bytes;
+}
 async function decryptBackup(o, pwd) {
-  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(o.iv)}, await bkKey(pwd, unb64(o.salt), +o.it || BK_IT, 'decrypt'), unb64(o.data));
-  return new TextDecoder().decode(pt);
+  if (o.gym !== 1 || o.enc !== 'AES-GCM' || o.kdf !== 'PBKDF2-SHA256' || !Number.isInteger(o.it) || o.it < 100000 || o.it > 1000000) throw new Error('envelope');
+  const salt = backupBase64(o.salt, 16), iv = backupBase64(o.iv, 12), data = backupBase64(o.data, BACKUP_MAX);
+  if (salt.length !== 16 || iv.length !== 12 || data.length < 16) throw new Error('envelope');
+  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, await bkKey(pwd, salt, o.it, 'decrypt'), data);
+  return new TextDecoder('utf-8', {fatal: true}).decode(pt);
 }
 let bkPwd = '';
-function prepareBackup() {
-  const name = 'gym-tracker-backup.json', pwd = bkPwd;
-  return Promise.all(photos.filter(p => p.pose !== 'chat').map(p => toDataURL(p.blob).then(data => ({id: p.id, date: p.date, pose: p.pose, data}))))
-    .then(ph => JSON.stringify({...db, photos: ph})).then(txt => pwd ? encryptBackup(txt, pwd) : txt)
-    .then(txt => backupFile = new File([txt], name, {type: 'application/json'}));
+const chatPhotoIds = o => new Set(Object.values(o.chat && o.chat.msgs || {}).flat().filter(m => m.k === 'img' && m.d).map(m => 'c:' + m.id));
+async function prepareBackup() {
+  const pwd = bkPwd, generation = storageGeneration, snapshot = JSON.parse(JSON.stringify(db));
+  const rows = await photoTx('readonly', st => st.getAll()), ids = chatPhotoIds(snapshot);
+  const ph = [], chatPhotos = [];
+  for (const p of rows) {
+    if (p.pose === 'chat') {
+      if (ids.has(p.id)) chatPhotos.push({id: p.id, date: p.date, pose: 'chat', data: p.data});
+    } else ph.push({id: p.id, date: p.date, pose: p.pose, data: await toDataURL(p.blob)});
+  }
+  const text = JSON.stringify({...snapshot, photos: ph, chatPhotos});
+  const txt = pwd ? await encryptBackup(text, pwd) : text;
+  if (storageBusy || generation !== storageGeneration) throw new Error('archive changed');
+  return backupFile = new File([txt], 'gym-tracker-backup.json', {type: 'application/json'});
 }
 // promemoria: i dati vivono solo sul telefono, quindi si invita a salvarne una copia
 const BK_DAYS = 7;
@@ -1353,7 +1418,7 @@ function sheetBackup() {
     <p class="sub" style="margin-bottom:6px">${t('backupText')}</p>
     <p class="note" style="padding:0 0 10px">${backupDays() == null ? t('bkNever') : backupDays() === 0 ? t('bkToday') : t('bkLast', backupDays())}</p>
     <label class="field">${t('bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" maxlength="100"></label>
-    <p class="note" style="padding:0 0 12px">${t('bkPwdHint')}</p>
+    <p class="note" style="padding:0 0 12px">${t('bkPwdHint')}</p><p class="note">${t('bkPrivateKey')}</p>
     <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button>
     <p class="note" style="padding:8px 2px 12px">${t('bkHow')}</p>
     <button class="btn s wide" data-act="import">${t('importData')}</button><div class="gap"></div>
@@ -1379,35 +1444,103 @@ function exportData() {
   if (navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: file.name}).then(done, () => {});
   else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click(); done(); }
 }
-function importData(inp) {
-  const f = inp.files[0]; inp.value = '';
-  if (!f) return;
-  f.text().then(async txt => {
-    let o;
-    try { o = JSON.parse(txt); } catch (e) { throw t('importBadJson'); }
-    if (o && o.enc && o.data) {
-      const pw = prompt(t('bkAsk')); if (pw == null) return;
-      try { o = JSON.parse(await decryptBackup(o, pw)); } catch (e) { throw t('bkBad'); }
+async function stageBackup(f) {
+  if (!f || f.size > BACKUP_MAX) throw new Error('backup size');
+  let o;
+  try { o = JSON.parse(await f.text()); } catch (e) { throw t('importBadJson'); }
+  if (o && o.enc) {
+    const pw = prompt(t('bkAsk')); if (pw == null) return null;
+    try { o = JSON.parse(await decryptBackup(o, pw)); } catch (e) { throw t('bkBad'); }
+  }
+  if (!o || !Array.isArray(o.sessions)) throw t('importNoSessions');
+  if (o.photos != null && !Array.isArray(o.photos) || o.chatPhotos != null && !Array.isArray(o.chatPhotos)) throw new Error('photos');
+  const ph = o.photos || [], cp = o.chatPhotos || [], hasChatPhotos = Array.isArray(o.chatPhotos);
+  const candidate = clean(o);
+  if (!candidate || o.sessions.length && !candidate.sessions.length) throw t('importNoSessions');
+  delete candidate.photos; delete candidate.chatPhotos;
+  if (ph.length + cp.length > BACKUP_PHOTOS) throw new Error('photo count');
+  let bytes = 0; const records = [], seen = new Set(), chatIds = chatPhotoIds(candidate);
+  for (const [list, isChat] of [[ph, false], [cp, true]]) for (const p of list) {
+    if (!p || typeof p.id !== 'string' || !(isChat ? /^c:[a-f0-9]{64}$/.test(p.id) : /^[A-Za-z0-9_-]{1,80}$/.test(p.id)) || seen.has(p.id) || !GymData.validDate(p.date) || (isChat ? p.pose !== 'chat' || !chatIds.has(p.id) : !POSES.includes(p.pose))) throw new Error('photo metadata');
+    seen.add(p.id);
+    const media = await GymMedia.decodeInlineImage(p.data, isChat ? {types: ['image/jpeg'], maxBytes: 49000, maxWidth: 2048, maxHeight: 2048, maxPixels: 4194304} : {maxBytes: 12 * 1024 * 1024});
+    bytes += media.bytes; if (bytes > BACKUP_BYTES) throw new Error('photo bytes');
+    records.push({id: p.id, date: p.date, pose: p.pose, blob: media.blob, ...(isChat ? {data: media.data} : {})});
+  }
+  return {candidate, records, hasChatPhotos};
+}
+async function commitBackup(staged) {
+  const {candidate, records, hasChatPhotos} = staged;
+  if (storageBusy) throw new Error('storage busy');
+  storageBusy = true;
+  clearTimeout(planSaveT);
+  let nextViews, committed = false;
+  const draining = [...pendingWrites];
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all(draining);
+    const before = await storageSnapshot();
+    if (before.generation !== storageGeneration) throw new Error('archive changed');
+    // Old backups omitted chat attachments. Keep only referenced attachments of
+    // exactly the same identity; never attach another identity's private photos.
+    if (!hasChatPhotos && candidate.chat && db.chat && candidate.chat.sk === db.chat.sk) {
+      const ids = chatPhotoIds(candidate);
+      for (const row of before.photos) if (row.pose === 'chat' && ids.has(row.id)) {
+        const media = await GymMedia.decodeInlineImage(row.data, {types: ['image/jpeg'], maxBytes: 49000, maxWidth: 2048, maxHeight: 2048, maxPixels: 4194304});
+        records.push({...row, blob: media.blob, data: media.data});
+      }
     }
-    if (!o || !Array.isArray(o.sessions)) throw t('importNoSessions');
-    const had = o.sessions.length; o = clean(o);
-    if (had && !o.sessions.length) throw t('importNoSessions');
-    if (!confirm(t('importConfirm', o.sessions.length))) return;
-    const ph = Array.isArray(o.photos) ? o.photos : []; delete o.photos;
-    db = o; save(); setLang();
-    return Promise.all(ph.map(p => fetch(p.data).then(r => r.blob()).then(blob => ({id: p.id, date: p.date, pose: p.pose, blob}))))
-      .then(recs => photoTx('readwrite', st => { st.clear(); recs.forEach(r => st.put(r)); }))
-      .then(loadPhotos).then(() => { backupFile = null; closeSheet(); go({name: 'home', tab: 'sessions'}); toast(t('importDone', o.sessions.length, ph.length)); });
-  }).catch(m => alert(typeof m === 'string' ? m : t('importFail')));
+    nextViews = photoViews(records);
+    const generation = crypto.randomUUID(), oldJson = JSON.stringify(db);
+    candidate.ts = Date.now(); const json = JSON.stringify(candidate);
+    await storageWrite([STORE, PHOTOS], tx => {
+      const kv = tx.objectStore(STORE), ps = tx.objectStore(PHOTOS);
+      // Read the rollback in the SAME transaction as replacement, not a stale
+      // preflight snapshot. Structured clone retains the original photo blobs.
+      const previous = kv.get(KEY), oldPhotos = ps.getAll();
+      oldPhotos.onsuccess = () => {
+        try {
+          const persisted = previous.result;
+          const prior = persisted && JSON.parse(persisted);
+          const rollbackJson = prior && (prior.ts || 0) > (db.ts || 0) ? persisted : oldJson;
+          kv.put({json: rollbackJson, photos: oldPhotos.result, generation: storageGeneration}, STORAGE_ROLLBACK);
+          kv.put(json, KEY); kv.put(generation, STORAGE_META);
+          ps.clear(); records.forEach(r => ps.put(r));
+        } catch (e) { tx.abort(); }
+      };
+    });
+    committed = true;
+    storageGeneration = generation; db = candidate; replacePhotos(nextViews); nextViews = null;
+    backupFile = null; libByName = null;
+    // IDB is the commit point. A failed cache write is repaired on next boot;
+    // reporting importFail here would falsely claim that the old archive won.
+    try { localStorage.setItem(KEY, json); } catch (e) {}
+  } finally {
+    if (nextViews) nextViews.forEach(p => URL.revokeObjectURL(p.url));
+    storageBusy = false;
+    if (window.gymChatResume) window.gymChatResume();
+  }
+  return committed;
+}
+async function importData(inp) {
+  const f = inp.files[0]; inp.value = '';
+  if (!f || storageBusy) return;
+  try {
+    const staged = await trackWrite(stageBackup(f));
+    if (!staged || !confirm(t('importConfirm', staged.candidate.sessions.length))) return;
+    await trackWrite(commitBackup(staged));
+    setLang(); applyTheme(); closeSheet(); go({name: 'home', tab: 'sessions'});
+    toast(t('importDone', db.sessions.length, staged.records.filter(p => p.pose !== 'chat').length));
+  } catch (m) { alert(typeof m === 'string' ? m : t('importFail')); }
 }
 function sheetPhoto(id) {
   const p = photos.find(x => x.id === id), w = weightAt(p.date);
   sheet(`<h2>${poseName(p.pose)} · ${fmtShort(p.date)}</h2>
     <img class="big-img" src="${p.url}" alt="">
     <p class="sub" style="margin:10px 0 6px">${fmtDate(p.date)}${w ? ` · ${t('weightOn', fmtKg(w))}` : ''}</p>
-    <label class="field">${t('date')}<input id="ph-date" type="date" value="${p.date}" max="${today()}"></label><div class="gap"></div>
-    ${typeof sheetChatPickImg === 'function' ? `<button class="btn s wide" data-act="photochat" data-id="${id}" style="background:var(--fill)">${t('chatShareHere')}</button><div class="gap"></div>` : ''}
-    <button class="btn d wide" data-act="delphoto" data-id="${id}">${t('delPhoto')}</button>`);
+    <label class="field">${t('date')}<input id="ph-date" type="date" value="${esc(p.date)}" max="${today()}"></label><div class="gap"></div>
+    ${typeof sheetChatPickImg === 'function' ? `<button class="btn s wide" data-act="photochat" data-id="${esc(id)}" style="background:var(--fill)">${t('chatShareHere')}</button><div class="gap"></div>` : ''}
+    <button class="btn d wide" data-act="delphoto" data-id="${esc(id)}">${t('delPhoto')}</button>`);
   document.getElementById('ph-date').onchange = ev => {
     const d = ev.target.value; if (!d || d > today()) return;
     photoTx('readwrite', st => st.put({id: p.id, date: d, pose: p.pose, blob: p.blob}))
@@ -1419,9 +1552,9 @@ function sheetCompare(pose) {
   const cap = p => { const w = weightAt(p.date); return `<figcaption><b>${fmtShort(p.date)}</b>${w ? ` · ${fmtKg(w)} kg` : ''}</figcaption>`; };
   sheet(`<h2>${t('compareTitle', poseName(pose).toLowerCase())}</h2>
     <div class="cmp"><figure id="cmp-a"><img src="${a.url}" alt="${t('before')}">${cap(a)}</figure><figure><img src="${b.url}" alt="${t('after')}">${cap(b)}</figure></div>
-    ${ps.length > 2 ? `<label class="field" style="margin-top:12px">${t('compareWith')}<select id="cmp-sel">${ps.map((p, i) => `<option value="${i}">${fmtShort(p.date)}</option>`).join('')}</select></label>` : ''}
+    ${ps.length > 2 ? `<label class="field" style="margin-top:12px">${t('compareWith')}<select id="cmp-sel">${ps.map((p, i) => `<option value="${esc(i)}">${fmtShort(p.date)}</option>`).join('')}</select></label>` : ''}
     <p class="note" style="padding:12px 0 0">${t('compareNote')}</p>
-    <button class="btn s wide" data-act="share" data-k="compare" data-a="${pose}" style="margin-top:12px;background:var(--card)">${icon('share')} ${t('shareCompare')}</button>`);
+    <button class="btn s wide" data-act="share" data-k="compare" data-a="${esc(pose)}" style="margin-top:12px;background:var(--card)">${icon('share')} ${t('shareCompare')}</button>`);
   const sel = document.getElementById('cmp-sel');
   if (sel) sel.onchange = () => { const p = ps[+sel.value]; document.getElementById('cmp-a').innerHTML = `<img src="${p.url}" alt="${t('before')}">${cap(p)}`; };
 }
@@ -1430,9 +1563,9 @@ function sheetBodyLog(day) {
   const v = n => n > 0 ? fmtKg(n) : '';
   sheet(`<h2>${t('bodyTitle')}</h2>
     <form data-form="bodylog">
-      <label class="field">${t('date')}<input name="d" type="date" value="${d}"></label>
-      <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${v(cur.weight)}" placeholder="78${DEC}4" autocomplete="off" data-focus></label>
-      <label class="field">${t('bodyK')}<input name="k" inputmode="numeric" value="${cur.kcal > 0 ? Math.round(cur.kcal) : ''}" placeholder="${t('optional')}" autocomplete="off"></label>
+      <label class="field">${t('date')}<input name="d" type="date" value="${esc(d)}"></label>
+      <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${esc(v(cur.weight))}" placeholder="78${DEC}4" autocomplete="off" data-focus></label>
+      <label class="field">${t('bodyK')}<input name="k" inputmode="numeric" value="${esc(cur.kcal > 0 ? Math.round(cur.kcal) : '')}" placeholder="${t('optional')}" autocomplete="off"></label>
       <p class="sub">${t('bodyHint')}</p>
       <button class="btn p wide">${t('save')}</button></form>`);
 }
@@ -1457,8 +1590,8 @@ function sheetGoal(name) {
       <div class="g-lift" ${lift ? '' : 'hidden'}>
         <label class="field">${t('typeLift')}<select name="ex">${names.map(x => `<option ${key(x.name) === key(sel) ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
         <div class="entry" style="margin-top:10px">
-          <label class="field">${t('kg')}<input name="kg" inputmode="decimal" value="${s0.kg === '' ? '' : fmtKg(s0.kg)}" autocomplete="off"></label>
-          <label class="field">${t('repsTitle')}<input name="reps" inputmode="numeric" value="${s0.reps}" autocomplete="off"></label></div>
+          <label class="field">${t('kg')}<input name="kg" inputmode="decimal" value="${esc(s0.kg === '' ? '' : fmtKg(s0.kg))}" autocomplete="off"></label>
+          <label class="field">${t('repsTitle')}<input name="reps" inputmode="numeric" value="${esc(s0.reps)}" autocomplete="off"></label></div>
         <p class="sub">${t('liftRule')}</p></div>
       <div class="g-body" ${lift ? 'hidden' : ''}>
         <label class="field">${t('targetW')}<input name="w" inputmode="decimal" placeholder="${lw ? t('nowW', fmtKg(lw)) : '80'}" autocomplete="off"></label>
@@ -1470,7 +1603,7 @@ function sheetGoal(name) {
 function sheetGoalMenu(id) {
   const g = goalList().find(x => x.id === id);
   sheet(`<h2>${esc(goalState(g).title)}</h2>${goalCard(g, 'div')}
-    <div class="gap"></div><button class="btn d wide" data-act="delgoal" data-id="${id}">${t('delGoal')}</button>`);
+    <div class="gap"></div><button class="btn d wide" data-act="delgoal" data-id="${esc(id)}">${t('delGoal')}</button>`);
 }
 // riepilogo di fine seduta
 function sheetSummary() {
@@ -1507,14 +1640,14 @@ function sheetSummary() {
     <p class="sub h">${t('week')}</p><p>${t('weekStatus', st.week, st.t, st.n)}</p>
     <p class="note" style="padding:12px 0 0">${improved && compared ? t('beatNote', improved, compared) : ''}${t('nextNote')}</p>
     ${summaryDonationCard(s)}
-    <div class="gap"></div><button class="btn s wide" data-act="share" data-k="session" data-a="${s.id}" style="background:var(--card)">${icon('share')} ${t('shareSession')}</button>
+    <div class="gap"></div><button class="btn s wide" data-act="share" data-k="session" data-a="${esc(s.id)}" style="background:var(--card)">${icon('share')} ${t('shareSession')}</button>
     <div class="gap"></div><button class="btn p wide" data-act="finish">${t('close')}</button>`);
 }
 
 // ---------- tutorial con swipe ----------
 function tourSlides() {
   const bench = BENCH[lang], rs = t('repsShort');
-  const mockStep = (v, u) => `<div class="step" style="height:56px"><button tabindex="-1">${icon('minus')}</button><label><input tabindex="-1" value="${v}" readonly style="font-size:24px"><span class="u">${u}</span></label><button tabindex="-1">${icon('plus')}</button></div>`;
+  const mockStep = (v, u) => `<div class="step" style="height:56px"><button tabindex="-1">${icon('minus')}</button><label><input tabindex="-1" value="${esc(v)}" readonly style="font-size:24px"><span class="u">${u}</span></label><button tabindex="-1">${icon('plus')}</button></div>`;
   const demo = [{d: addDays(today(), -28), v: 70, dir: 'eq'}, {d: addDays(today(), -21), v: 70, dir: 'eq'}, {d: addDays(today(), -14), v: 72.5, dir: 'up'}, {d: addDays(today(), -7), v: 70, dir: 'down'}, {d: today(), v: 75, dir: 'up'}];
   return [
     [`<img class="logo-big" src="icons/icon-512.png" alt="">`, t('t1h'), t('t1p') +
@@ -1635,7 +1768,7 @@ async function keepAwake(on) {
 }
 function startRest(name, next, planRest) {
   if (!restDefault()) return;   // spento dalle impostazioni: vale per tutti gli esercizi
-  const own = db.rest && db.rest[key(name)];
+  const own = db.rest && Object.hasOwn(db.rest, key(name)) ? db.rest[key(name)] : undefined;
   if (own === 0) return;   // spento per questo esercizio
   const sec = own || planRest || restDefault();
   unlockAudio();
@@ -1644,7 +1777,7 @@ function startRest(name, next, planRest) {
 }
 // recupero che si userà per un esercizio: scelto da te, della scheda o predefinito (0 = nessun timer)
 function exRest(e) {
-  const own = db.rest && db.rest[key(e.name)];
+  const own = db.rest && Object.hasOwn(db.rest, key(e.name)) ? db.rest[key(e.name)] : undefined;
   if (!restDefault()) return {sec: 0, src: 'off'};
   if (own === 0) return {sec: 0, src: 'exoff'};
   if (own) return {sec: own, src: 'own'};
@@ -1653,9 +1786,9 @@ function exRest(e) {
 }
 const exRestTxt = e => { const r = exRest(e); return r.sec ? mmss(r.sec) : t('restOff'); };
 function sheetExRest(eid) {
-  const e = sess(view.id).exercises.find(x => x.id === eid), cur = db.rest && db.rest[key(e.name)];
+  const e = sess(view.id).exercises.find(x => x.id === eid), cur = db.rest && Object.hasOwn(db.rest, key(e.name)) ? db.rest[key(e.name)] : undefined;
   const base = (e.target && e.target.rest) || restDefault() || 90;
-  const chip = (v, label, on) => `<button class="chip" data-act="exrestset" data-eid="${eid}" data-v="${v}" aria-pressed="${on}">${label}</button>`;
+  const chip = (v, label, on) => `<button class="chip" data-act="exrestset" data-eid="${esc(eid)}" data-v="${v}" aria-pressed="${on}">${label}</button>`;
   sheet(`<h2>${t('exRestTitle')}</h2><p class="sub" style="margin-bottom:12px">${esc(e.name)}</p>
     <div class="opts three">${chip('auto', `${t('exRestAuto')} · ${mmss(base)}`, cur === undefined)}${chip('0', t('restOff'), cur === 0)}
     ${[30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => chip(v, mmss(v), cur === v)).join('')}</div>
@@ -1687,7 +1820,7 @@ function drawRest() {
     }
     if (rest.done) {
       el.className = 'rest done';
-      el.innerHTML = `<button class="rest-main" data-act="restskip"><b>${t('restDone')}</b><span>${esc(rest.name)} · ${t('restNext', rest.next)}</span></button>`;
+      el.innerHTML = `<button class="rest-main" data-act="restskip"><b>${t('restDone')}</b><span>${esc(rest.name)} · ${esc(t('restNext', rest.next))}</span></button>`;
       clearInterval(restTick); restTick = null;
       setTimeout(() => { if (rest && rest.done && Date.now() - rest.done > 7000) stopRest(); }, 8000);
       return;
@@ -1714,7 +1847,7 @@ const b64d = s => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s.rep
 
 // i miei numeri da mandare agli amici
 function myChallenge() {
-  const from = addDays(today(), -30), counts = {};
+  const from = addDays(today(), -30), counts = Object.create(null);
   db.sessions.forEach(s => s.exercises.forEach(e => { if (e.sets.length) { const k = e.lib || key(e.name); counts[k] = (counts[k] || 0) + 1; } }));
   const lifts = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k]) => {
     const ex = db.sessions.flatMap(s => s.exercises).find(e => (e.lib || key(e.name)) === k), all = exHistory(ex.name).flatMap(x => x.sets);
@@ -1730,19 +1863,24 @@ function myChallenge() {
 const challengeLink = () => APP_URL + '#sfida=' + b64e(myChallenge());
 // legge una sfida da un testo incollato o dall'indirizzo, con controlli sui campi
 function parseChallenge(text) {
-  const m = String(text || '').match(/sfida=([A-Za-z0-9_-]{10,4000})/);
+  if (typeof text !== 'string' || text.length > 10000) return null;
+  const m = text.match(/sfida=([A-Za-z0-9_-]{10,4000})(?![A-Za-z0-9_-])/);
   if (!m) return null;
   try {
-    const o = b64d(m[1]), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', nr = v => isFinite(v) ? +v : 0;
-    if (o.v !== 1 || typeof o.id !== 'string') return null;
-    return {id: str(o.id, 40), n: str(o.n, 30) || '?', st: nr(o.st), wt: nr(o.wt), m: nr(o.m), pg: nr(o.pg), d: str(o.d, 10),
-      l: (Array.isArray(o.l) ? o.l : []).slice(0, 10).map(x => ({k: str(x.k, 80), n: str(x.n, 40), e: nr(x.e), b: Array.isArray(x.b) ? [nr(x.b[0]), nr(x.b[1])] : [0, 0]}))};
+    const o = b64d(m[1]);
+    if (!o || typeof o !== 'object' || Array.isArray(o) || o.v !== 1 || !GymData.validId(o.id) || !Array.isArray(o.l) || o.l.length > 10) return null;
+    if (!o.l.every(x => x && typeof x === 'object' && !Array.isArray(x) && typeof x.k === 'string' && typeof x.n === 'string' && Array.isArray(x.b))) return null;
+    const c = GymData.normalizeChallenge(o);
+    if (c) { delete c.me; delete c.got; }
+    return c;
   } catch (e) { return null; }
 }
 function addFriend(c) {
+  c = c && GymData.validId(c.id) ? GymData.normalizeChallenge(c) : null;
+  if (c) { delete c.me; delete c.got; }
   if (!c) { alert(t('pasteFail')); return; }
   if (c.id === social().id) { toast(t('ownChallenge')); return; }
-  const fr = db.friends || (db.friends = {}), had = !!fr[c.id];
+  const fr = db.friends || (db.friends = Object.create(null)), had = !!fr[c.id];
   fr[c.id] = {...c, got: today()}; save();
   closeSheet(); go({name: 'home', tab: 'progress', ptab: 'friends'});
   toast(had ? t('friendUpdated', esc(c.n)) : t('friendAdded', esc(c.n)));
@@ -1760,7 +1898,7 @@ function friendsView() {
   // prima i progressi di ognuno rispetto a se stesso, poi costanza e forza
   html += board(t('progressBoard'), p => p.pg, p => `${p.pg > 0 ? '+' : ''}${fmtKg(p.pg)}%`) + board(t('streakBoard'), p => p.st, p => p.st) + board(t('monthBoard'), p => p.m, p => p.m);
   // forza: solo esercizi che almeno due persone hanno in comune
-  const keys = {};
+  const keys = Object.create(null);
   all.forEach(p => p.l.forEach(x => { (keys[x.k] = keys[x.k] || []).push({p, x}); }));
   const shared = Object.entries(keys).filter(([, v]) => v.length > 1).slice(0, 6);
   if (shared.length) html += `<p class="glabel">${t('liftsBoard')}</p>` + shared.map(([k, v]) => {
@@ -1795,7 +1933,7 @@ function donationCard(subtle = false) {
   if (!DONATE_URL) return '';
   return `<aside class="donation-card${subtle ? ' donation-summary' : ''}" aria-label="${t('donateTitle')}">
     <div class="donation-copy"><p>${t('donateText')}</p><span>${t('donateOptional')}</span></div>
-    <a class="donation-button" href="${DONATE_URL}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☕</span> ${t('donateBtn')} ${icon('external')}</a>
+    <a class="donation-button" href="${esc(DONATE_URL)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☕</span> ${t('donateBtn')} ${icon('external')}</a>
   </aside>`;
 }
 function summaryDonationCard(s) {
@@ -1828,15 +1966,15 @@ function waNumber(raw) {
   else if (!plus && lang === 'it' && /^3\d{9}$/.test(d)) d = '39' + d;   // cellulare italiano senza prefisso
   return d.length >= 8 && d.length <= 15 ? d : '';
 }
-const waLink = (c, msg) => `https://wa.me/${c && c.tel ? c.tel : ''}?text=${encodeURIComponent(msg)}`;
+const waLink = (c, msg) => `https://wa.me/${c && c.tel ? waNumber(c.tel) : ''}?text=${encodeURIComponent(msg)}`;
 let afterContact = null;  // cosa riaprire dopo aver aggiunto o modificato un amico
 // elenco degli amici con un pulsante WhatsApp ciascuno; «altra persona» lascia scegliere la chat a WhatsApp
 function friendsToSend(msg, reopen) {
   afterContact = reopen;
   const list = contacts(), inChat = typeof chatLinkTargets === 'function' ? chatLinkTargets(msg) : '';
   return inChat + `<p class="glabel">${inChat ? t('waOthers') : t('sendToFriend')}</p>` +
-    (list.length ? `<div class="list">${list.map(c => `<div class="row friendrow"><a class="grow" href="${waLink(c, msg)}" target="_blank" rel="noopener"><h3>${esc(c.n)}</h3>
-      <div class="sub">${c.tel ? '+' + c.tel : t('noNumber')}</div></a><button class="ib" data-act="editcontact" data-id="${c.id}" aria-label="${esc(t('edit'))}">${icon('more')}</button></div>`).join('')}</div>`
+    (list.length ? `<div class="list">${list.map(c => `<div class="row friendrow"><a class="grow" href="${esc(waLink(c, msg))}" target="_blank" rel="noopener"><h3>${esc(c.n)}</h3>
+      <div class="sub">${esc(c.tel ? '+' + c.tel : t('noNumber'))}</div></a><button class="ib" data-act="editcontact" data-id="${esc(c.id)}" aria-label="${esc(t('edit'))}">${icon('more')}</button></div>`).join('')}</div>`
       : `<p class="sub" style="margin-bottom:8px">${t('noFriendsYet')}</p>`) +
     `<div class="opts" style="margin-top:8px"><button class="btn s" data-act="addcontact" style="background:var(--fill)">${icon('plus')} ${t('addFriendBtn')}</button>
       <a class="btn s" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" style="background:var(--fill)">${t('waOther')}</a></div>`;
@@ -1845,7 +1983,7 @@ function sheetContacts() {
   afterContact = sheetContacts;
   const list = contacts();
   sheet(`<h2>${t('friendsWa')}</h2><p class="sub" style="margin-bottom:12px">${t('friendsWaText')}</p>
-    ${list.length ? `<div class="list">${list.map(c => `<button class="row" data-act="editcontact" data-id="${c.id}"><div class="grow"><h3>${esc(c.n)}</h3><div class="sub">${c.tel ? '+' + c.tel : t('noNumber')}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div><div class="gap"></div>` : ''}
+    ${list.length ? `<div class="list">${list.map(c => `<button class="row" data-act="editcontact" data-id="${esc(c.id)}"><div class="grow"><h3>${esc(c.n)}</h3><div class="sub">${esc(c.tel ? '+' + c.tel : t('noNumber'))}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div><div class="gap"></div>` : ''}
     <button class="btn p wide" data-act="addcontact">${icon('plus')} ${t('addFriendBtn')}</button>`);
 }
 function sheetContact(id) {
@@ -1853,11 +1991,11 @@ function sheetContact(id) {
   const canPick = 'contacts' in navigator && 'ContactsManager' in window;
   sheet(`<h2>${c.id ? esc(c.n) : t('addFriendBtn')}</h2>
     ${canPick ? `<button class="btn s wide" data-act="pickcontact" type="button" style="background:var(--fill);margin-bottom:12px">${t('pickContact')}</button>` : ''}
-    <form data-form="contact" data-id="${c.id || ''}"><label class="field">${t('name')}<input name="n" value="${esc(c.n || '')}" maxlength="30" autocomplete="off" ${c.id ? '' : 'data-focus'}></label>
-    <label class="field">${t('friendTel')}<input name="p" value="${c.tel ? '+' + c.tel : ''}" inputmode="tel" placeholder="+39 333 1234567" autocomplete="off"></label>
+    <form data-form="contact" data-id="${esc(c.id || '')}"><label class="field">${t('name')}<input name="n" value="${esc(c.n || '')}" maxlength="30" autocomplete="off" ${c.id ? '' : 'data-focus'}></label>
+    <label class="field">${t('friendTel')}<input name="p" value="${esc(c.tel ? '+' + c.tel : '')}" inputmode="tel" placeholder="+39 333 1234567" autocomplete="off"></label>
     <p class="sub" style="margin-bottom:12px">${t('friendTelHint')}</p>
     <button class="btn p wide">${t('save')}</button></form>
-    ${c.id ? `<div class="gap"></div><button class="btn d wide" data-act="delcontact" data-id="${c.id}">${t('removeContact')}</button>` : ''}`);
+    ${c.id ? `<div class="gap"></div><button class="btn d wide" data-act="delcontact" data-id="${esc(c.id)}">${t('removeContact')}</button>` : ''}`);
 }
 function pickContact() {
   navigator.contacts.select(['name', 'tel'], {multiple: false}).then(r => {
@@ -2030,14 +2168,14 @@ function sheetSocialSettings() {
 
 
 // ---------- schede (create da sé o ricevute da un coach) ----------
-const plans = () => db.plans || (db.plans = {});
+const plans = () => db.plans || (db.plans = Object.create(null));
 const planList = () => Object.values(plans()).sort((a, b) => (b.got || '').localeCompare(a.got || '') || a.name.localeCompare(b.name));
 const dayLetter = i => String.fromCharCode(65 + i);
 const dayTitle = (p, i) => p.days[i].name || `${p.name} ${dayLetter(i)}`;
 const repsLow = r => { const m = String(r || '').match(/\d+/); return m ? +m[0] : ''; };
 // recupero suggerito dalle ripetizioni: carichi pesanti, pause lunghe
 const restFor = reps => { const lo = repsLow(reps) || 10; return lo <= 6 ? 180 : lo <= 10 ? 120 : 90; };
-const exLine = x => `${x.sets} × ${x.reps}${x.rest ? ' · ' + t('restS', mmss(x.rest)) : ''}`;
+const exLine = x => `${esc(x.sets)} × ${esc(x.reps)}${x.rest ? ' · ' + t('restS', mmss(x.rest)) : ''}`;
 const nameFor = x => { if (x.lib && VAR[x.lib]) { const used = db.sessions.flatMap(s => s.exercises).find(e => e.lib === x.lib); return used ? used.name : tx(VAR[x.lib].v.name); } return x.n; };
 // fumetto del coach: nota con l'iniziale di chi l'ha scritta
 const bubble = (who, text) => text ? `<div class="bubble"><span class="ava">${esc((who || '?').trim().charAt(0).toUpperCase())}</span><div><b>${esc(who || '')}</b><p>${esc(text).replace(/\n/g, '<br>')}</p></div></div>` : '';
@@ -2045,7 +2183,7 @@ const bubble = (who, text) => text ? `<div class="bubble"><span class="ava">${es
 function plansSection() {
   const ps = planList();
   return `<div class="sec"><h2>${t('plans')}</h2></div>
-    ${ps.length ? `<div class="list">${ps.map(p => `<button class="row" data-act="plan" data-id="${p.id}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
+    ${ps.length ? `<div class="list">${ps.map(p => `<button class="row" data-act="plan" data-id="${esc(p.id)}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
       <div class="grow"><h3>${esc(p.name)}</h3><div class="sub">${p.author ? esc(t('planBy', p.author, p.role)) + ' · ' : ''}${t('daysN', p.days.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div>`
       : `<p class="sub" style="margin:0 2px 8px">${t('plansEmpty')}</p>`}
     <div class="opts" style="margin:10px 0 8px"><button class="btn s" data-act="newplan">${icon('plus')} ${t('newPlan')}</button><button class="btn s" data-act="pasteplan">${t('pastePlan')}</button></div>
@@ -2056,29 +2194,29 @@ function planView() {
   const p = plans()[view.id];
   return `<header><button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${esc(p.name)}</h1><p>${p.author ? esc(t('planBy', p.author, p.role)) : t('daysN', p.days.length)}</p></div>
-      ${p.own ? `<button class="ib txt" data-act="editplan" data-id="${p.id}">${t('edit')}</button>` : ''}</header>
+      ${p.own ? `<button class="ib txt" data-act="editplan" data-id="${esc(p.id)}">${t('edit')}</button>` : ''}</header>
     ${bubble(p.author, p.note)}
     ${p.days.map((d, i) => `<div class="dcard"><div class="item"><h3>${esc(dayTitle(p, i))}</h3><span class="sub">${t('exN', d.ex.length)}</span></div>
       ${d.ex.map(x => `<div class="dex"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div></div>`).join('') || `<p class="sub">${t('planEmptyDay')}</p>`}
-      ${d.ex.length ? `<button class="btn p wide" data-act="startday" data-id="${p.id}" data-i="${i}" style="margin-top:10px">${esc(t('startDay', dayTitle(p, i)))}</button>` : ''}</div>`).join('')}
+      ${d.ex.length ? `<button class="btn p wide" data-act="startday" data-id="${esc(p.id)}" data-i="${i}" style="margin-top:10px">${esc(t('startDay', dayTitle(p, i)))}</button>` : ''}</div>`).join('')}
     <div class="gap"></div>
-    <button class="btn s wide" data-act="sendplan" data-id="${p.id}" style="background:var(--card)">${icon('share')} ${t('sendPlan')}</button><div class="gap"></div>
-    <button class="btn d wide" data-act="delplan" data-id="${p.id}">${t('delPlan')}</button>`;
+    <button class="btn s wide" data-act="sendplan" data-id="${esc(p.id)}" style="background:var(--card)">${icon('share')} ${t('sendPlan')}</button><div class="gap"></div>
+    <button class="btn d wide" data-act="delplan" data-id="${esc(p.id)}">${t('delPlan')}</button>`;
 }
 // editor: ogni campo si salva mentre scrivi
 function planEditView() {
   const p = plans()[view.id], inp = (f, v, ph, tag = 'input') => tag === 'input'
     ? `<input data-pf="${f}" value="${esc(v || '')}" placeholder="${esc(ph || '')}" autocomplete="off">`
     : `<textarea data-pf="${f}" rows="3" placeholder="${esc(ph || '')}">${esc(v || '')}</textarea>`;
-  return `<header><button class="ib" data-act="plan" data-id="${p.id}" aria-label="${t('back')}">${icon('back')}</button>
-      <div class="t small"><h1>${esc(p.name) || t('newPlan')}</h1></div><button class="ib txt" data-act="plan" data-id="${p.id}">${t('save')}</button></header>
+  return `<header><button class="ib" data-act="plan" data-id="${esc(p.id)}" aria-label="${t('back')}">${icon('back')}</button>
+      <div class="t small"><h1>${esc(p.name) || t('newPlan')}</h1></div><button class="ib txt" data-act="plan" data-id="${esc(p.id)}">${t('save')}</button></header>
     <div class="pane-like">
       <label class="field">${t('planName')}${inp('name', p.name, t('planNamePh'))}</label>
       <div class="opts"><label class="field">${t('author')}${inp('author', p.author, t('nicknamePh'))}</label><label class="field">${t('role')}${inp('role', p.role)}</label></div>
       <label class="field">${t('planNote')}${inp('note', p.note, '', 'textarea')}</label>
     </div>
     ${p.days.map((d, i) => `<div class="dcard"><label class="field">${t('dayName')} ${dayLetter(i)}<input data-pd="${i}" value="${esc(d.name || '')}" placeholder="${esc(t('dayNamePh'))}" autocomplete="off"></label>
-      <div class="opts"><label class="field">${t('minL')}<input data-pdm="${i}" inputmode="numeric" value="${d.min || ''}" maxlength="3" placeholder="60"></label>
+      <div class="opts"><label class="field">${t('minL')}<input data-pdm="${i}" inputmode="numeric" value="${esc(d.min || '')}" maxlength="3" placeholder="60"></label>
       <label class="field">${t('warmL')}<input data-pdw="${i}" value="${esc(d.warm || '')}" maxlength="240" autocomplete="off"></label></div>
       ${d.ex.map((x, j) => `<button class="dex" data-act="planex" data-i="${i}" data-j="${j}" style="width:100%;text-align:left"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div><span class="chev">${icon('chev')}</span></button>`).join('')}
       <div class="opts" style="margin-top:10px"><button class="btn s" data-act="planaddex" data-i="${i}" style="background:var(--fill)">${icon('plus')} ${t('exerciseBtn')}</button>
@@ -2097,9 +2235,9 @@ function addToPlan(name, lib) {
 function sheetPlanEx(i, j) {
   const x = plans()[view.id].days[i].ex[j];
   sheet(`<h2>${esc(nameFor(x))}</h2><form data-form="planex" data-i="${i}" data-j="${j}">
-    <div class="opts"><label class="field">${t('setsL')}<input name="s" inputmode="numeric" value="${x.sets}"></label>
+    <div class="opts"><label class="field">${t('setsL')}<input name="s" inputmode="numeric" value="${esc(x.sets)}"></label>
     <label class="field">${t('repsRange')}<input name="r" value="${esc(x.reps)}" autocomplete="off"></label></div>
-    <label class="field">${t('restL')}<input name="t" inputmode="numeric" value="${x.rest || ''}"></label>
+    <label class="field">${t('restL')}<input name="t" inputmode="numeric" value="${esc(x.rest || '')}"></label>
     <div class="opts"><label class="field">${t('bufferL')}<input name="rir" value="${esc(x.rir || '')}" maxlength="6" placeholder="1–2" autocomplete="off"></label>
     <label class="field">${t('tempoL')}<input name="tp" value="${esc(x.tempo || '')}" maxlength="8" placeholder="3-1-X" autocomplete="off"></label></div>
     <label class="field">${t('altL')}<input name="alt" value="${esc(x.alt || '')}" maxlength="40" autocomplete="off"></label>
@@ -2128,18 +2266,23 @@ function planPayload(p) {
     d: p.days.slice(0, 7).map(d => ({n: (d.name || '').slice(0, 40), e: d.ex.slice(0, 15).map(x => [x.lib || '', nameFor(x).slice(0, 50), x.sets, String(x.reps).slice(0, 12), x.rest || 0, (x.note || '').slice(0, 120), String(x.rir || '').slice(0, 6), String(x.tempo || '').slice(0, 8), (x.alt || '').slice(0, 40)]), m: d.min || 0, w: (d.warm || '').slice(0, 240)}))};
 }
 function parsePlan(text) {
-  const m = String(text || '').match(/scheda=([A-Za-z0-9_-]{10,120000})/);
+  if (typeof text !== 'string' || text.length > 130000) return null;
+  const m = text.match(/scheda=([A-Za-z0-9_-]{10,120000})(?![A-Za-z0-9_-])/);
   if (!m) return null;
   try {
-    const o = b64d(m[1]), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', nr = v => isFinite(v) ? +v : 0;
-    if (o.v !== 1 || o.t !== 'p' || !Array.isArray(o.d)) return null;
-    return {id: str(o.id, 40), name: str(o.n, 50) || '?', author: str(o.a, 30), role: str(o.r, 30), note: str(o.no, 600), food: str(o.f, 1200),
-      days: o.d.slice(0, 7).map(d => ({name: str(d.n, 40), min: Math.min(240, nr(d.m)), warm: str(d.w, 240), ex: (Array.isArray(d.e) ? d.e : []).slice(0, 15).map(x => ({lib: VAR[str(x[0], 80)] ? str(x[0], 80) : '', n: str(x[1], 50),
-        sets: Math.min(20, Math.max(1, nr(x[2]) || 3)), reps: str(x[3], 12) || '8–12', rest: Math.min(900, nr(x[4])), note: str(x[5], 120), rir: str(x[6], 6), tempo: str(x[7], 8), alt: str(x[8], 40)}))}))};
+    const o = b64d(m[1]), obj = x => x && typeof x === 'object' && !Array.isArray(x);
+    const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+    const nr = v => typeof v === 'number' && Number.isFinite(v) ? v : 0;
+    if (!obj(o) || o.v !== 1 || o.t !== 'p' || !GymData.validId(o.id) || !Array.isArray(o.d) || !o.d.length || o.d.length > 7 || typeof o.n !== 'string') return null;
+    if (!o.d.every(d => obj(d) && Array.isArray(d.e) && d.e.length <= 15 && d.e.every(x => Array.isArray(x) && x.length >= 4 && typeof x[1] === 'string' && typeof x[3] === 'string'))) return null;
+    return GymData.normalizePlan({id: o.id, name: str(o.n, 50) || '?', author: str(o.a, 30), role: str(o.r, 30), note: str(o.no, 600), food: str(o.f, 1200),
+      days: o.d.map(d => ({name: str(d.n, 40), min: Math.max(0, Math.min(240, nr(d.m))), warm: str(d.w, 240), ex: d.e.map(x => ({lib: Object.hasOwn(VAR, str(x[0], 80)) ? str(x[0], 80) : '', n: str(x[1], 50),
+        sets: Math.min(20, Math.max(1, nr(x[2]) || 3)), reps: str(x[3], 12) || '8–12', rest: Math.max(0, Math.min(900, nr(x[4]))), note: str(x[5], 120), rir: str(x[6], 6), tempo: str(x[7], 8), alt: str(x[8], 40)}))}))});
   } catch (e) { return null; }
 }
 function addPlan(p) {
-  if (!p) { alert(t('pasteFailAny')); return; }
+  p = p && GymData.validId(p.id) ? GymData.normalizePlan(p) : null;
+  if (!p || !p.days.length) { alert(t('pasteFailAny')); return; }
   const had = plans()[p.id];
   if (had && had.own) { toast(t('ownChallenge')); return; }
   plans()[p.id] = {...p, own: false, got: today()}; save();
@@ -2151,7 +2294,7 @@ function sheetSendPlan(id) {
   if (!p.days.some(d => d.ex.length)) { alert(t('planNeedsDay')); return; }
   shareText = t('planMsg', p.author || nick() || '🙂', p.name) + '\n' + APP_URL + '#scheda=' + b64e(planPayload(p));
   sheet(`<h2>${t('sendPlan')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('planMsg', p.author || nick() || '🙂', p.name))}</p>
-    <button class="btn p wide" id="pdf-btn" data-act="planpdf" data-id="${id}">${icon('share')} ${t('pdfBtn')}</button>
+    <button class="btn p wide" id="pdf-btn" data-act="planpdf" data-id="${esc(id)}">${icon('share')} ${t('pdfBtn')}</button>
     <p class="note" style="padding:6px 2px 14px">${t('pdfHint')}</p>
     <button class="btn s wide" data-act="sharetext">${icon('share')} ${t('shareWord')} · ${t('pdfLinkOnly')}</button><div class="gap"></div>
     ${friendsToSend(shareText, () => sheetSendPlan(id))}<div class="gap"></div>
@@ -2212,7 +2355,7 @@ function stepVal(eid, f, d) {
 }
 function syncChips(eid) {
   const d = drafts[eid];
-  document.querySelectorAll(`.chip[data-eid="${eid}"]`).forEach(c =>
+  document.querySelectorAll(`.chip[data-eid="${CSS.escape(eid)}"]`).forEach(c =>
     c.setAttribute('aria-pressed', +c.dataset.reps === +d.reps && +c.dataset.kg === num(d.kg)));
   const err = document.getElementById('err-' + eid); if (err) err.textContent = '';
 }
@@ -2275,7 +2418,7 @@ const acts = {
   exmenu: b => sheetExMenu(b.dataset.eid),
   exrest: b => sheetExRest(b.dataset.eid),
   exrestset: b => { const e = sess(view.id).exercises.find(x => x.id === b.dataset.eid), v = b.dataset.v;
-    db.rest = {...(db.rest || {})};
+    db.rest = Object.assign(Object.create(null), db.rest || {});
     if (v === 'auto') delete db.rest[key(e.name)]; else db.rest[key(e.name)] = +v;
     save(); closeSheet(); const y = window.scrollY; render(); window.scrollTo(0, y); toast(t('exRestSaved', esc(e.name), exRestTxt(e))); },
   delex: b => { const s = sess(view.id), eid = b.dataset.eid, n = s.exercises.find(e => e.id === eid).name; closeSheet();
@@ -2418,8 +2561,9 @@ const forms = {
   },
 };
 document.addEventListener('click', ev => {
+  if (storageBusy) return;
   const b = ev.target.closest('[data-act]');
-  if (b && !b.disabled && acts[b.dataset.act]) acts[b.dataset.act](b);
+  if (b && !b.disabled && Object.hasOwn(acts, b.dataset.act)) acts[b.dataset.act](b);
 });
 // celle della tabella Settimane: attivabili anche da tastiera
 document.addEventListener('keydown', ev => {
@@ -2428,10 +2572,12 @@ document.addEventListener('keydown', ev => {
 });
 document.addEventListener('submit', ev => {
   ev.preventDefault();
-  const f = ev.target; if (forms[f.dataset.form]) forms[f.dataset.form](f);
+  if (storageBusy) return;
+  const f = ev.target; if (Object.hasOwn(forms, f.dataset.form)) forms[f.dataset.form](f);
 });
 let planSaveT;
 document.addEventListener('input', ev => {
+  if (storageBusy) return;
   const el = ev.target;
   if ((el.dataset.pf || el.dataset.pd || el.dataset.pdm || el.dataset.pdw) && view.name === 'planedit') {
     const p = plans()[view.id];
@@ -2446,17 +2592,15 @@ document.addEventListener('input', ev => {
 
 setLang();
 applyTheme();
-render();
-if (rest) drawRest();
-restore();
-loadPhotos();
+window.gymDataReady = restore(true).then(() => { if (rest) drawRest(); });
 let skipInstall = false;
 try { skipInstall = sessionStorage.getItem('install-skip') === '1'; } catch (e) {}
 // parte dopo che tutti gli script (anche chat.js) sono caricati
-addEventListener('DOMContentLoaded', () => {
+addEventListener('DOMContentLoaded', async () => {
+  await window.gymDataReady;
   if (handleChallengeHash()) {}
   else if (mobile() && !standalone() && !skipInstall) openInstall();
   else if (!db.tourSeen) openTour();
 });
-window.addEventListener('hashchange', handleChallengeHash);
+window.addEventListener('hashchange', () => { if (!storageBusy) handleChallengeHash(); });
 // Offline installation and update checks are managed by update.js.

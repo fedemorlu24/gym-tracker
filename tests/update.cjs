@@ -1,10 +1,10 @@
-// The local fixture serves pinned v65, the current candidate, then two future releases.
+// The local fixture serves pinned v66, the current candidate, then two future releases.
 const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const {spawn} = require('node:child_process');
 const path = require('node:path');
-const baseline = '65';
+const baseline = '66';
 const candidate = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8').match(/const VERSION = '(\d+)'/)[1];
 const next = String(Number(candidate) + 1), last = String(Number(candidate) + 2);
 let fixture;
@@ -20,6 +20,7 @@ async function fixtureURL() {
 }
 (async () => {
  const browser = await chromium.launch(); const context = await browser.newContext({locale:'it-IT'}); const page = await context.newPage(); const errors=[];const failed=[],http=[];page.on('requestfailed',r=>failed.push({url:r.url(),error:r.failure()?.errorText}));page.on('response',r=>{if(r.status()>=400)http.push({url:r.url(),status:r.status()})});
+ await context.routeWebSocket('**',socket=>socket.close());
  page.on('pageerror',e=>errors.push(e.message)); page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
  const url=await fixtureURL();
  const version=()=>page.evaluate(async()=>{await navigator.serviceWorker.ready;const c=new MessageChannel();return new Promise(r=>{c.port1.onmessage=e=>r(e.data);navigator.serviceWorker.controller.postMessage('version',[c.port2])})});
@@ -28,10 +29,13 @@ async function fixtureURL() {
   assert.equal(await version(),baseline);
   await page.evaluate(async()=>{
    document.getElementById('tour').hidden=true;document.getElementById('install').hidden=true;
-   db={tourSeen:1,badges:{},settings:{lang:'it'},sessions:[{id:'update-session',date:'2026-10-18',name:'Preserve workout',exercises:[{id:'update-ex',name:'Squat',sets:[{reps:8,kg:80}]}]}],plans:[{id:'update-plan',name:'Preserve plan',days:[]}],profile:{sex:'m',age:35,weight:80},ts:Date.now()};
-   save();await idbPut(JSON.stringify(db));await photoTx('readwrite',s=>s.put({id:'update-photo',date:'2026-10-18',pose:'front',blob:new Blob(['photo bytes preserved'],{type:'image/png'})}));
+   const nt=await nostrLoad(),sk=new Uint8Array(32).fill(3);
+   db={tourSeen:'2026-10-18',badges:{},settings:{lang:'it'},sessions:[{id:'update-session',date:'2026-10-18',name:'Preserve workout',exercises:[{id:'update-ex',name:'Squat',sets:[{reps:8,kg:80}]}]}],plans:{'update-plan':{id:'update-plan',name:'Preserve plan',days:[]}},profile:{sex:'m',age:35,weight:80},chat:{sk:toHex(sk),pk:nt.getPublicKey(sk),tok:'ab'.repeat(12),friends:{},msgs:{},relays:[],sync:0,seen:[],blocked:[]},ts:Date.now()};
+   const canvas=document.createElement('canvas');canvas.width=canvas.height=2;
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+   save();await idbPut(JSON.stringify(db));await photoTx('readwrite',s=>s.put({id:'update-photo',date:'2026-10-18',pose:'front',blob}));
   });
-  const snapshot=()=>page.evaluate(async()=>({local:JSON.parse(localStorage.getItem(KEY)),idb:JSON.parse(await idbGet()),photo:await (await photoTx('readonly',s=>s.get('update-photo'))).blob.text()}));
+  const snapshot=()=>page.evaluate(async()=>{await window.gymDataReady;await Promise.all([...pendingWrites]);return {local:JSON.parse(localStorage.getItem(KEY)),idb:JSON.parse(await idbGet()),photo:await toDataURL((await photoTx('readonly',s=>s.get('update-photo'))).blob)};});
   const before=await snapshot();
   await context.request.post(url+'__version',{data:candidate});await page.reload();await page.waitForFunction(v=>typeof APP_VERSION!=='undefined'&&APP_VERSION===v,candidate);
   for(let i=0;i<50&&await version()!==candidate;i++)await page.waitForTimeout(200);

@@ -1,9 +1,10 @@
 // Service worker: tiene sul telefono una copia dell'app per usarla senza rete.
 // VERSION deve coincidere con il ?v= dei file in index.html: aggiornali insieme a ogni rilascio.
-const VERSION = '66';
+const VERSION = '67';
 const CACHE = 'gym-' + VERSION;
 const FILES = [
   './',
+  `security-data.js?v=${VERSION}`, `secure-media.js?v=${VERSION}`,
   `style.css?v=${VERSION}`, `i18n.js?v=${VERSION}`, `exlib.js?v=${VERSION}`, `lib/data.js?v=${VERSION}`, `app.js?v=${VERSION}`, `import.js?v=${VERSION}`, `plandoc.js?v=${VERSION}`, `guide.js?v=${VERSION}`, `guide3d.js?v=${VERSION}`, `chat.js?v=${VERSION}`, `nostr-tools.js?v=${VERSION}`,
   `update.js?v=${VERSION}`, 'manifest.json', 'icons/icon-32.png', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

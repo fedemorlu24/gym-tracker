@@ -66,7 +66,9 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
     assert.equal(await page.locator('#gf-seek').isEnabled(), true);
     assert.equal(await page.locator('#gf-speed').isEnabled(), true);
     await page.evaluate(() => { guidePlayback(false); gfMs = 7000; gfDraw(gfMs); });
-    await page.waitForTimeout(250);
+    // The 3D container exists before its asynchronous model/decoder load finishes.
+    // Wait for real playback progress, including on a busy test machine.
+    await page.waitForFunction(() => !gfPaused && gfMs > 7000);
     assert.ok(await page.evaluate(() => !gfPaused && gfMs > 7000), 'No preview time limit');
     const ungated = await page.evaluate(() => Object.keys(BASE).filter(id => GMAP[id]).every(id => {
       const html = guidePanel(id, BASE[id].variants[0].eq);
