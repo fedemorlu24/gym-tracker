@@ -1337,3 +1337,5 @@ let skipInstall = false;
 try { skipInstall = sessionStorage.getItem('install-skip') === '1'; } catch (e) {}
 if (mobile() && !standalone() && !skipInstall) openInstall();
 else if (!db.tourSeen) openTour();
+// copia offline dell'app (sw.js)
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
