@@ -338,3 +338,12 @@ body.tabs.resting{padding-bottom:calc(env(safe-area-inset-bottom) + 290px)}
 .dbody span{font-size:13px;color:var(--sub);margin-left:4px}
 .dcard .meter{margin:12px 0 6px}
 .tabbar button{font-size:10.5px}
+
+/* amici e condivisione */
+.board .rank,.dex .rank{width:26px;height:26px;border-radius:50%;background:var(--fill);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:none}
+.board.me .rank{background:var(--acc);color:var(--acc-t)}
+.board.me{background:var(--acc-soft)}
+.score{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+a.btn{text-decoration:none}
+.field textarea{font:inherit;font-size:16px;color:var(--text);background:var(--card);border:0;border-radius:12px;padding:12px 14px;width:100%;resize:vertical}
+.seg button{font-size:14px}

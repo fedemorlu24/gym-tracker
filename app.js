@@ -154,13 +154,13 @@ const sess = id => db.sessions.find(s => s.id === id);
 const order = s => db.sessions.indexOf(s);
 
 // storico di un esercizio (per nome) in tutte le sedute, dalla più vecchia
-function history(name) {
+function exHistory(name) {
   return db.sessions
     .flatMap(s => s.exercises.filter(e => key(e.name) === key(name) && e.sets.length).map(e => ({sid: s.id, date: s.date, sets: e.sets, o: order(s)})))
     .sort((a, b) => a.date.localeCompare(b.date) || a.o - b.o);
 }
 // sedute precedenti a quella in esame (escluse quelle con data futura)
-const priorOf = (s, e) => history(e.name).filter(x => x.sid !== s.id && x.date <= s.date);
+const priorOf = (s, e) => exHistory(e.name).filter(x => x.sid !== s.id && x.date <= s.date);
 const prevFor = (s, e) => priorOf(s, e).pop();
 // obiettivi per la prossima serie partendo dalla stessa serie dell'ultima volta
 function suggest(ps) {
@@ -170,7 +170,7 @@ function suggest(ps) {
 }
 function exStats(name) {
   let best = 0;
-  return history(name).map(x => {
+  return exHistory(name).map(x => {
     const b = bestSet(x.sets), e = r05(e1rm(b));
     const pr = best > 0 && e > best;
     best = Math.max(best, e);
@@ -324,7 +324,7 @@ function checkGoals() {
   goalList().forEach(g => {
     if (g.done) return;
     let ok = false;
-    if (g.type === 'lift') ok = history(g.ex).some(x => x.date >= g.created && x.sets.some(z => z.kg >= g.kg && z.reps >= g.reps));
+    if (g.type === 'lift') ok = exHistory(g.ex).some(x => x.date >= g.created && x.sets.some(z => z.kg >= g.kg && z.reps >= g.reps));
     else { const c = lastWeight(); ok = c > 0 && (g.weight >= g.start ? c >= g.weight : c <= g.weight); }
     if (ok) { g.done = today(); hit.push(g); }
   });
@@ -399,7 +399,7 @@ function render() {
   const app = document.getElementById('app');
   let tabs = false;
   if (view.name === 'session' && sess(view.id)) app.innerHTML = sessionView();
-  else if (view.name === 'ex' && history(view.ex).length) app.innerHTML = exView();
+  else if (view.name === 'ex' && exHistory(view.ex).length) app.innerHTML = exView();
   else if (view.name === 'settings') app.innerHTML = settingsView();
   else { if (view.name !== 'home') view = {name: 'home', tab: 'today'}; app.innerHTML = home(); tabs = true; }
   document.body.classList.toggle('tabs', tabs);
@@ -551,8 +551,10 @@ function weeksView() {
 }
 function progressList() {
   const seg = `<div class="seg" role="tablist"><button role="tab" aria-selected="${view.ptab !== 'weeks'}" data-act="ptab" data-v="list">${t('progList')}</button>
-    <button role="tab" aria-selected="${view.ptab === 'weeks'}" data-act="ptab" data-v="weeks">${t('progWeeks')}</button></div>`;
+    <button role="tab" aria-selected="${view.ptab === 'weeks'}" data-act="ptab" data-v="weeks">${t('progWeeks')}</button>
+    <button role="tab" aria-selected="${view.ptab === 'friends'}" data-act="ptab" data-v="friends">${t('progFriends')}</button></div>`;
   if (view.ptab === 'weeks') return seg + weeksView();
+  if (view.ptab === 'friends') return seg + friendsView();
   return seg + progressListBody();
 }
 function progressListBody() {
@@ -655,6 +657,7 @@ function sessionView() {
   return `<header>
       <button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${esc(s.name)}</h1><p>${fmtDate(s.date)}</p></div>
+      ${s.exercises.some(e => e.sets.length) ? `<button class="ib" data-act="share" data-k="session" data-a="${s.id}" aria-label="${t('shareSession')}">${icon('share')}</button>` : ''}
       <button class="ib txt" data-act="editsession">${t('edit')}</button>
     </header>` +
     (s.exercises.length ? s.exercises.map(e => e.id === open ? exOpen(s, e) : exClosed(s, e)).join('') : `<div class="empty">${t('emptySession')}</div>`) +
@@ -722,7 +725,8 @@ function exView() {
   };
   return `<header>
       <button class="ib" data-act="back" aria-label="${t('back')}">${icon('back')}</button>
-      <div class="t small"><h1>${esc(name)}</h1><p>${t('sinceN', st.length, fmtShort(f.date))}</p></div></header>
+      <div class="t small"><h1>${esc(name)}</h1><p>${t('sinceN', st.length, fmtShort(f.date))}</p></div>
+      <button class="ib" data-act="share" data-k="progress" data-a="${esc(name)}" aria-label="${t('shareProgress')}">${icon('share')}</button></header>
     ${panel(t('weight'), t('weightSub'), 'kg', 'kg',
       lineChart(st.map((x, i) => ({d: x.date, v: x.kg, dir: i ? dir(x.kg, st[i - 1].kg) : 'eq', live: isLive(x)})), 'kg'))}
     ${panel(t('repsTitle'), t('repsSub'), 'reps', rs,
@@ -840,6 +844,9 @@ function settingsView() {
     <button class="row" data-act="weekly"><div class="grow"><h3>${t('perWeek')}</h3><div class="sub">${weeklyTarget()}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('language')}</p>
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
+    <p class="glabel">${t('socialSettings')}</p>
+    <div class="group"><button class="row" data-act="socialset"><div class="grow"><h3>${t('nickname')}</h3><div class="sub">${esc(nick()) || t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
+    <button class="row" data-act="socialset"><div class="grow"><h3>${t('groupLink')}</h3><div class="sub">${db.social && db.social.group ? 'chat.whatsapp.com' : t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('restSetting')}</p>
     <div class="opts three">${[0, 60, 90, 120, 180, 240].map(v => `<button class="chip" data-act="restset" data-v="${v}" aria-pressed="${restDefault() === v}">${v ? mmss(v) : t('restOff')}</button>`).join('')}</div>
     <p class="note" style="padding:8px 4px 0">${t('restText')} ${t('restScreen')}</p>
@@ -1063,7 +1070,8 @@ function sheetCompare(pose) {
   sheet(`<h2>${t('compareTitle', poseName(pose).toLowerCase())}</h2>
     <div class="cmp"><figure id="cmp-a"><img src="${a.url}" alt="${t('before')}">${cap(a)}</figure><figure><img src="${b.url}" alt="${t('after')}">${cap(b)}</figure></div>
     ${ps.length > 2 ? `<label class="field" style="margin-top:12px">${t('compareWith')}<select id="cmp-sel">${ps.map((p, i) => `<option value="${i}">${fmtShort(p.date)}</option>`).join('')}</select></label>` : ''}
-    <p class="note" style="padding:12px 0 0">${t('compareNote')}</p>`);
+    <p class="note" style="padding:12px 0 0">${t('compareNote')}</p>
+    <button class="btn s wide" data-act="share" data-k="compare" data-a="${pose}" style="margin-top:12px;background:var(--card)">${icon('share')} ${t('shareCompare')}</button>`);
   const sel = document.getElementById('cmp-sel');
   if (sel) sel.onchange = () => { const p = ps[+sel.value]; document.getElementById('cmp-a').innerHTML = `<img src="${p.url}" alt="${t('before')}">${cap(p)}`; };
 }
@@ -1148,6 +1156,7 @@ function sheetSummary() {
     ${badgesToday.length ? `<p class="sub h">${t('badgesUnlocked')}</p><div class="badges">${badgesToday.map(b => `<div class="badge on"><span class="medal">${b.g}</span><b>${b.t}</b></div>`).join('')}</div>` : ''}
     <p class="sub h">${t('week')}</p><p>${t('weekStatus', st.week, st.t, st.n)}</p>
     <p class="note" style="padding:12px 0 0">${improved && compared ? t('beatNote', improved, compared) : ''}${t('nextNote')}</p>
+    <div class="gap"></div><button class="btn s wide" data-act="share" data-k="session" data-a="${s.id}" style="background:var(--card)">${icon('share')} ${t('shareSession')}</button>
     <div class="gap"></div><button class="btn p wide" data-act="finish">${t('close')}</button>`);
 }
 
@@ -1297,6 +1306,228 @@ function drawRest() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && rest) { if (!rest.done) keepAwake(true); drawRest(); } });
 
+
+// ---------- condivisione e amici (senza server) ----------
+const social = () => db.social || (db.social = {id: uid() + uid()});
+const nick = () => (db.social && db.social.name) || '';
+const APP_URL = location.origin + location.pathname;
+// codifica compatta in base64url (anche per caratteri non latini)
+const b64e = o => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))));
+
+// i miei numeri da mandare agli amici
+function myChallenge() {
+  const from = addDays(today(), -30), counts = {};
+  db.sessions.forEach(s => s.exercises.forEach(e => { if (e.sets.length) { const k = e.lib || key(e.name); counts[k] = (counts[k] || 0) + 1; } }));
+  const lifts = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k]) => {
+    const ex = db.sessions.flatMap(s => s.exercises).find(e => (e.lib || key(e.name)) === k), all = exHistory(ex.name).flatMap(x => x.sets);
+    const b = bestSet(all), h = exHistory(ex.name);
+    // miglioramento nell'ultimo mese rispetto al proprio meglio precedente
+    const before = Math.max(0, ...h.filter(x => x.date < from).flatMap(x => x.sets.map(e1rm))), recent = Math.max(0, ...h.filter(x => x.date >= from).flatMap(x => x.sets.map(e1rm)));
+    return {k, n: ex.name.slice(0, 40), e: r05(e1rm(b)), b: [b.kg, b.reps], p: before && recent ? Math.round((recent - before) / before * 1000) / 10 : null};
+  });
+  const ps = lifts.map(x => x.p).filter(x => x !== null);
+  return {v: 1, id: social().id, n: nick().slice(0, 30), st: streak().n, wt: weeklyTarget(),
+    m: doneSessions().filter(s => s.date >= from).length, pg: ps.length ? Math.round(ps.reduce((a, x) => a + x, 0) / ps.length * 10) / 10 : 0, l: lifts, d: today()};
+}
+const challengeLink = () => APP_URL + '#sfida=' + b64e(myChallenge());
+// legge una sfida da un testo incollato o dall'indirizzo, con controlli sui campi
+function parseChallenge(text) {
+  const m = String(text || '').match(/sfida=([A-Za-z0-9_-]{10,4000})/);
+  if (!m) return null;
+  try {
+    const o = b64d(m[1]), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', nr = v => isFinite(v) ? +v : 0;
+    if (o.v !== 1 || typeof o.id !== 'string') return null;
+    return {id: str(o.id, 40), n: str(o.n, 30) || '?', st: nr(o.st), wt: nr(o.wt), m: nr(o.m), pg: nr(o.pg), d: str(o.d, 10),
+      l: (Array.isArray(o.l) ? o.l : []).slice(0, 10).map(x => ({k: str(x.k, 80), n: str(x.n, 40), e: nr(x.e), b: Array.isArray(x.b) ? [nr(x.b[0]), nr(x.b[1])] : [0, 0]}))};
+  } catch (e) { return null; }
+}
+function addFriend(c) {
+  if (!c) { alert(t('pasteFail')); return; }
+  if (c.id === social().id) { toast(t('ownChallenge')); return; }
+  const fr = db.friends || (db.friends = {}), had = !!fr[c.id];
+  fr[c.id] = {...c, got: today()}; save();
+  closeSheet(); go({name: 'home', tab: 'progress', ptab: 'friends'});
+  toast(had ? t('friendUpdated', esc(c.n)) : t('friendAdded', esc(c.n)));
+}
+function friendsView() {
+  const me = {...myChallenge(), n: nick() || t('you'), me: true}, fr = Object.values(db.friends || {});
+  let html = `<div class="opts" style="margin-bottom:12px"><button class="btn p" data-act="sendchallenge">${t('challengeSend')}</button>
+    <button class="btn s" data-act="pastechallenge">${t('challengePaste')}</button></div>`;
+  if (db.social && db.social.group) html += `<button class="btn s wide" data-act="opengroup" style="margin-bottom:12px">${t('openGroup')}</button>`;
+  if (!fr.length) return html + `<div class="empty" style="padding:28px 12px">${t('boardEmpty')}</div>`;
+  const all = [me, ...fr];
+  const board = (title, val, fmtv) => `<p class="glabel">${title}</p><div class="group">${[...all].sort((a, b) => val(b) - val(a)).map((p, i) =>
+    `<button class="row board${p.me ? ' me' : ''}" ${p.me ? '' : `data-act="friend" data-id="${esc(p.id)}"`}><span class="rank">${esc(p.n.trim().charAt(0).toUpperCase() || '?')}</span><div class="grow"><h3>${esc(p.n)}</h3>
+      ${p.me ? '' : `<div class="sub">${t('updated', rel(p.d || p.got))}</div>`}</div><b class="score">${fmtv(p)}</b></button>`).join('')}</div>`;
+  // prima i progressi di ognuno rispetto a se stesso, poi costanza e forza
+  html += board(t('progressBoard'), p => p.pg, p => `${p.pg > 0 ? '+' : ''}${fmtKg(p.pg)}%`) + board(t('streakBoard'), p => p.st, p => p.st) + board(t('monthBoard'), p => p.m, p => p.m);
+  // forza: solo esercizi che almeno due persone hanno in comune
+  const keys = {};
+  all.forEach(p => p.l.forEach(x => { (keys[x.k] = keys[x.k] || []).push({p, x}); }));
+  const shared = Object.entries(keys).filter(([, v]) => v.length > 1).slice(0, 6);
+  if (shared.length) html += `<p class="glabel">${t('liftsBoard')}</p>` + shared.map(([k, v]) => {
+    const mine = v.find(y => y.p.me), label = mine ? mine.x.n : VAR[k] ? tx(VAR[k].v.name) : v[0].x.n;
+    return `<div class="dcard"><h3>${esc(label)}</h3>${v.sort((a, b) => b.x.e - a.x.e).map((y, i) =>
+      `<div class="dex"><span class="rank">${esc(y.p.n.trim().charAt(0).toUpperCase() || '?')}</span><div class="grow"><b>${esc(y.p.n)}</b><span>${fmtKg(y.x.b[0])} kg × ${y.x.b[1]}</span></div><b class="score">${fmtKg(y.x.e)}</b></div>`).join('')}</div>`;
+  }).join('');
+  return html + `<p class="note" style="margin-top:8px">${t('boardHint')}</p>`;
+}
+function needNick(then) {
+  if (nick()) return then();
+  sheet(`<h2>${t('nickname')}</h2><p class="sub" style="margin-bottom:12px">${t('nicknameNeeded')}</p>
+    <form data-form="nick"><label class="field"><input name="n" data-focus placeholder="${esc(t('nicknamePh'))}" maxlength="30" autocomplete="nickname"></label>
+    <button class="btn p wide">${t('save')}</button></form>`);
+  pendingNick = then;
+}
+let pendingNick = null;
+function sheetSendChallenge() {
+  const link = challengeLink(), msg = t('challengeMsg', nick()) + '\n' + link;
+  sheet(`<h2>${t('challengeSend')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('challengeMsg', nick()))}</p>
+    <button class="btn p wide" data-act="sharetext">${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
+    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a><div class="gap"></div>
+    <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
+  shareText = msg;
+}
+let shareText = '';
+function sheetPasteChallenge() {
+  // prima prova a leggere gli appunti (iOS chiede conferma con "Incolla"), altrimenti campo di testo
+  const ask = () => sheet(`<h2>${t('challengePaste')}</h2><form data-form="paste"><label class="field">${t('pastePrompt')}<textarea name="x" rows="4" data-focus></textarea></label>
+    <button class="btn p wide">${t('pasteBtn')}</button></form>`);
+  if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(x => { const c = parseChallenge(x); c ? addFriend(c) : ask(); }, ask);
+  else ask();
+}
+function sheetFriend(id) {
+  const f = db.friends[id];
+  sheet(`<h2>${esc(f.n)}</h2><p class="sub" style="margin-bottom:12px">${t('updated', rel(f.d || f.got))} · ${t('streakBoard')}: ${f.st} · ${t('monthBoard')}: ${f.m}</p>
+    <div class="list">${f.l.map(x => `<div class="row"><div class="grow"><h3>${esc(VAR[x.k] ? tx(VAR[x.k].v.name) : x.n)}</h3><div class="sub">${fmtKg(x.b[0])} kg × ${x.b[1]}</div></div><b class="score">${fmtKg(x.e)}</b></div>`).join('')}</div>
+    <div class="gap"></div><button class="btn d wide" data-act="delfriend" data-id="${esc(id)}">${t('removeFriend')}</button>`);
+}
+// sfida aperta da un link: nell'app si aggiunge, in Safari si spiega come portarla nell'app
+function handleChallengeHash() {
+  const c = parseChallenge(location.hash);
+  if (!c) return false;
+  window.history.replaceState(null, '', location.pathname + location.search);
+  if (standalone() || !isIOS) { addFriend(c); return true; }
+  const link = APP_URL + '#sfida=' + location.hash.split('sfida=')[1];
+  sheet(`<h2>${esc(t('challengeFrom', c.n))}</h2><p class="sub" style="margin-bottom:14px">${t('inBrowserChallenge')}</p>
+    <button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`);
+  shareText = APP_URL + '#sfida=' + b64e({...c, v: 1});
+  return true;
+}
+
+// ---------- immagini da condividere ----------
+let shareFile = null;
+const FONT = '-apple-system, system-ui, sans-serif';
+function cardCanvas(draw) {
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
+  const g = c.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, 1350); bg.addColorStop(0, '#16171a'); bg.addColorStop(1, '#0b0c0e');
+  g.fillStyle = bg; g.fillRect(0, 0, 1080, 1350);
+  return {c, g, draw};
+}
+function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); }
+function fitText(g, s, max, size, weight = 700) {
+  let f = size; g.font = `${weight} ${f}px ${FONT}`;
+  while (g.measureText(s).width > max && f > 20) { f -= 2; g.font = `${weight} ${f}px ${FONT}`; }
+  return s;
+}
+function cardFrame(g, logo, title, sub) {
+  if (logo) { g.save(); rr(g, 72, 72, 104, 104, 24); g.clip(); g.drawImage(logo, 72, 72, 104, 104); g.restore(); }
+  g.fillStyle = '#9a9aa3'; g.font = `600 34px ${FONT}`; g.fillText('Gym Tracker', 200, 118);
+  g.fillStyle = '#f2f2f4'; g.font = `500 30px ${FONT}`; g.fillText(sub, 200, 162);
+  g.fillStyle = '#f2f2f4'; fitText(g, title, 936, 76, 800); g.fillText(title, 72, 290);
+  g.fillStyle = '#9a9aa3'; g.font = `500 28px ${FONT}`; g.fillText(APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), 72, 1290);
+}
+function statBox(g, x, y, w, val, label, accent) {
+  rr(g, x, y, w, 170, 28); g.fillStyle = accent ? '#ff5a1f' : '#232428'; g.fill();
+  g.fillStyle = accent ? '#111114' : '#f2f2f4'; fitText(g, val, w - 48, 64, 800); g.fillText(val, x + 24, y + 92);
+  g.fillStyle = accent ? '#111114' : '#9a9aa3'; g.font = `600 28px ${FONT}`; g.fillText(label, x + 24, y + 140);
+}
+const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+function sessionCard(s, logo) {
+  const {c, g} = cardCanvas(), sets = s.exercises.reduce((a, e) => a + e.sets.length, 0), v = s.exercises.reduce((a, e) => a + vol(e.sets), 0);
+  let recs = 0;
+  const lines = s.exercises.filter(e => e.sets.length).map(e => {
+    const prior = priorOf(s, e), best = Math.max(0, ...prior.flatMap(x => x.sets.map(e1rm))), top = Math.max(...e.sets.map(e1rm)), pr = best > 0 && top > best + 1e-9;
+    if (pr) recs++;
+    return {n: e.name, sets: e.sets.map(z => `${fmtKg(z.kg)}×${z.reps}`).join('  '), pr};
+  });
+  cardFrame(g, logo, s.name, fmtDate(s.date));
+  const w = (936 - 32) / 3;
+  statBox(g, 72, 350, w, String(sets), t('sets'));
+  statBox(g, 72 + w + 16, 350, w, v >= 1000 ? fmt1(v / 1000) + ' t' : fmtInt(v), t('volume'));
+  statBox(g, 72 + (w + 16) * 2, 350, w, String(recs), t('records'), recs > 0);
+  let y = 610;
+  lines.slice(0, 6).forEach(l => {
+    g.fillStyle = '#f2f2f4'; fitText(g, l.n, l.pr ? 700 : 936, 40, 700); g.fillText(l.n, 72, y);
+    if (l.pr) { rr(g, 840, y - 40, 168, 54, 27); g.fillStyle = '#ff5a1f'; g.fill(); g.fillStyle = '#111114'; g.font = `800 28px ${FONT}`; g.fillText(t('record'), 862, y - 4); }
+    g.fillStyle = '#9a9aa3'; fitText(g, l.sets, 936, 32, 500); g.fillText(l.sets, 72, y + 48);
+    y += 112;
+  });
+  const st = streak();
+  if (st.n) { g.fillStyle = '#ff5a1f'; g.font = `800 40px ${FONT}`; g.fillText(`${st.n} ${t('cardWeeks')}`, 72, 1230); }
+  return {c, text: t('shareTxtSession', s.name, recs)};
+}
+function progressCard(name, logo) {
+  const {c, g} = cardCanvas(), st = exStats(name), f = st[0], l = st[st.length - 1];
+  const d = l.e - f.e;
+  cardFrame(g, logo, name, t('cardSince', fmtShort(f.date)));
+  statBox(g, 72, 350, 452, `${sign(Math.round(d * 10) / 10)} kg`, t('forecastSub').split('(')[0].trim(), d > 0);
+  statBox(g, 556, 350, 452, `${fmtKg(l.b.kg)}×${l.b.reps}`, t('bestSet'));
+  // grafico della forza stimata
+  const pts = st.slice(-16), X0 = 72, X1 = 1008, Y0 = 640, Y1 = 1160, vs = pts.map(p => p.e), lo = Math.min(...vs), hi = Math.max(...vs), sp = hi - lo || 1;
+  const X = i => pts.length === 1 ? (X0 + X1) / 2 : X0 + i * (X1 - X0) / (pts.length - 1), Y = v => Y1 - (v - lo) / sp * (Y1 - Y0);
+  g.strokeStyle = '#2a2b30'; g.lineWidth = 2; g.beginPath(); g.moveTo(X0, Y1 + 30); g.lineTo(X1, Y1 + 30); g.stroke();
+  g.strokeStyle = '#ff5a1f'; g.lineWidth = 10; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
+  pts.forEach((p, i) => i ? g.lineTo(X(i), Y(p.e)) : g.moveTo(X(i), Y(p.e))); g.stroke();
+  pts.forEach((p, i) => { g.beginPath(); g.arc(X(i), Y(p.e), 14, 0, 7); g.fillStyle = p.pr ? '#ff5a1f' : '#16171a'; g.fill(); g.lineWidth = 6; g.stroke(); });
+  g.fillStyle = '#f2f2f4'; g.font = `800 40px ${FONT}`; g.textAlign = 'right'; g.fillText(fmtKg(pts[pts.length - 1].e), X1, Y(pts[pts.length - 1].e) - 32); g.textAlign = 'left';
+  g.fillStyle = '#9a9aa3'; g.font = `500 28px ${FONT}`; g.fillText(fmtAxis(pts[0].date), X0, Y1 + 76); g.textAlign = 'right'; g.fillText(fmtAxis(pts[pts.length - 1].date), X1, Y1 + 76); g.textAlign = 'left';
+  return {c, text: t('shareTxtProgress', name, `${sign(Math.round(d * 10) / 10)} kg`)};
+}
+async function compareCard(pose, logo) {
+  const {c, g} = cardCanvas(), ps = photos.filter(p => p.pose === pose), a = ps[0], b = ps[ps.length - 1];
+  cardFrame(g, logo, t('compareTitle', poseName(pose).toLowerCase()), `${fmtShort(a.date)} → ${fmtShort(b.date)}`);
+  const [ia, ib] = await Promise.all([loadImg(a.url), loadImg(b.url)]);
+  [[ia, a, 72], [ib, b, 548]].forEach(([im, p, x]) => {
+    const w = 460, h = 760, y = 340;
+    g.save(); rr(g, x, y, w, h, 28); g.clip();
+    if (im) { const k = Math.max(w / im.width, h / im.height); g.drawImage(im, x + (w - im.width * k) / 2, y + (h - im.height * k) / 2, im.width * k, im.height * k); }
+    g.restore();
+    const wt = weightAt(p.date);
+    g.fillStyle = '#f2f2f4'; g.font = `800 40px ${FONT}`; g.fillText(fmtShort(p.date), x, y + h + 60);
+    if (wt) { g.fillStyle = '#9a9aa3'; g.font = `500 32px ${FONT}`; g.fillText(`${fmtKg(wt)} kg`, x, y + h + 104); }
+  });
+  return {c, text: t('compareTitle', poseName(pose).toLowerCase())};
+}
+// prepara l'immagine, poi la mostra: il tocco su "Condividi" la invia subito (iOS lo richiede)
+async function openShare(kind, arg) {
+  const logo = await loadImg('icons/icon-192.png');
+  const r = kind === 'session' ? sessionCard(sess(arg), logo) : kind === 'progress' ? progressCard(arg, logo) : await compareCard(arg, logo);
+  const blob = await new Promise(res => r.c.toBlob(res, 'image/jpeg', .9));
+  shareFile = new File([blob], `gym-${kind}-${today()}.jpg`, {type: 'image/jpeg'});
+  shareText = r.text + '\n' + APP_URL;
+  const url = URL.createObjectURL(blob);
+  sheet(`<h2>${t('sharePreview')}</h2>${kind === 'compare' ? `<p class="warn">${t('photoShareWarn')}</p>` : ''}
+    <img class="big-img" src="${url}" alt="" style="aspect-ratio:4/5;object-fit:cover">
+    <div class="gap"></div><button class="btn p wide" data-act="sharefile">${t('shareImage')}</button><div class="gap"></div>
+    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a>
+    ${db.social && db.social.group ? `<div class="gap"></div><button class="btn s wide" data-act="opengroup">${t('openGroup')}</button>` : ''}`);
+}
+function shareNow() {
+  if (shareFile && navigator.canShare && navigator.canShare({files: [shareFile]})) navigator.share({files: [shareFile], text: shareText}).catch(() => {});
+  else if (shareFile) { const a = document.createElement('a'); a.href = URL.createObjectURL(shareFile); a.download = shareFile.name; a.click(); }
+}
+function sheetSocialSettings() {
+  const so = db.social || {};
+  sheet(`<h2>${t('socialSettings')}</h2>
+    <form data-form="social"><label class="field">${t('nickname')}<input name="n" value="${esc(so.name || '')}" placeholder="${esc(t('nicknamePh'))}" maxlength="30" autocomplete="nickname"></label>
+    <label class="field">${t('groupLink')}<input name="g" value="${esc(so.group || '')}" placeholder="https://chat.whatsapp.com/…" inputmode="url" autocomplete="off"></label>
+    <p class="sub">${t('groupLinkHint')}</p>
+    <button class="btn p wide">${t('save')}</button></form>`);
+}
+
 // ---------- azioni ----------
 function readEntry(eid) {
   return {reps: parseInt(document.getElementById('reps-' + eid).value, 10), kg: num(document.getElementById('kg-' + eid).value)};
@@ -1422,6 +1653,16 @@ const acts = {
   install: openInstall,
   installclose: closeInstall,
   installnow: () => { if (installEvt) installEvt.prompt(); },
+  share: b => openShare(b.dataset.k, b.dataset.a),
+  sharefile: shareNow,
+  sharetext: () => { if (navigator.share) navigator.share({text: shareText}).catch(() => {}); else acts.copytext(); },
+  copytext: () => { (navigator.clipboard ? navigator.clipboard.writeText(shareText) : Promise.reject()).then(() => toast(t('copied')), () => prompt('', shareText)); },
+  sendchallenge: () => needNick(sheetSendChallenge),
+  pastechallenge: sheetPasteChallenge,
+  friend: b => sheetFriend(b.dataset.id),
+  delfriend: b => { const id = b.dataset.id, n = db.friends[id].n; closeSheet(); undoable(t('friendRemoved', esc(n)), () => { delete db.friends[id]; }); },
+  opengroup: () => { if (db.social && db.social.group) window.open(db.social.group, '_blank'); },
+  socialset: sheetSocialSettings,
   restless: () => adjustRest(-15),
   restmore: () => adjustRest(15),
   restskip: stopRest,
@@ -1429,6 +1670,14 @@ const acts = {
   nativeshare: () => navigator.share({title: t('shareTitle'), url: location.href}).catch(() => {}),
 };
 const forms = {
+  nick: f => { const n = f.n.value.trim(); if (!n) return f.n.focus(); social().name = n.slice(0, 30); save(); closeSheet();
+    const then = pendingNick; pendingNick = null; if (then) setTimeout(then, 280); },
+  paste: f => addFriend(parseChallenge(f.x.value)),
+  social: f => {
+    const n = f.n.value.trim(), g = f.g.value.trim();
+    if (g && !/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+/.test(g)) return alert(t('groupInvalid'));
+    social().name = n.slice(0, 30); social().group = g; save(); closeSheet(); render(); toast(t('saved'));
+  },
   newsession: f => { const n = f.n.value.trim(); if (n) createSession(n); else f.n.focus(); },
   addex: f => { const n = f.n.value.trim(); if (!n) return f.n.focus();
     const known = exerciseNames().find(x => key(x.name) === key(n)); addExercise(known ? known.name : n); },
@@ -1487,7 +1736,9 @@ restore();
 loadPhotos();
 let skipInstall = false;
 try { skipInstall = sessionStorage.getItem('install-skip') === '1'; } catch (e) {}
-if (mobile() && !standalone() && !skipInstall) openInstall();
+if (handleChallengeHash()) {}
+else if (mobile() && !standalone() && !skipInstall) openInstall();
 else if (!db.tourSeen) openTour();
+window.addEventListener('hashchange', handleChallengeHash);
 // copia offline dell'app (sw.js)
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
