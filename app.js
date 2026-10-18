@@ -1770,7 +1770,7 @@ function sheetSendChallenge() {
 let shareText = '';
 // invito: il link mostra su WhatsApp l'anteprima con logo e titolo (tag og: in index.html)
 // pagina Buy Me a Coffee (donazione volontaria): vuoto = il pulsante non compare
-const DONATE_URL = '';
+const DONATE_URL = 'https://buymeacoffee.com/fedemorlu24';
 const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
 function sheetInvite() {
   const msg = t('inviteMsg', nick() || '🙂') + '\n' + INVITE_URL;
