@@ -1,6 +1,6 @@
 const KEY = 'gym-tracker-v1';
 let db = load();
-let view = {name: 'home', tab: 'sessions'};
+let view = {name: 'home', tab: 'today'};
 
 function load() {
   try { return JSON.parse(localStorage.getItem(KEY)) || {sessions: []}; }
@@ -137,6 +137,8 @@ const I = {
   addsq: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   arrow: '<path d="M12 4v15M6 13l6 6 6-6"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  fwd: '<path d="M9 5l7 7-7 7"/>',
 };
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
 
@@ -399,7 +401,7 @@ function render() {
   if (view.name === 'session' && sess(view.id)) app.innerHTML = sessionView();
   else if (view.name === 'ex' && history(view.ex).length) app.innerHTML = exView();
   else if (view.name === 'settings') app.innerHTML = settingsView();
-  else { if (view.name !== 'home') view = {name: 'home', tab: 'sessions'}; app.innerHTML = home(); tabs = true; }
+  else { if (view.name !== 'home') view = {name: 'home', tab: 'today'}; app.innerHTML = home(); tabs = true; }
   document.body.classList.toggle('tabs', tabs);
   document.getElementById('tabbar').innerHTML = tabs ? tabbar() : '';
   document.getElementById('tabbar').hidden = !tabs;
@@ -407,14 +409,81 @@ function render() {
   const wk = document.getElementById('wk-wrap'); if (wk) wk.scrollLeft = wk.scrollWidth;
 }
 function tabbar() {
-  const tab = view.tab || 'sessions';
+  const tab = view.tab || 'today';
   const b = (k, ic, l) => `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-tab="${k}">${icon(ic)}${l}</button>`;
-  return b('sessions', 'lift', t('tabWorkouts')) + b('progress', 'chart', t('tabProgress')) + b('body', 'body', t('tabBody'));
+  return b('today', 'cal', t('tabToday')) + b('sessions', 'lift', t('tabWorkouts')) + b('progress', 'chart', t('tabProgress')) + b('body', 'body', t('tabBody'));
+}
+
+
+// ---------- Oggi: tutto quello che riguarda un giorno ----------
+function todayView() {
+  const day = view.day || today(), isToday = day === today(), mon = weekOf(day);
+  const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
+  const ss = db.sessions.filter(s => s.date === day).sort((a, b) => order(a) - order(b));
+  const bodyOf = d => (db.body || []).find(x => x.date === d);
+  // striscia della settimana: pallino arancione = allenamento, grigio = corpo
+  const strip = Array.from({length: 7}, (_, i) => {
+    const d = addDays(mon, i), dd = dt(d), w = db.sessions.some(s => s.date === d && s.exercises.some(e => e.sets.length)),
+      b = !!bodyOf(d) || photos.some(p => p.date === d);
+    return `<button class="dstrip-d${d === day ? ' sel' : ''}${d === today() ? ' now' : ''}" data-act="day" data-d="${d}" aria-label="${fmtDate(d)}" aria-pressed="${d === day}">
+      <span>${dd.toLocaleDateString(locale, {weekday: 'narrow'})}</span><b>${dd.getDate()}</b><i>${w ? '<em class="w"></em>' : ''}${b ? '<em class="b"></em>' : ''}</i></button>`;
+  }).join('');
+  const short = cap(dt(day).toLocaleDateString(locale, {weekday: 'short', day: 'numeric', month: 'short'}));
+  let html = `<header><div class="t"><h1>${isToday ? t('tabToday') : short}</h1>${isToday ? `<p>${cap(fmtDate(day))}</p>` : ''}</div>
+      ${isToday ? '' : `<button class="ib txt" data-act="day" data-d="${today()}">${t('tabToday')}</button>`}
+      <button class="ib" data-act="settings" aria-label="${t('settings')}">${icon('gear')}</button></header>
+    <div class="dstrip"><button class="ib" data-act="day" data-d="${addDays(mon, -7)}" aria-label="${t('prevWeekA')}">${icon('back')}</button>
+      <div class="dstrip-days">${strip}</div>
+      <button class="ib" data-act="day" data-d="${addDays(mon, 7)}" aria-label="${t('nextWeekA')}" ${addDays(mon, 7) > today() ? 'disabled' : ''}>${icon('fwd')}</button></div>`;
+
+  // allenamento del giorno
+  html += `<p class="glabel">${t('workoutCard')}</p>`;
+  if (ss.length) html += ss.map(s => {
+    const sets = s.exercises.reduce((a, e) => a + e.sets.length, 0), v = s.exercises.reduce((a, e) => a + vol(e.sets), 0);
+    const lines = s.exercises.map(e => {
+      const prior = priorOf(s, e), prev = prior[prior.length - 1], best = Math.max(0, ...prior.flatMap(x => x.sets.map(e1rm)));
+      const top = e.sets.length ? Math.max(...e.sets.map(e1rm)) : 0;
+      const tag = !e.sets.length ? `<span class="tag eq">${t('todo')}</span>` : best > 0 && top > best + 1e-9 ? `<span class="tag pr">${t('record')}</span>`
+        : prev && top > Math.max(...prev.sets.map(e1rm)) + 1e-9 ? '<span class="tag up">▲</span>' : '';
+      return `<div class="dex"><div class="grow"><b>${esc(e.name)}</b><span>${e.sets.map(z => `<i>${setTxt(z)}</i>`).join(' · ') || '–'}</span></div>${tag}</div>`;
+    }).join('');
+    return `<button class="dcard" data-act="open" data-sid="${s.id}"><div class="item"><h3>${esc(s.name)}</h3><span class="chev">${icon('chev')}</span></div>
+      <p class="sub">${t('setsDone', sets, v >= 1000 ? fmt1(v / 1000) + ' t' : fmtInt(v) + ' kg')}</p>${lines}</button>`;
+  }).join('');
+  else if (isToday) {
+    const last = [...db.sessions].filter(s => s.exercises.length).sort((a, b) => b.date.localeCompare(a.date) || order(b) - order(a));
+    // proposta: la seduta fatta l'ultima volta nello stesso giorno della settimana, altrimenti la più recente
+    const wd = dt(day).getDay(), sug = last.find(s => dt(s.date).getDay() === wd) || last[0];
+    html += `<div class="dcard"><p class="sub">${t('restDayTxt')}</p>
+      ${sug ? `<button class="btn p wide" data-act="repeat" data-sid="${sug.id}" style="margin-top:12px">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
+      <button class="btn s wide" data-act="newsession" style="margin-top:8px;background:var(--fill)">${t('startWorkout')}</button></div>`;
+  } else html += `<div class="dcard"><p class="sub">${t('restDayTxt')}</p></div>`;
+
+  // corpo del giorno
+  const bd = bodyOf(day), bw = bodyWeight(), ph = photos.filter(p => p.date === day);
+  html += `<p class="glabel">${t('bodyCard')}</p><div class="dcard">`;
+  if (bd && (bd.weight || bd.kcal || bd.protein)) {
+    const lo = Math.round(bw * 1.6), hi = Math.round(bw * 2.2), pp = bd.protein && bw ? Math.min(1, bd.protein / lo) : 0;
+    html += `<div class="dbody">${bd.weight ? `<div><b>${fmtKg(bd.weight)}</b><span>kg</span></div>` : ''}${bd.kcal ? `<div><b>${fmtInt(bd.kcal)}</b><span>kcal</span></div>` : ''}${bd.protein ? `<div><b>${fmtInt(bd.protein)}</b><span>${t('protein', '').trim()}</span></div>` : ''}</div>
+      ${bd.protein && bw ? `<div class="meter"><i style="width:${pp * 100}%;${bd.protein >= lo ? 'background:var(--up)' : ''}"></i></div><p class="sub">${t('proteinGoal', lo, hi)}</p>` : ''}`;
+  } else html += `<p class="sub">${t('noBodyDay')}</p>`;
+  if (ph.length) html += `<div class="grid" style="padding:10px 0 0">${ph.map(p => `<button data-act="photo" data-id="${p.id}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}"><img src="${p.url}" alt=""><span>${poseName(p.pose)}</span></button>`).join('')}</div>`;
+  html += `<button class="btn s wide" data-act="bodylog" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('logBody')}</button></div>`;
+
+  // settimana e obiettivi
+  html += `<p class="glabel">${t('weekCard')}</p>` + streakCard();
+  const close = goalList().filter(g => !g.done).map(g => [g, goalState(g).pct]).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  if (close.length) html += `<p class="glabel">${t('goalsClose')}</p><div class="list">${close.map(([g]) => goalCard(g)).join('')}</div>`;
+
+  // con un allenamento in corso il pulsante per riprenderlo resta a portata di pollice
+  if (isToday && ss.length) html += `<div class="bar"><button class="btn p wide" data-act="open" data-sid="${ss[ss.length - 1].id}">${t('continueWorkout')}</button></div>`;
+  return html;
 }
 
 // ---------- home ----------
 function home() {
-  const tab = view.tab || 'sessions';
+  const tab = view.tab || 'today';
+  if (tab === 'today') return todayView();
   const title = {sessions: t('tabWorkouts'), progress: t('tabProgress'), body: t('tabBody')}[tab];
   let html = `<header><div class="t"><h1>${title}</h1></div>
       <button class="ib" data-act="settings" aria-label="${t('settings')}">${icon('gear')}</button></header>`;
@@ -998,8 +1067,8 @@ function sheetCompare(pose) {
   const sel = document.getElementById('cmp-sel');
   if (sel) sel.onchange = () => { const p = ps[+sel.value]; document.getElementById('cmp-a').innerHTML = `<img src="${p.url}" alt="${t('before')}">${cap(p)}`; };
 }
-function sheetBodyLog() {
-  const d = today(), cur = (db.body || []).find(x => x.date === d) || {};
+function sheetBodyLog(day) {
+  const d = day || today(), cur = (db.body || []).find(x => x.date === d) || {};
   const v = n => n > 0 ? fmtKg(n) : '';
   sheet(`<h2>${t('bodyTitle')}</h2>
     <form data-form="bodylog">
@@ -1286,9 +1355,10 @@ const acts = {
   tab: b => go({name: 'home', tab: b.dataset.tab, ptab: view.ptab, wf: view.wf}),
   ptab: b => go({name: 'home', tab: 'progress', ptab: b.dataset.v, wf: view.wf}),
   wfilter: b => go({name: 'home', tab: 'progress', ptab: 'weeks', wf: b.dataset.k}),
-  home: () => go({name: 'home', tab: view.name === 'settings' ? (view.from || 'sessions') : 'sessions'}),
-  settings: () => go({name: 'settings', from: view.tab}),
-  open: b => go({name: 'session', id: b.dataset.sid}),
+  home: () => go({name: 'home', tab: view.from || 'today', day: view.fromDay}),
+  day: b => go({name: 'home', tab: 'today', day: b.dataset.d === today() ? undefined : b.dataset.d}),
+  settings: () => go({name: 'settings', from: view.tab, fromDay: view.day}),
+  open: b => go({name: 'session', id: b.dataset.sid, from: view.name === 'home' ? view.tab : 'today', fromDay: view.day}),
   back: () => go(view.back || {name: 'home', tab: 'progress'}),
   ex: b => go({name: 'ex', ex: b.dataset.name, back: {...view, y: window.scrollY}}),
   backup: sheetBackup,
@@ -1321,7 +1391,7 @@ const acts = {
   step: b => stepVal(b.dataset.eid, b.dataset.f, +b.dataset.d),
   addset: b => addSet(b.dataset.eid),
   close: closeSheet,
-  bodylog: sheetBodyLog,
+  bodylog: b => sheetBodyLog(b.dataset.d),
   addphoto: b => addPhoto(b.dataset.pose),
   photo: b => sheetPhoto(b.dataset.id),
   compare: b => sheetCompare(b.dataset.pose),
@@ -1336,7 +1406,7 @@ const acts = {
   goalmenu: b => sheetGoalMenu(b.dataset.id),
   delgoal: b => { const id = b.dataset.id; closeSheet(); undoable(t('delGoalDone'), () => { db.goals = goalList().filter(g => g.id !== id); }); },
   summary: () => { celebrate(); sheetSummary(); },
-  finish: () => { closeSheet(); go({name: 'home', tab: 'sessions'}); },
+  finish: () => { closeSheet(); go({name: 'home', tab: 'today'}); },
   profile: sheetProfile,
   sex: b => { const f = b.closest('form'); f.sex.value = b.dataset.v;
     f.querySelectorAll('[data-act=sex]').forEach(x => x.setAttribute('aria-pressed', x === b)); },
