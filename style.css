@@ -411,6 +411,9 @@ a.btn{text-decoration:none}
 .rec-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
 .rec-row .grow span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rec-grid{grid-template-columns:40% 1fr}
+#sheet .rec-grid{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+#sheet .rec-top{flex-wrap:wrap}
+#sheet .rec-top b{overflow-wrap:anywhere}
 .note a{color:var(--acc-ink);font-weight:600}
 .ex.closed .ex-body.sum{padding-bottom:12px}
 .impsteps{margin:0 0 14px 20px;line-height:1.5}
@@ -584,7 +587,10 @@ body:has(.clist){padding-bottom:0;overflow:hidden}
 
 /* Optional support stays visible; it never controls access to the app. */
 .donation-card{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:16px 0 20px;padding:16px;border:1px solid color-mix(in srgb,var(--acc) 45%,var(--line));border-radius:20px;background:linear-gradient(120deg,color-mix(in srgb,var(--acc) 12%,var(--card)),var(--card))}
-.donation-copy{flex:1 1 180px;min-width:0}.donation-copy b{display:block;font-size:16px;letter-spacing:-.02em}.donation-copy>span{display:block;color:var(--sub);font-size:11px;font-weight:600;margin-top:3px}.donation-copy p{color:var(--sub);font-size:13px;line-height:1.4;margin:7px 0 0}
+.donation-copy{flex:1 1 180px;min-width:0}.donation-copy>span{display:block;color:var(--sub);font-size:11px;margin-top:6px}.donation-copy p{color:var(--text);font-size:14px;line-height:1.5;margin:0}
 .donation-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1 1 180px;min-height:48px;padding:12px 16px;border-radius:14px;background:#ffb044;color:#261601;font-weight:750;font-size:15px;text-decoration:none;text-align:center;box-shadow:0 3px 12px #9e500018;transition:background .15s}
 .donation-button:hover{background:#ffc16c}.donation-button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}.donation-button>span{font-size:21px}.donation-button .i{width:16px;height:16px;flex-shrink:0}
+.donation-summary{display:block;background:var(--card);border-color:var(--line);border-radius:16px;margin:16px 0}
+.donation-summary .donation-button{justify-content:flex-start;background:transparent;color:var(--acc-ink);box-shadow:none;padding:8px 0;margin-top:4px;min-height:44px;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.donation-summary .donation-button:hover{color:var(--text)}
 .gf-share{padding:12px;border-top:1px solid var(--line)}.gf-share .btn{background:var(--fill);font-size:13px}

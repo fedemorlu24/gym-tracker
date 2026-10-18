@@ -3,14 +3,17 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
 import io
+import re
 import subprocess
 import sys
 import tarfile
 import tempfile
 
 REPO = Path(__file__).resolve().parents[1]
-BASELINE = 'f18345e71ef321a4e7e839b229d04547c6650c8f'  # Released v62, not moving HEAD.
-phase = 62
+BASELINE = '25cff1309b1cf7605f813e7deb36220e8837ce7d'  # Released v63, not moving HEAD.
+BASE_VERSION = 63
+CANDIDATE = int(re.search(r"const VERSION = '(\d+)'", (REPO / 'sw.js').read_text())[1])
+phase = BASE_VERSION
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -19,7 +22,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path != '/__version':
             return self.send_error(404)
         value = self.rfile.read(int(self.headers.get('Content-Length', 0)))
-        if value not in [b'62', b'63', b'64', b'65']:
+        if value not in [str(v).encode() for v in [BASE_VERSION, CANDIDATE, CANDIDATE + 1, CANDIDATE + 2]]:
             return self.send_error(400)
         phase = int(value)
         self.send_response(200)
@@ -28,13 +31,13 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = unquote(urlsplit(self.path).path).lstrip('/') or 'index.html'
-        root = base if phase == 62 else REPO
+        root = base if phase == BASE_VERSION else REPO
         target = (root / path).resolve()
         if not target.is_relative_to(root) or not target.is_file():
             return self.send_error(404)
         data = target.read_bytes()
-        if phase > 63 and path in ['index.html', 'sw.js']:
-            data = data.replace(b'?v=63', ('?v=' + str(phase)).encode()).replace(b"VERSION = '63'", ("VERSION = '" + str(phase) + "'").encode())
+        if phase > CANDIDATE and path in ['index.html', 'sw.js']:
+            data = data.replace(f'?v={CANDIDATE}'.encode(), f'?v={phase}'.encode()).replace(f"VERSION = '{CANDIDATE}'".encode(), f"VERSION = '{phase}'".encode())
         self.send_response(200)
         self.send_header('Content-Type', self.guess_type(path))
         self.send_header('Cache-Control', 'no-store')

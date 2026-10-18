@@ -459,7 +459,12 @@ window.G3D = (() => {
   // un punto del corpo a riposo (m) che segue l'osso indicato: dove sta ora
   const onBone = (n, p) => V3(...p).applyMatrix4(rest[n].mwi).applyMatrix4(bones[n].matrixWorld);
   const NIP = [0, 1.2806, .1294];          // linea dei capezzoli, sulla superficie del petto
-  const headTo = d => { aim('neck', curDir('neck').lerp(d, .5)); aim('head', d); };
+  // Preserve the torso's roll (e.g. prone leg curl); aiming from rest turned
+  // the face upward even when the chest was supported face down on the bench.
+  const headTo = d => {
+    const nd = curDir('neck'); worldDelta('neck', new T.Quaternion().setFromUnitVectors(nd, nd.clone().lerp(d, .5).normalize()));
+    worldDelta('head', new T.Quaternion().setFromUnitVectors(curDir('head'), d.clone().normalize()));
+  };
   function barbell(g, c, half = .7, pr = .225, ez = false) {
     const shaft = ez ? [[-half - .1, 0], [-.32, 0], [-.25, -.025], [-.12, .025], [.12, .025], [.25, -.025], [.32, 0], [half + .1, 0]] : [[-half - .1, 0], [half + .1, 0]];
     for (let i = 1; i < shaft.length; i++) g.add(seg(c.clone().add(V3(shaft[i - 1][0], shaft[i - 1][1], 0)), c.clone().add(V3(shaft[i][0], shaft[i][1], 0)), .0145, mat(0x9aa0a8, .3, .7)));
@@ -523,7 +528,7 @@ window.G3D = (() => {
     g.add(box(w, th, len, mat(c, .8), a.clone().add(b).multiplyScalar(.5), new T.Quaternion().setFromUnitVectors(V3(0, 0, 1), d.normalize())));
   }
   const post = (g, a, b, r = .025) => { const o = seg(a, b, r, steel()); o && g.add(o); };
-  const kit = {get T() { return T; }, V3, JR, LEN, U, FLOOR, FOFF, RAD, m3, torso, shift, leg, arm, headTo, onBone, wp, curDir, aim, worldDelta, alignPalm, grip, flat,
+  const kit = {get T() { return T; }, V3, JR, LEN, U, FLOOR, FOFF, RAD, m3, reset, torso, shift, leg, arm, headTo, onBone, wp, curDir, aim, worldDelta, alignPalm, grip, flat,
     restDir: n => rest[n].dir.clone(), pad, post, steel, mat, box, seg, sph, disc, mPlate, mProp,
     armDir(s, ua, fa, palm, close) { scapula(s, ua); aim('uarm.' + s, ua); aim('farm.' + s, fa || ua); if (palm) alignPalm(s, palm); if (close) grip(s, close); },
     legDir(s, th, sh, foot) { aim('thigh.' + s, th); aim('shin.' + s, sh || th); const fd = foot || rest['foot.' + s].dir; aim('foot.' + s, fd); aim('toe.' + s, fd); },

@@ -37,7 +37,25 @@ window.MOVES3D = (() => {
   const M = {};
 
   // ---------- squat ----------
-  M.squat = o => ({seg: 1300, view: [32, 10], build(k, g) { if (o.smith) smithRails(k, g, .07); }, pose(k, u) {
+  M.squat = o => ({seg: 1300, view: [32, 10], build(k, g) {
+    if (o.machine) {
+      const V3 = k.V3; g.add(k.box(.8, .10, .55, k.mat(0x354352, .8), V3(0, .05, .32)));
+      sides.forEach(([s, sg]) => k.post(g, V3(sg * .5, .05, .85), V3(sg * .5, 1.75, -.85), .035)); return;
+    }
+    if (o.smith) smithRails(k, g, .07);
+  }, pose(k, u) {
+    if (o.machine) {
+      const V3 = k.V3, f = lean(k, -35); k.torso(V3(0, L(.85, .55, u), L(-.1, .2, u)), f.up, f.fwd, .9);
+      sides.forEach(([s, sg]) => k.leg(s, V3(sg * .18, k.ay + .1, .22), V3(sg * .2, .2, 1), sg * 12)); k.headTo(f.up.clone());
+      const c = k.onBone('spine3', P.traps), back = k.onBone('spine2', [0, 1.18, -.15]), tools = [
+        {t: 'box', p: back, s: [.36, .72, .08], c: 0x263549, q: new k.T.Quaternion().setFromUnitVectors(V3(0, 1, 0), f.up)}];
+      sides.forEach(([s, sg]) => {
+        const pad = c.clone().add(V3(sg * .16, .045, .04)), hand = k.wp('uarm.' + s).add(V3(sg * .08, -.18, .22));
+        k.arm(s, hand, V3(sg * .4, -.6, .3), V3(-sg, 0, 0));
+        tools.push({t: 'box', p: pad, s: [.16, .09, .22], c: 0x263549}, {t: 'line', a: pad, b: pad.clone().setX(sg * .62), r: .03},
+          {t: 'line', a: pad, b: hand, r: .018}, {t: 'plate', p: pad.clone().setX(sg * .58), n: V3(1, 0, 0), r: .19});
+      }); return {tools};
+    }
     const V3 = k.V3, front = o.hold === 'front', gob = o.hold === 'goblet', none = o.hold === 'none';
     const lu = front ? L(4, 22, u) : gob ? L(4, 28, u) : none ? L(4, 36, u) : L(5, 40, u);
     const {up, fwd} = lean(k, lu), hipY = L(.845, front || gob ? .40 : .435, u);
@@ -91,7 +109,7 @@ window.MOVES3D = (() => {
       if (o.db) return {tools: sides.map(([s, sg]) => db(V3(sg * w, b.y, b.z), V3(1, 0, 0)))};
       return {tools: [bar(b)]};
     }});
-  M.hinge = o => ({seg: 1500, view: [70, 8], pose(k, u) {
+  M.hinge = o => ({seg: 1500, view: [70, 8], build(k, g) { if (o.smith) smithRails(k, g, .07); }, pose(k, u) {
     const V3 = k.V3;
     if (o.good) {        // good morning: bilanciere sui trapezi, ginocchia morbide, anche indietro
       const {up, fwd} = lean(k, L(3, 72, u));
@@ -100,6 +118,11 @@ window.MOVES3D = (() => {
       k.shift(V3(0, 0, .05 - (c().z + k.wp('root').z) / 2));
       feet(k, .15, 12); neutral(k);
       barHands(k, c(), .27).forEach(([s, p]) => hold(k, s, p, V3((s === 'l' ? 1 : -1) * .35, -1, -.6), fwd));
+      if (o.band) return {tools: sides.flatMap(([s, sg]) => {
+        const shoulder = c().clone().setX(sg * .15), hand = fist(k, s), foot = V3(sg * .15, .025, .03);
+        return [{t: 'line', a: foot, b: hand, r: .008, c: 0xe68842}, {t: 'line', a: hand, b: shoulder, r: .008, c: 0xe68842},
+          {t: 'line', a: shoulder, b: c(), r: .008, c: 0xe68842}];
+      })};
       return {tools: [bar(c())]};
     }
     // Keep a small knee bend throughout the hinge; height is not a squat curve.
@@ -135,7 +158,10 @@ window.MOVES3D = (() => {
         k.pad(g, V3(0, top, .42), V3(0, top, -.62), .3, .08);
         k.post(g, V3(0, 0, .3), V3(0, top - .04, .3), .03); k.post(g, V3(0, 0, -.5), V3(0, top - .04, -.5), .03);
       }
-      if (!o.db) {
+      if (o.machine) {
+        stack(k, g, -.75, -.7);
+        sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .48, 0, -.55), k.V3(sg * .48, inc > 0 ? 1.45 : 1.08, -.55), .035));
+      } else if (!o.db) {
         const hy = o.floor ? .62 : inc > 0 ? 1.45 : 1.08;
         if (o.smith) smithRails(k, g, inc > 0 ? -.2 : -.25); else rackPosts(k, g, inc > 0 ? -.45 : -.58, hy);
       }
@@ -163,8 +189,11 @@ window.MOVES3D = (() => {
       const c = topP.lerp(botP, u), close = o.close, w = o.db ? L(.14, .29, u) : close ? .15 : .29, feetDir = up.clone().negate();
       const pole = sg => V3(sg * (close || o.jm ? .05 : .22), 0, 0).addScaledVector(fwd, -1).addScaledVector(feetDir, close || o.jm ? .5 : .28);
       const tools = [];
-      sides.forEach(([s, sg]) => { const p = c.clone().add(V3(sg * w, 0, 0)); hold(k, s, p, pole(sg), feetDir); if (o.db) tools.push(db(p, V3(1, 0, 0))); });
-      if (!o.db) tools.push(bar(c));
+      sides.forEach(([s, sg]) => { const p = c.clone().add(V3(sg * w, 0, 0)); hold(k, s, p, pole(sg), feetDir);
+        if (o.machine) tools.push({t: 'line', a: p.clone().add(V3(-.07, 0, 0)), b: p.clone().add(V3(.07, 0, 0)), r: .018, c: 0x263549},
+          {t: 'line', a: p, b: V3(sg * .48, inc > 0 ? 1.45 : 1.08, -.55), r: .03});
+        else if (o.db) tools.push(db(p, V3(1, 0, 0))); });
+      if (!o.db && !o.machine) tools.push(bar(c));
       return {tools};
     }};
   };
@@ -319,29 +348,86 @@ window.MOVES3D = (() => {
 
   // ---------- spalle ----------
   // alzate: laterali (piano della scapola, gomiti appena piegati, fino all'orizzontale), frontali (fino all'altezza delle spalle)
-  M.raise = o => ({seg: 1200, view: o.front ? [60, 6] : [20, 8], pose(k, u) {
+  M.raise = o => ({seg: 1200, view: o.front ? [60, 6] : [20, 8], build(k, g) {
+    if (!o.machine) return;
+    seat(k, g, .46, 0, o.rev ? undefined : .8); stack(k, g, -.45, -.7);
+    if (o.rev) k.pad(g, k.V3(0, .8, .18), k.V3(0, 1.2, .18), .28, .08);
+    sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .42, .02, -.3), k.V3(sg * .42, 1.8, -.3), .035));
+  }, pose(k, u) {
     const V3 = k.V3, lu = o.rev ? 72 : 4, {up, fwd} = lean(k, lu);
-    k.torso(V3(0, o.rev ? .79 : .845, o.rev ? -.12 : 0), up, fwd, .6);
-    feet(k, .14, 10); neutral(k);
+    if (o.machine) sit(k, .46, 0, o.rev ? 5 : 0, .46);
+    else { k.torso(V3(0, o.rev ? .79 : .845, o.rev ? -.12 : 0), up, fwd, .6); feet(k, .14, 10); }
+    neutral(k);
     const tools = [];
     sides.forEach(([s, sg]) => {
       const a = L(o.rev ? 5 : 8, o.front ? 88 : o.y ? 150 : 86, u) * k.RAD;
       let ua;
       if (o.front) ua = V3(sg * .1, -Math.cos(a), Math.sin(a));
-      else if (o.rev) ua = V3(sg * Math.sin(a), -Math.cos(a), 0).addScaledVector(fwd, .05);    // busto quasi orizzontale: le braccia si aprono di lato
+      else if (o.rev) ua = o.machine ? V3(sg * Math.sin(a), -.04, Math.cos(a)) : V3(sg * Math.sin(a), -Math.cos(a), 0).addScaledVector(fwd, .05);
       else ua = V3(sg * Math.sin(a), -Math.cos(a), Math.sin(a) * (o.y ? .4 : .3));
       ua.normalize();
-      const fa = ua.clone().add(V3(0, o.front || o.y ? 0 : -.18, o.front ? 0 : .05)).normalize();
+      const fa = o.machine && !o.rev ? V3(0, .1, 1).normalize() : ua.clone().add(V3(0, o.front || o.y ? 0 : -.18, o.front ? 0 : .05)).normalize();
       const palm = o.front ? V3(0, -Math.sin(a), -Math.cos(a)) : o.y ? V3(-sg * .3, 0, 1).normalize() : V3(-sg, 0, 0).lerp(V3(0, -1, 0), u).normalize();
       k.armDir(s, ua, fa, palm, 1);
-      const f = fist(k, s); tools.push(o.cable ? {t: 'cable', a: f, b: V3(-sg * .25, .12, .1), kind: 'd'} : db(f, k.curDir('hand.' + s).cross(palm).normalize()));
+      const f = fist(k, s);
+      if (o.machine) {
+        const contact = o.rev ? f : k.wp('farm.' + s).add(V3(sg * .045, .01, 0)), pivot = V3(sg * .42, o.rev ? 1.8 : 1.16, -.3);
+        tools.push({t: 'line', a: contact.clone().add(V3(0, 0, -.06)), b: contact.clone().add(V3(0, 0, .08)), r: o.rev ? .018 : .055, c: 0x263549},
+          {t: 'line', a: contact, b: pivot, r: .025});
+      } else tools.push(o.cable ? {t: 'cable', a: f, b: V3(-sg * .25, .12, .1), kind: 'd'} : db(f, k.curDir('hand.' + s).cross(palm).normalize()));
     });
+    if (o.front && (o.bb || o.ez || o.plate)) {
+      const c = mid(fist(k, 'l'), fist(k, 'r')); c.z = Math.max(.16, c.z);
+      const w = o.plate ? .14 : .22;
+      sides.forEach(([s, sg]) => k.arm(s, c.clone().setX(sg * w), V3(sg * .3, -.8, .4), o.plate ? V3(-sg, 0, 0) : V3(0, -Math.sin(u * 1.5), -Math.cos(u * 1.5))));
+      return {tools: [o.plate ? {t: 'plate', p: c, n: V3(0, 0, 1), r: .15} : bar(c, .65, .13)]};
+    }
     return {tools};
+  }});
+
+  // Suspended shoulder work: the body pivots at planted feet and straps stay
+  // the same length. Do not reuse a bent-over dumbbell pose with elastic straps.
+  M.suspensionUpper = o => ({seg: 1500, view: [55, 12], anchorZ: 1, pose(k, u) {
+    const V3 = k.V3, anchor = V3(.2, 2.25, 1);
+    const poseAt = (tilt, progress) => {
+      k.reset();
+      const f = lean(k, tilt), hip = V3(0, k.ay, 0).addScaledVector(f.up, .75);
+      k.torso(hip, f.up, f.fwd, .9); feet(k, .12, 0); k.headTo(f.up.clone());
+      const world = p => V3(p.x, 0, 0).addScaledVector(f.up, p.y).addScaledVector(f.fwd, p.z).normalize();
+      sides.forEach(([s, sg]) => {
+        let ua, fa;
+        if (o.mode === 'facePull') {
+          ua = world(V3(sg * .05, 0, 1).lerp(V3(sg * .85, .1, .3), progress));
+          fa = world(V3(0, 0, 1).lerp(V3(0, 1, .12), progress));
+        } else {
+          const a = L(5, o.y ? 55 : 80, progress) * k.RAD;
+          ua = world(o.y ? V3(sg * Math.sin(a) * .65, Math.sin(a), Math.cos(a)) : V3(sg * Math.sin(a), .05, Math.cos(a)));
+          fa = ua.clone();
+        }
+        k.armDir(s, ua, fa, V3(-sg, 0, 0), 1);
+      });
+      return fist(k, 'l').distanceTo(anchor);
+    };
+    const length = poseAt(-38, 0);
+    let lo = -65, hi = 25, flo = poseAt(lo, u) - length;
+    for (let i = 0; i < 16; i++) {
+      const m = (lo + hi) / 2, fm = poseAt(m, u) - length;
+      if (flo * fm <= 0) hi = m; else { lo = m; flo = fm; }
+    }
+    poseAt((lo + hi) / 2, u);
+    return {tools: [], strapLength: length};
   }});
 
   // ---------- piegamenti ----------
   // corpo in linea dai talloni alla testa, mani sotto le spalle, gomiti a ~45° indietro, petto vicino al pavimento in basso
   M.pushup = o => ({seg: 1100, view: [70, 14], pose(k, u) {
+    if (o.suspension) {
+      const V3 = k.V3, sy = L(1.18, .96, u), ankle = V3(0, .1, -.6), ph = Math.asin((sy - ankle.y) / 1.285), up = V3(0, Math.sin(ph), Math.cos(ph));
+      k.torso(ankle.clone().addScaledVector(up, .765), up, V3(0, -Math.cos(ph), Math.sin(ph)), .9);
+      sides.forEach(([s, sg]) => k.leg(s, V3(sg * .12, k.ay, -.6), V3(0, 0, 1), 0)); k.headTo(up.clone());
+      sides.forEach(([s, sg]) => k.arm(s, V3(sg * .25, 1.04, .68), V3(sg * .65, -.1, -.6), V3(0, -1, 0)));
+      return {tools: []};
+    }
     const V3 = k.V3, ankZ = -.78, ay = .1, Ltot = 1.285;
     const sy = L(.58, .2, u), ph = Math.asin((sy - ay) / Ltot);
     const dir = V3(0, Math.sin(ph), Math.cos(ph)), fwd = V3(0, -Math.cos(ph), Math.sin(ph));
@@ -412,11 +498,13 @@ window.MOVES3D = (() => {
       k.armDir(s, ua, fd, palm, 1); tools.push(db(fist(k, s), V3(1, 0, 0))); });
     return {tools};
   }});
-  M.curlPreacher = o => ({seg: 1200, view: [70, 12], build(k, g) { const V3 = k.V3; seat(k, g, .5, -.05); k.pad(g, V3(0, 1.13, .2), V3(0, .88, .47), .42, .09); k.post(g, V3(0, 0, .42), V3(0, .9, .42), .035); }, pose(k, u) {
+  M.curlPreacher = o => ({seg: 1200, view: [70, 12], build(k, g) { const V3 = k.V3; seat(k, g, .5, -.05); k.pad(g, V3(0, 1.13, .2), V3(0, .88, .47), .42, .09); k.post(g, V3(0, 0, .42), V3(0, .9, .42), .035); if (o.machine || o.cable) stack(k, g, .9, .55); }, pose(k, u) {
     const V3 = k.V3, f = sit(k, .5, -.05, 12, .4); k.headTo(f.up.clone());
     const ua = V3(0, -.75, .66).normalize(), tools = [], ps = [];
     sides.forEach(([s, sg]) => { const th = L(10, 125, u), fa = ua.clone().applyAxisAngle(V3(1, 0, 0), -th * k.RAD); k.armDir(s, V3(sg * .12, -.75, .66).normalize(), fa, V3(0, 1, 0).applyAxisAngle(V3(1, 0, 0), -th * k.RAD), 1); ps.push(fist(k, s)); });
-    if (o.db) ps.forEach(p => tools.push(db(p, V3(1, 0, 0)))); else tools.push(bar(mid(ps[0], ps[1]), o.ez || !o.db ? .62 : .7, .16));
+    if (o.machine) ps.forEach((p, i) => { const sg = i ? -1 : 1, pivot = k.wp('farm.' + (i ? 'r' : 'l')).setX(sg * .30);
+      tools.push({t: 'line', a: p.clone().add(V3(-.06, 0, 0)), b: p.clone().add(V3(.06, 0, 0)), r: .018}, {t: 'line', a: p, b: pivot, r: .025}, {t: 'line', a: pivot, b: V3(sg * .30, .9, .42), r: .025});
+    }); else if (o.db) ps.forEach(p => tools.push(db(p, V3(1, 0, 0)))); else tools.push(bar(mid(ps[0], ps[1]), .62, .16));
     return {tools};
   }});
   M.curlConc = o => ({seg: 1100, view: [20, 12], build(k, g) { seat(k, g, .46, 0); }, pose(k, u) {
@@ -456,13 +544,18 @@ window.MOVES3D = (() => {
     sides.forEach(([s, sg]) => { const u2 = V3(sg * .05, .97, -.25).normalize(), fa = bend(k, s, u2, th); k.armDir(s, u2, fa, f.up.clone().negate(), 1); ps.push(fist(k, s)); });
     return {tools: o.db ? ps.map(p => db(p, V3(0, 0, 1))) : [bar(mid(ps[0], ps[1]), .62, .16)]};
   }});
-  M.overheadExt = o => ({seg: 1200, view: [70, 8], build(k, g) { if (o.seat) seat(k, g, .46, 0, .75); }, pose(k, u) {
+  M.overheadExt = o => ({seg: 1200, view: [70, 8], build(k, g) { if (o.seat) seat(k, g, .46, 0, .75); if (o.machine) { stack(k, g, -.6); sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .4, 0, -.3), k.V3(sg * .4, 1.5, -.3), .03)); } }, pose(k, u) {
     const V3 = k.V3; let f;
     if (o.seat) f = sit(k, .46, 0, -2, .42); else { f = lean(k, 0); k.torso(V3(0, .845, 0), f.up, f.fwd, .5); feet(k, .15, 10); }
     neutral(k);
     const th = L(8, 150, u), ps = [];
     sides.forEach(([s, sg]) => { const ua = V3(sg * .12, 1, .08).normalize(), fa = bend(k, s, ua, th); k.armDir(s, ua, fa, V3(-sg, 0, 0), 1); ps.push(fist(k, s)); });
     const c = mid(ps[0], ps[1]);
+    if (o.machine) return {tools: ps.flatMap((p, i) => {
+      const sg = i ? -1 : 1, pivot = k.wp('farm.' + (i ? 'r' : 'l')).setX(sg * .4);
+      return [{t: 'line', a: p.clone().add(V3(-.06, 0, 0)), b: p.clone().add(V3(.06, 0, 0)), r: .017},
+        {t: 'line', a: p, b: pivot, r: .025}, {t: 'line', a: pivot, b: V3(sg * .4, 1.5, -.3), r: .025}];
+    })};
     if (o.db) {
       sides.forEach(([s, sg]) => k.arm(s, c.clone().add(V3(sg * .04, 0, 0)), V3(sg * .35, .6, .1), V3(0, 1, 0)));
       return {tools: [db(c.clone().add(V3(0, -.08, 0)), V3(0, 1, 0))]};
@@ -500,13 +593,24 @@ window.MOVES3D = (() => {
     const p = hang.lerp(top, u); k.arm('l', p, V3(.2, 1, -.7), V3(-1, 0, 0));
     return {tools: [db(p, V3(0, 0, 1))]};
   }});
-  M.rowChest = o => ({seg: 1100, view: [70, 12], build(k, g) { const V3 = k.V3; k.pad(g, V3(0, .5, -.6), V3(0, 1.05, .2), .32, .08); k.post(g, V3(0, 0, -.15), V3(0, .75, -.15), .035); }, pose(k, u) {
-    const V3 = k.V3, {up, fwd} = lean(k, 52); k.torso(V3(0, .72, -.45), up, fwd, .6);
-    feet(k, .16, 10, -.78); neutral(k);
-    const sh = shoulders(k), tools = [];
-    sides.forEach(([s, sg]) => { const hang = V3(sg * .2, sh.y - .6, sh.z + .04), top = k.onBone('spine2', [sg * .2, 1.14, .1]); const p = hang.lerp(top, u);
-      k.arm(s, p, V3(sg * .3, .8, -.6), V3(-sg, 0, 0)); tools.push(o.bb ? null : db(p, V3(0, 0, 1))); });
-    return {tools: tools.filter(Boolean).concat(o.bb ? [bar(V3(0, L(sh.y - .6, sh.y - .25, u), sh.z + .04))] : [])};
+  M.rowChest = o => ({seg: 1100, view: [70, 12], build(k, g) {
+    const V3 = k.V3;
+    if (o.bb) { flatBench(k, g, .3, -.9, .9); return; }
+    k.pad(g, V3(0, .5, -.6), V3(0, 1.05, .2), .32, .08); k.post(g, V3(0, 0, -.15), V3(0, .75, -.15), .035);
+    if (o.machine) { stack(k, g, .85, .6); sides.forEach(([s, sg]) => k.post(g, V3(sg * .45, 0, .7), V3(sg * .45, .45, .7), .035)); }
+  }, pose(k, u) {
+    const V3 = k.V3, {up, fwd} = lean(k, o.bb ? 90 : 52); k.torso(V3(0, o.bb ? 1.01 : .72, -.45), up, fwd, .7);
+    if (o.bb) sides.forEach(([s, sg]) => k.legDir(s, V3(sg * .02, 0, -1).normalize(), V3(0, 0, -1), V3(0, -1, 0)));
+    else feet(k, .16, 10, -.78); neutral(k);
+    const sh = shoulders(k), tools = [], ps = [];
+    sides.forEach(([s, sg]) => {
+      const hang = V3(sg * .24, sh.y - .59, sh.z + .04), top = o.bb ? V3(sg * .24, .81, sh.z - .08) : k.onBone('spine2', [sg * .24, 1.14, .16]), p = hang.lerp(top, u);
+      k.arm(s, p, V3(sg * .3, .8, -.6), o.bb ? V3(0, 0, -1) : V3(-sg, 0, 0)); ps.push(p);
+      if (o.machine) tools.push({t: 'line', a: p.clone().add(V3(0, 0, -.07)), b: p.clone().add(V3(0, 0, .07)), r: .018},
+        {t: 'line', a: p, b: p.clone().setX(sg * .45), r: .025}, {t: 'line', a: p.clone().setX(sg * .45), b: V3(sg * .45, .45, .7), r: .03});
+      else if (!o.bb) tools.push(db(p, V3(0, 0, 1)));
+    });
+    if (o.bb) tools.push(bar(mid(ps[0], ps[1]))); return {tools};
   }});
   M.rowSeat = o => ({seg: 1200, view: [70, 8], build(k, g) { const V3 = k.V3; k.pad(g, V3(0, .36, .25), V3(0, .36, -.25), .34, .08); k.post(g, V3(0, 0, 0), V3(0, .32, 0), .035); g.add(k.box(.45, .3, .06, k.steel(), V3(0, .2, .75)));
     if (o.pad) { k.pad(g, V3(0, .78, .20), V3(0, 1.15, .20), .3, .1); k.post(g, V3(0, .04, .20), V3(0, 1, .20), .03); } stack(k, g, 1.05); }, pose(k, u) {
@@ -521,15 +625,23 @@ window.MOVES3D = (() => {
     k.torso(ank.clone().addScaledVector(dir, .765), dir, fwd, .9);
     sides.forEach(([s, sg]) => k.legDir(s, dir.clone().negate(), dir.clone().negate(), V3(0, .7, -.7).normalize()));
     k.headTo(dir.clone());
-    const sh = shoulders(k); sides.forEach(([s, sg]) => k.arm(s, V3(sg * .27, BY, .1), V3(sg * .5, -1, -.5), V3(0, 0, -1)));
+    const sh = shoulders(k); sides.forEach(([s, sg]) => k.arm(s, V3(sg * .27, BY, .1), V3(sg * .5, -1, -.5), o.suspension ? V3(-sg, 0, 0) : V3(0, 0, -1)));
     return {tools: []};
   }});
-  M.shrug = o => ({seg: 1000, view: [30, 6], pose(k, u) {
+  M.shrug = o => ({seg: 1000, view: [30, 6], build(k, g) {
+    if (o.smith) smithRails(k, g, .14);
+    if (o.machine) sides.forEach(([s, sg]) => { k.post(g, k.V3(sg * .48, 0, -.5), k.V3(sg * .48, .55, -.5), .04); k.post(g, k.V3(sg * .48, .03, -.65), k.V3(sg * .48, .03, .35), .04); });
+  }, pose(k, u) {
     const V3 = k.V3, f = lean(k, 0); k.torso(V3(0, .845, 0), f.up, f.fwd, .5); feet(k, .14, 10); neutral(k);
     shrug(k, L(0, 14, u));
     const tools = [], ps = [];
     sides.forEach(([s, sg]) => { k.armDir(s, V3(sg * .1, -1, .02).normalize(), V3(sg * .05, -1, .03).normalize(), o.db ? V3(-sg, 0, 0) : V3(0, 0, -1), 1); ps.push(fist(k, s)); });
-    if (o.db) ps.forEach(p => tools.push(db(p, V3(0, 0, 1))));
+    if (o.machine) ps.forEach((p, i) => { const sg = i ? -1 : 1;
+      tools.push({t: 'line', a: p.clone().add(V3(0, 0, -.07)), b: p.clone().add(V3(0, 0, .07)), r: .018},
+        {t: 'line', a: p, b: p.clone().setX(sg * .48), r: .025}, {t: 'line', a: p.clone().setX(sg * .48), b: V3(sg * .48, .55, -.5), r: .03},
+        {t: 'plate', p: p.clone().setX(sg * .52), n: V3(1, 0, 0), r: .16});
+    });
+    else if (o.db) ps.forEach(p => tools.push(db(p, V3(0, 0, 1))));
     else {
       const c = mid(ps[0], ps[1]); if (!o.trap) c.z = Math.max(c.z, .14);
       sides.forEach(([s, sg]) => k.arm(s, c.clone().setX(sg * (o.trap ? .28 : .22)), V3(sg * .3, .2, -1), o.trap ? V3(-sg, 0, 0) : V3(0, 0, -1)));
@@ -537,20 +649,39 @@ window.MOVES3D = (() => {
     }
     return {tools};
   }});
-  M.backExt = o => ({seg: 1300, view: [80, 8], build(k, g) { const V3 = k.V3; k.pad(g, V3(0, .9, .12), V3(0, .72, -.08), .36, .1); k.post(g, V3(0, 0, -.2), V3(0, .85, -.2), .04); g.add(k.box(.35, .04, .3, k.steel(), V3(0, .22, -.75))); }, pose(k, u) {
-    const V3 = k.V3, legDir = V3(0, -.7, -.71).normalize();
+  M.backExt = o => ({seg: 1300, view: [80, 8], build(k, g) { const V3 = k.V3;
+    if (o.machine) { seat(k, g, .46, 0); stack(k, g, -.7, .5); k.post(g, V3(.4, 0, -.25), V3(.4, .65, -.25), .035); return; } k.pad(g, V3(0, .9, .12), V3(0, .72, -.08), .36, .1); k.post(g, V3(0, 0, -.2), V3(0, .85, -.2), .04); g.add(k.box(.35, .04, .3, k.steel(), V3(0, .22, -.75))); }, pose(k, u) {
+    const V3 = k.V3;
+    if (o.machine) {
+      const f = sit(k, .46, 0, L(30, -5, u), .45); k.headTo(f.up.clone()); crossArms(k);
+      const pad = k.onBone('spine3', [0, 1.3, -.15]);
+      return {tools: [{t: 'box', p: pad, s: [.38, .22, .10], c: 0x263549, q: new k.T.Quaternion().setFromUnitVectors(V3(0, 1, 0), f.up)},
+        {t: 'line', a: pad, b: pad.clone().setX(.4), r: .025}, {t: 'line', a: pad.clone().setX(.4), b: V3(.4, .65, -.25), r: .03}]};
+    }
+    const legDir = V3(0, -.7, -.71).normalize();
     const {up, fwd} = lean(k, L(150, 45, u)); k.torso(V3(0, .92, -.05), up, fwd, .3);
     sides.forEach(([s, sg]) => k.legDir(s, legDir.clone().add(V3(sg * .05, 0, 0)).normalize(), legDir, V3(0, -.6, .8).normalize()));
     k.headTo(up.clone()); crossArms(k);
     return {tools: o.plate ? [{t: 'plate', p: k.onBone('spine3', P.sternum).addScaledVector(fwd, .06), n: fwd, r: .16}] : []};
   }});
-  M.revHyper = o => ({seg: 1200, view: [80, 10], build(k, g) { flatBench(k, g, .5, -.35, 1.0); }, pose(k, u) {
+  M.revHyper = o => ({seg: 1200, view: [65, 12], build(k, g) {
+    flatBench(k, g, .5, -.35, 1.0);
+    sides.forEach(([s, sg]) => { k.post(g, k.V3(sg * .22, .99, .25), k.V3(sg * .22, 1.04, .5), .018);
+      k.post(g, k.V3(sg * .4, .03, -.5), k.V3(sg * .4, .03, .6), .035);
+      k.post(g, k.V3(sg * .4, .03, -.25), k.V3(sg * .4, .98, -.25), .035); });
+  }, pose(k, u) {
     const V3 = k.V3, {up, fwd} = lean(k, 90); k.torso(V3(0, 1.12, -.25), up, fwd, .95);
     const a = L(0, 85, u) * k.RAD, ld = V3(0, -Math.cos(a), -Math.sin(a));
     sides.forEach(([s, sg]) => k.legDir(s, ld.clone().add(V3(sg * .04, 0, 0)).normalize(), ld, V3(0, -Math.sin(a), Math.cos(a)).negate()));
     k.headTo(up.clone());
     sides.forEach(([s, sg]) => k.arm(s, V3(sg * .22, 1.04, .45), V3(sg * .4, -.5, -.6), V3(0, -1, 0)));
-    return {tools: []};
+    if (!o.machine) return {tools: []};
+    const ankle = mid(k.wp('foot.l'), k.wp('foot.r')), axle = ankle.clone().add(V3(0, -.12, 0));
+    return {tools: [{t: 'line', a: V3(0, .96, -.25), b: axle, r: .035},
+      {t: 'line', a: axle.clone().setX(-.42), b: axle.clone().setX(.42), r: .025},
+      ...sides.flatMap(([s, sg]) => [{t: 'plate', p: axle.clone().setX(sg * .34), n: V3(1, 0, 0), r: .18},
+        {t: 'line', a: axle, b: k.wp('foot.' + s), r: .015, c: 0xe68842},
+        {t: 'box', p: k.wp('foot.' + s), s: [.10, .08, .10], c: 0x263549}])]};
   }});
 
   // ---------- spalle (altri) ----------
@@ -622,7 +753,24 @@ window.MOVES3D = (() => {
       k.armDir(s, ua, fa, V3(-sg, 0, 0), 1); const p = fist(k, s); tools.push({t: 'line', a: p.clone().add(V3(0, .20, 0)), b: p.clone().add(V3(0, -.07, 0)), r: .02, c: 0x202c3a}, {t: 'line', a: p.clone().add(V3(0, .20, 0)), b: V3(sg * .48, 1.8, -.3), r: .03}); });
     return {tools};
   }});
-  M.pullover = o => ({seg: 1400, view: [70, 18], build(k, g) { flatBench(k, g); }, pose(k, u) {
+  M.pullover = o => ({seg: 1400, view: [65, 18], build(k, g) {
+    if (!o.machine) return flatBench(k, g);
+    seat(k, g, .46, 0, .8); stack(k, g, -.4, -.65);
+    sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .42, 0, -.2), k.V3(sg * .42, 1.18, -.2), .035));
+  }, pose(k, u) {
+    if (o.machine) {
+      const V3 = k.V3, f = sit(k, .46, 0, -5, .45), a = L(155, 25, u) * k.RAD, tools = [];
+      k.headTo(f.up.clone());
+      sides.forEach(([s, sg]) => {
+        const ua = V3(sg * .12, -Math.cos(a), Math.sin(a)).normalize();
+        k.armDir(s, ua, bend(k, s, ua, 85), V3(-sg, 0, 0), 1);
+        const elbow = k.wp('farm.' + s).add(V3(sg * .055, 0, 0)), p = fist(k, s), pivot = V3(sg * .42, 1.18, -.2);
+        tools.push({t: 'line', a: elbow.clone().add(V3(0, -.06, 0)), b: elbow.clone().add(V3(0, .06, 0)), r: .055, c: 0x263549},
+          {t: 'line', a: elbow, b: pivot, r: .025}, {t: 'line', a: elbow, b: p, r: .018},
+          {t: 'line', a: p.clone().add(V3(-.07, 0, 0)), b: p.clone().add(V3(.07, 0, 0)), r: .016, c: 0x263549});
+      });
+      return {tools};
+    }
     const V3 = k.V3, f = lie(k), a = L(0, 105, u) * k.RAD;
     const ua = V3(0, Math.cos(a), -Math.sin(a)).normalize(), ps = [];
     sides.forEach(([s, sg]) => { const u2 = ua.clone().add(V3(sg * .08, 0, 0)).normalize(); k.armDir(s, u2, bend(k, s, u2, 20), f.up.clone().negate(), 1); ps.push(fist(k, s)); });
@@ -635,7 +783,18 @@ window.MOVES3D = (() => {
   }});
 
   // ---------- gambe (macchine, glutei, polpacci) ----------
-  M.sissy = o => ({seg: 1300, view: [80, 6], pose(k, u) {
+  M.sissy = o => ({seg: 1300, view: [80, 6], build(k, g) {
+    if (!o.machine) return;
+    const V3 = k.V3; g.add(k.box(.6, .04, .65, k.steel(), V3(0, .02, .05)));
+    k.post(g, V3(.30, .04, -.05), V3(.30, .38, -.05), .035);
+    g.add(k.seg(V3(-.24, .35, -.05), V3(.24, .35, -.05), .065, k.mat(0x263549, .8)));
+    g.add(k.seg(V3(-.24, .14, .13), V3(.24, .14, .13), .045, k.mat(0x263549, .8)));
+  }, pose(k, u) {
+    if (o.machine) {
+      const V3 = k.V3, a = L(0, 55, u) * k.RAD, kn = V3(0, .46, 0), up = V3(0, Math.cos(a), -Math.sin(a)), fwd = V3(0, Math.sin(a), Math.cos(a));
+      k.torso(kn.clone().addScaledVector(up, .39), up, fwd, .9);
+      sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .12, k.ay + .04, 0), V3(0, 0, 1), 0); k.armDir(s, fwd.clone().add(V3(sg * .1, 0, 0)), fwd, V3(0, -1, 0), .2); }); k.headTo(up.clone()); return {tools: []};
+    }
     const V3 = k.V3, {up, fwd} = lean(k, L(0, -24, u)); k.torso(V3(0, L(.845, .55, u), L(0, .12, u)), up, fwd, .8);
     sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .12, L(k.ay, .16, u), 0), V3(0, 0, 1), sg * 6); tiptoe(k, s, L(0, 45, u)); });
     k.headTo(up.clone());
@@ -667,7 +826,24 @@ window.MOVES3D = (() => {
     tools.push({t: 'line', a: pivot, b: tip, r: .025}, {t: 'line', a: tip, b: an, r: .02}, {t: 'plate', p: tip, n: V3(1, 0, 0), r: .12});
     return {tools};
   }});
-  M.hipAb = o => ({seg: 1200, view: [25, 16], build(k, g) { seat(k, g, .5, -.05, .8); stack(k, g, -.5, .5); sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .4, .03, -.3), k.V3(sg * .4, .03, .65), .035)); }, pose(k, u) {
+  M.hipAb = o => ({seg: 1200, view: [25, 16], build(k, g) {
+    if (o.cable || o.band) {
+      if (!o.band) stack(k, g, -.15, o.adduct ? .95 : -.95);
+      k.post(g, k.V3(-.45, 0, .22), k.V3(-.45, 1.12, .22), .025); return;
+    }
+    seat(k, g, .5, -.05, .8); stack(k, g, -.5, .5); sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .4, .03, -.3), k.V3(sg * .4, .03, .65), .035));
+  }, pose(k, u) {
+    if (o.cable || o.band) {
+      const V3 = k.V3, f = lean(k, 0); k.torso(V3(0, .845, 0), f.up, f.fwd, .6); neutral(k);
+      k.leg('r', V3(-.12, k.ay, 0), V3(0, 0, 1), -5);
+      const a = (o.adduct ? L(30, -4, u) : L(4, 32, u)) * k.RAD, dir = V3(Math.sin(a), -Math.cos(a), -.02).normalize();
+      k.legDir('l', dir, dir, k.restDir('foot.l'));
+      k.arm('r', V3(-.45, 1.10, .22), V3(-1, -.3, 0), V3(0, -1, 0));
+      k.armDir('l', V3(.18, -.95, .15).normalize(), V3(-.2, -.9, .2).normalize(), V3(-1, 0, 0), .3);
+      const ankle = k.wp('foot.l'), anchor = o.band ? k.wp('foot.r') : V3(o.adduct ? .95 : -.95, .12, -.15);
+      return {tools: [{t: 'box', p: ankle, s: [.09, .07, .10], c: 0x263549},
+        {t: 'line', a: ankle, b: anchor, r: o.band ? .008 : .004, c: o.band ? 0xe68842 : 0x7c828a}]};
+    }
     const V3 = k.V3, f = lean(k, -6); k.torso(V3(0, .6, -.05), f.up, f.fwd, .4); k.headTo(f.up.clone());
     const a = (o.adduct ? L(32, 4, u) : L(4, 32, u)) * k.RAD;
     sides.forEach(([s, sg]) => { const th = V3(sg * Math.sin(a), -.08, Math.cos(a)).normalize(); k.legDir(s, th, V3(sg * Math.sin(a) * .6, -1, .1).normalize());
@@ -687,13 +863,22 @@ window.MOVES3D = (() => {
     sides.forEach(([s, sg]) => k.armDir(s, V3(sg * .1, -.25, 1).normalize(), V3(sg * .05, -.15, 1).normalize(), V3(0, -1, 0), 0));
     return {tools: []};
   }});
-  M.legCurl = o => ({seg: 1200, view: [80, 12], build(k, g) { flatBench(k, g, .4, -.9, .6); k.post(g, k.V3(.34, 0, .46), k.V3(.34, .7, .46), .035); }, pose(k, u) {
-    const V3 = k.V3, {up, fwd} = lean(k, -90).up ? lean(k, 90) : lean(k, 90);
+  M.legCurl = o => ({seg: 1200, view: [80, 12], build(k, g) {
+    if (o.cable) { stack(k, g, .9); k.post(g, k.V3(-.3, 0, .45), k.V3(-.3, 1.1, .45), .025); return; }
+    flatBench(k, g, .4, -.9, .6); k.post(g, k.V3(.34, 0, .46), k.V3(.34, .7, .46), .035); }, pose(k, u) {
+    const V3 = k.V3;
+    if (o.cable) {
+      const f = lean(k, 4); k.torso(V3(0, .845, 0), f.up, f.fwd, .8); feet(k, .12, 5); neutral(k);
+      const a = L(8, 100, u) * k.RAD; k.legDir('l', V3(0, -1, -.06).normalize(), V3(0, -Math.cos(a), -Math.sin(a)), V3(0, Math.sin(a), Math.cos(a)));
+      k.arm('r', V3(-.3, 1.08, .45), V3(-1, -.4, 0), V3(0, -1, 0)); k.armDir('l', V3(.1, -1, 0).normalize(), V3(0, -1, .1).normalize(), V3(-1, 0, 0), .3);
+      const p = k.wp('foot.l'); return {tools: [{t: 'box', p, s: [.10, .07, .10], c: 0x263549}, {t: 'line', a: p, b: V3(0, .12, .9), r: .004}]};
+    }
     k.torso(V3(0, .7, .05), V3(0, 0, -1), V3(0, -1, 0), .95);
     const a = L(5, 115, u) * k.RAD, tools = [];
     sides.forEach(([s, sg]) => { k.legDir(s, V3(sg * .03, 0, 1).normalize(), V3(0, Math.sin(a), Math.cos(a)).normalize(), V3(0, 1, 0)); k.arm(s, V3(sg * .2, .6, -.75), V3(sg, .2, 0), V3(0, -1, 0)); });
     k.headTo(V3(0, .2, -1).normalize());
     const an = k.wp('foot.l').lerp(k.wp('foot.r'), .5).add(V3(0, .05, -.04));
+    if (o.db) return {tools: [db(an, V3(0, 1, 0))]};
     tools.push({t: 'line', a: an.clone().add(V3(-.2, 0, 0)), b: an.clone().add(V3(.2, 0, 0)), r: .04, c: 0x2a2d33});
     const pivot = k.wp('shin.l').setX(.34), tip = an.clone().setX(.34);
     tools.push({t: 'line', a: pivot, b: tip, r: .025}, {t: 'line', a: tip, b: an, r: .02}, {t: 'plate', p: tip, n: V3(1, 0, 0), r: .12});
@@ -715,14 +900,18 @@ window.MOVES3D = (() => {
     return {tools: []};
   }});
   // hip thrust e ponte: spalle sulla panca (o a terra), piedi piatti, anche fino alla linea spalle-ginocchia, ginocchia a 90° in alto
-  M.thrust = o => ({seg: 1300, view: [70, 12], build(k, g) { if (!o.floor) { const V3 = k.V3; k.pad(g, V3(0, .42, -.12), V3(0, .42, -.6), .9, .1); k.post(g, V3(0, 0, -.35), V3(0, .38, -.35), .05); } }, pose(k, u) {
+  M.thrust = o => ({seg: 1300, view: [70, 12], build(k, g) { if (o.smith) smithRails(k, g, .25); if (o.machine || o.band) sides.forEach(([s, sg]) => k.post(g, k.V3(sg * .55, .04, -.4), k.V3(sg * .55, .04, .8), .04)); if (!o.floor) { const V3 = k.V3; k.pad(g, V3(0, .42, -.12), V3(0, .42, -.6), .9, .1); k.post(g, V3(0, 0, -.35), V3(0, .38, -.35), .05); } }, pose(k, u) {
     const V3 = k.V3, shY = o.floor ? .1 : .5, hipY = L(o.floor ? .12 : .3, shY + (o.floor ? .3 : .02), u);
     const shp = V3(0, shY, -.25), hip = V3(0, hipY, .25), up = shp.clone().sub(hip).normalize(), fwd = V3(0, 1, 0).sub(up.clone().multiplyScalar(up.y)).normalize();
     k.torso(hip, up, fwd, .95);
     sides.forEach(([s, sg]) => k.leg(s, V3(sg * .18, k.ay, .62), V3(sg * .2, 1, .2), sg * 12));
     k.headTo(up.clone().addScaledVector(fwd, .6).normalize());
     const c = k.onBone('root', P.hipFront).addScaledVector(fwd, .025), tools = [];
-    if (o.db) tools.push(db(c, V3(1, 0, 0))); else if (!o.bw) tools.push(bar(c), {t: 'line', a: c.clone().add(V3(-.15, 0, 0)), b: c.clone().add(V3(.15, 0, 0)), r: .04, c: 0x202c3a});
+    if (o.machine) {
+      tools.push({t: 'box', p: c, s: [.50, .09, .24], c: 0x263549});
+      sides.forEach(([s, sg]) => tools.push({t: 'line', a: c.clone().setX(sg * .30), b: V3(sg * .55, .10, -.15), r: .035},
+        {t: 'line', a: c.clone().setX(sg * .30), b: c.clone().setX(sg * .70), r: .025}, {t: 'plate', p: c.clone().setX(sg * .62), n: V3(1, 0, 0), r: .19}));
+    } else if (o.db) tools.push(db(c, V3(1, 0, 0))); else if (!o.bw) tools.push(bar(c), {t: 'line', a: c.clone().add(V3(-.15, 0, 0)), b: c.clone().add(V3(.15, 0, 0)), r: .04, c: 0x202c3a});
     if (o.bw) sides.forEach(([s, sg]) => { k.arm(s, V3(sg * .3, .05, k.wp('root').z - .1), V3(sg, .3, .2), V3(0, -1, 0)); k.grip(s, -.1); });
     else sides.forEach(([s, sg]) => k.arm(s, V3(sg * .3, c.y + .02, c.z), V3(sg, .3, -.5), V3(0, -1, 0)));
     return {tools: o.bw ? [] : tools};
@@ -734,7 +923,27 @@ window.MOVES3D = (() => {
     return {tools: [{t: 'cable', a: c, b: V3(0, .15, -1.05), kind: 'rope'}]};
   }});
   // a quattro zampe: mani sotto le spalle, ginocchia sotto le anche; la gamba di lavoro spinge indietro e in alto, ginocchio a 90°
-  M.kickBack = o => ({seg: 1200, view: [-70, 12], pose(k, u) {
+  M.kickBack = o => ({seg: 1200, view: [-60, 14], build(k, g) {
+    const V3 = k.V3;
+    if (!o.band) stack(k, g, .95, .55);
+    sides.forEach(([s, sg]) => { k.post(g, V3(sg * .28, 0, .55), V3(sg * .28, 1.15, .55), .025);
+      k.post(g, V3(sg * .28, 1.15, .42), V3(sg * .28, 1.15, .66), .018); });
+  }, pose(k, u) {
+    if (o.cable || o.band || o.machine) {
+      const V3 = k.V3, f = lean(k, 18); k.torso(V3(0, .83, -.08), f.up, f.fwd, .6); neutral(k);
+      k.leg('r', V3(-.14, k.ay, -.02), V3(0, 0, 1), -5);
+      const a = L(-5, 25, u) * k.RAD, dir = V3(.04, -Math.cos(a), -Math.sin(a)).normalize();
+      k.legDir('l', dir, dir.clone().add(V3(0, 0, -.08)).normalize(), k.restDir('foot.l'));
+      sides.forEach(([s, sg]) => k.arm(s, V3(sg * .28, 1.15, .55), V3(sg * .5, -.7, -.2), V3(0, -1, 0)));
+      const ankle = k.wp('foot.l');
+      if (o.machine) {
+        const plate = ankle.clone().add(V3(0, -.015, -.08));
+        return {tools: [{t: 'box', p: plate, s: [.18, .22, .04], c: 0x263549}, {t: 'line', a: plate, b: V3(.42, .12, .1), r: .03},
+          {t: 'plate', p: plate.clone().setX(.4), n: V3(1, 0, 0), r: .13}, {t: 'line', a: plate, b: plate.clone().setX(.45), r: .025}]};
+      }
+      return {tools: [{t: 'box', p: ankle, s: [.09, .07, .10], c: 0x263549},
+        {t: 'line', a: ankle, b: o.band ? k.wp('foot.r') : V3(.55, .12, .95), r: o.band ? .008 : .004, c: o.band ? 0xe68842 : 0x7c828a}]};
+    }
     const V3 = k.V3; k.torso(V3(0, .52, -.12), V3(0, -.02, 1).normalize(), V3(0, -1, 0), .95);
     k.leg('r', V3(-.12, .1, -.55), V3(0, -1, .2), 0); k.aim('foot.r', V3(0, -.2, -1).normalize());
     const a = L(-80, 10, u) * k.RAD; k.legDir('l', V3(.05, Math.sin(a), -Math.cos(a)).normalize(), V3(0, 1, -.15).normalize(), V3(0, .3, -1).normalize());
@@ -743,16 +952,23 @@ window.MOVES3D = (() => {
     return {tools: o.cable ? [{t: 'cable', a: k.wp('foot.l'), b: V3(.1, .15, -1.1), kind: 'd'}] : []};
   }});
   // polpacci: talloni sotto il livello del gradino → in punta di piedi, ginocchia ferme
-  M.calf = o => ({seg: 1100, view: [70, 8], build(k, g) { const V3 = k.V3; g.add(k.box(.6, .08, .25, k.mat(0x3a3d44, .8), V3(0, .04, .1))); if (o.seat) { seat(k, g, .45, -.3); k.post(g, V3(.38, 0, .25), V3(.38, .55, .25), .035); } if (o.machine && !o.seat) { sides.forEach(([s, sg]) => { k.post(g, V3(sg * .45, 0, -.2), V3(sg * .45, 1.95, -.2), .035); k.post(g, V3(sg * .45, .03, -.35), V3(sg * .45, .03, .35), .04); }); k.post(g, V3(-.45, 1.95, -.2), V3(.45, 1.95, -.2), .03); } if (o.donkey) { k.pad(g, V3(0, 1.0, .5), V3(0, 1.0, .9), .5, .08); k.post(g, V3(0, 0, .7), V3(0, .96, .7), .04); } }, pose(k, u) {
-    const V3 = k.V3, rise = L(-.025, .08, u), pitch = L(-15, 38, u), tools = [];
-    if (o.seat) { const f = sit(k, .45, -.3, -2, .1, .14); sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .14, k.ay + .08 + rise, .1), V3(0, .3, 1), 0); tiptoe(k, s, pitch); }); k.headTo(f.up.clone());
-      const kn = k.wp('shin.l').lerp(k.wp('shin.r'), .5).add(V3(0, .06, 0)); tools.push({t: 'line', a: kn.clone().add(V3(-.25, 0, 0)), b: kn.clone().add(V3(.25, 0, 0)), r: .04, c: 0x2a2d33});
+  M.calf = o => ({seg: 1100, view: [70, 8], build(k, g) { const V3 = k.V3; if (o.smith) smithRails(k, g, o.donkey ? -.1 : -.03); g.add(k.box(.6, .08, .25, k.mat(0x3a3d44, .8), V3(0, .04, .1))); if (o.seat) { seat(k, g, .45, -.3); k.post(g, V3(.38, 0, .25), V3(.38, .55, .25), .035); } if (o.machine && !o.seat) { sides.forEach(([s, sg]) => { k.post(g, V3(sg * .45, 0, -.2), V3(sg * .45, 1.95, -.2), .035); k.post(g, V3(sg * .45, .03, -.35), V3(sg * .45, .03, .35), .04); }); k.post(g, V3(-.45, 1.95, -.2), V3(.45, 1.95, -.2), .03); } if (o.donkey) { k.pad(g, V3(0, 1.0, .5), V3(0, 1.0, .9), .5, .08); k.post(g, V3(0, 0, .7), V3(0, .96, .7), .04); } }, pose(k, u) {
+    const V3 = k.V3, pitch = L(-15, 38, u), toeOffset = V3(...k.JR['toe.l']).sub(V3(...k.JR['ankle.l'])).applyAxisAngle(V3(1, 0, 0), pitch * k.RAD), ankleY = .10 - toeOffset.y, footZ = .21 - toeOffset.z, rise = ankleY - k.ay - .08, tools = [];
+    if (o.seat) { const f = sit(k, .45, -.3, -2, .1, .14); sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .14, ankleY, footZ), V3(0, .3, 1), 0); tiptoe(k, s, pitch); }); k.headTo(f.up.clone());
+      const kn = k.wp('shin.l').lerp(k.wp('shin.r'), .5).add(V3(0, .06, 0));
+      if (o.db) { sides.forEach(([side, sg]) => { const p = k.wp('shin.' + side).add(V3(0, .09, -.02)); k.arm(side, p, V3(sg, -.2, .3), V3(0, -1, 0)); tools.push(db(p, V3(1, 0, 0))); }); return {tools}; }
+      tools.push({t: 'line', a: kn.clone().add(V3(-.25, 0, 0)), b: kn.clone().add(V3(.25, 0, 0)), r: .04, c: 0x2a2d33});
       tools.push({t: 'line', a: kn.clone().setX(.38), b: V3(.38, .55, .25), r: .025}, {t: 'line', a: kn, b: kn.clone().setX(.48), r: .02}, {t: 'plate', p: kn.clone().setX(.42), n: V3(1, 0, 0), r: .15}); sides.forEach(([s, sg]) => k.arm(s, kn.clone().add(V3(sg * .26, .02, 0)), V3(sg, 0, -.3), V3(0, -1, 0))); return {tools}; }
     const lu = o.donkey ? 85 : 0, f = lean(k, lu); k.torso(V3(0, .845 + rise + .08, o.donkey ? -.1 : .08), f.up, f.fwd, o.donkey ? .6 : .5);
-    sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .12, k.ay + .08 + rise, .1), V3(0, 0, 1), sg * 5); tiptoe(k, s, pitch); });
+    sides.forEach(([s, sg]) => { k.leg(s, V3(sg * .12, ankleY, footZ), V3(0, 0, 1), sg * 5); tiptoe(k, s, pitch); });
     neutral(k);
     if (o.donkey) sides.forEach(([s, sg]) => { k.arm(s, V3(sg * .22, 1.04, .62), V3(sg, .2, -.3), V3(0, -1, 0)); });
     else { sides.forEach(([s, sg]) => k.armDir(s, V3(sg * .1, -1, .02).normalize(), V3(sg * .05, -1, .03).normalize(), V3(-sg, 0, 0), o.db ? 1 : .3)); if (o.db) sides.forEach(([s]) => tools.push(db(fist(k, s), V3(0, 0, 1)))); }
+    if (o.smith) {
+      const c = o.donkey ? k.wp('root').add(V3(0, .13, 0)) : k.onBone('spine3', P.traps);
+      if (!o.donkey) sides.forEach(([s, sg]) => k.arm(s, c.clone().setX(sg * .29), V3(sg * .4, -1, -.5), V3(0, 0, 1)));
+      tools.push(bar(c), ...(o.donkey ? [{t: 'line', a: c.clone().setX(-.16), b: c.clone().setX(.16), r: .05, c: 0x263549}] : []));
+    }
     if (o.machine && !o.seat) {
       const c = o.donkey ? k.onBone('root', [0, .94, -.12]) : k.onBone('spine3', P.traps);
       sides.forEach(([s, sg]) => tools.push({t: 'box', p: c.clone().add(V3(sg * .18, .04, 0)), s: [.16, .08, .25], c: 0x263549}, {t: 'line', a: c.clone().add(V3(sg * .18, .09, 0)), b: V3(sg * .45, c.y + .09, -.2), r: .025}, {t: 'plate', p: V3(sg * .50, c.y + .09, -.2), n: V3(1, 0, 0), r: .16}));
@@ -806,11 +1022,20 @@ window.MOVES3D = (() => {
       k.armDir('l', V3(0, 1, 0), V3(0, 1, 0), V3(1, 0, 0), .1);
       return {tools: []};
     }
-    plankLine(k, .33 + br); k.headTo(V3(0, .3, 1).normalize());
+    plankLine(k, .33 + br, -.85, o.suspension ? .3 : .1); k.headTo(V3(0, .3, 1).normalize());
     const sh = shoulders(k); sides.forEach(([s, sg]) => { k.arm(s, V3(sg * .1, .05, sh.z + .28), V3(sg * .2, -1, -.3), V3(-sg * .5, -1, 0).normalize()); k.grip(s, .4); });
     return {tools: []};
   }});
-  M.crunch = o => ({seg: 1100, view: [70, 16], pose(k, u) {
+  M.crunch = o => ({seg: 1100, view: [70, 16], build(k, g) {
+    if (o.machine) { seat(k, g, .46, 0, .55); stack(k, g, -.35, -.65); k.post(g, k.V3(.4, 0, 0), k.V3(.4, .9, 0), .035); }
+  }, pose(k, u) {
+    if (o.machine) {
+      const V3 = k.V3; sit(k, .46, 0, L(-5, 15, u), .48); curlUp(k, L(0, 28, u)); neutral(k);
+      const c = k.onBone('spine3', P.sternum).add(V3(0, 0, .07));
+      sides.forEach(([s, sg]) => k.arm(s, c.clone().add(V3(sg * .2, .04, .02)), V3(sg * .4, -.5, .4), V3(0, -1, 0)));
+      return {tools: [{t: 'line', a: c.clone().setX(-.28), b: c.clone().setX(.28), r: .06, c: 0x263549},
+        {t: 'line', a: c.clone().setX(.28), b: V3(.4, .9, 0), r: .03}]};
+    }
     const V3 = k.V3; floorBack(k); curlUp(k, L(0, 32, u));
     k.headTo(k.curDir('spine3').clone()); handsOnHead(k);
     return {tools: []};
@@ -870,6 +1095,14 @@ window.MOVES3D = (() => {
     sides.forEach(([s, sg]) => k.legDir(s, td.clone().negate().add(V3(sg * .03, 0, 0)).normalize(), V3(0, -.05, -1).normalize(), V3(0, -.4, -1).normalize()));
     k.headTo(up.clone().addScaledVector(fwd, .2).normalize());
     const sh = shoulders(k), wz = sh.z + Math.sqrt(Math.max(.01, .56 * .56 - (sh.y - .12) ** 2)), w = V3(0, .1, wz);
+    if (o.suspension) {
+      // Intersect a fixed-length strap with the arm's reach circle.
+      const anchor = V3(0, 2.25, 1.1), delta = anchor.clone().sub(sh).setX(0), d = delta.length(), axis = delta.divideScalar(d);
+      const r = .56, length = 1.95, along = (r * r - length * length + d * d) / (2 * d), height = Math.sqrt(Math.max(0, r * r - along * along));
+      w.copy(sh).addScaledVector(axis, along).addScaledVector(V3(0, -axis.z, axis.y), height);
+      sides.forEach(([s, sg]) => k.arm(s, w.clone().setX(sg * .12), V3(sg * .3, -.5, -.3), V3(0, -1, 0)));
+      return {tools: [], strapLength: Math.sqrt(length * length + .08 * .08)};
+    }
     sides.forEach(([s, sg]) => k.arm(s, w.clone().add(V3(sg * .1, .02, 0)), V3(sg * .2, -.3, -1), V3(0, -.3, -1).normalize()));
     return {tools: [{t: 'plate', p: w, n: V3(1, 0, 0), r: .1}, {t: 'line', a: w.clone().add(V3(-.13, 0, 0)), b: w.clone().add(V3(.13, 0, 0)), r: .012}]};
   }});
@@ -906,7 +1139,9 @@ window.MOVES3D = (() => {
   }});
   // dead bug: schiena a terra, braccia verso il soffitto, anche e ginocchia a 90° (tibie parallele al pavimento);
   // si allungano braccio e gamba opposti fin quasi a terra, si torna e si cambia lato
-  M.deadBug = o => ({seg: 1500, cyc: true, view: [60, 22], pose(k, u) {
+  M.deadBug = o => ({seg: 1500, cyc: true, view: [60, 22], build(k, g) {
+    if (o.band) { k.post(g, k.V3(-.4, .05, -1.2), k.V3(.4, .05, -1.2), .04); k.post(g, k.V3(0, .05, -1.2), k.V3(0, .5, -1.2), .03); }
+  }, pose(k, u) {
     const V3 = k.V3; floorBack(k, .1, false);
     const [i, t] = phase(u, 4), e = [t, 1 - t, 0, 0][i], e2 = [0, 0, t, 1 - t][i];     // e: braccio sx + gamba dx, e2: braccio dx + gamba sx
     const legOf = x => ({th: V3(0, 1, 0).lerp(V3(0, .22, 1).normalize(), x).normalize(), sh: V3(0, 0, 1).lerp(V3(0, .2, 1).normalize(), x).normalize()});
@@ -914,6 +1149,11 @@ window.MOVES3D = (() => {
     [['l', 1, e2], ['r', -1, e]].forEach(([s, sg, x]) => { const L2 = legOf(x); k.legDir(s, L2.th.clone().add(V3(sg * .03, 0, 0)).normalize(), L2.sh, V3(0, .3, 1).normalize()); });
     [['l', 1, e], ['r', -1, e2]].forEach(([s, sg, x]) => { const d = armOf(x).add(V3(sg * .06, 0, 0)).normalize(); k.armDir(s, d, d, V3(-sg, 0, 0), .3); });
     k.headTo(V3(0, .1, -1).normalize());
+    if (o.kb || o.band) {
+      const c = shoulders(k).add(V3(0, .59, .02));
+      sides.forEach(([s, sg]) => k.arm(s, c.clone().add(V3(sg * .06, 0, 0)), V3(sg, .3, 0), V3(-sg, 0, 0)));
+      return {tools: o.kb ? [{t: 'kb', p: c, down: V3(0, 1, 0)}] : sides.map(([s]) => ({t: 'line', a: fist(k, s), b: V3(0, .5, -1.2), r: .008, c: 0xe68842}))};
+    }
     return {tools: []};
   }});
   M.hollow = o => ({seg: 1800, view: [70, 14], pose(k, u) {
@@ -933,12 +1173,13 @@ window.MOVES3D = (() => {
   }});
   // scalatori: dalla plancia alta, un ginocchio verso il petto e poi l'altro; nel cambio le anche salgono un po' (piccolo salto)
   M.climber = o => ({seg: 1400, cyc: true, view: [70, 14], pose(k, u) {
-    const V3 = k.V3, {dir} = plankLine(k, .51); k.headTo(dir.clone().add(V3(0, -.2, .2)).normalize());
+    const V3 = k.V3, {dir} = plankLine(k, o.suspension ? .56 : .51, -.85, o.suspension ? .3 : .1); k.headTo(dir.clone().add(V3(0, -.2, .2)).normalize());
     const sh = shoulders(k);
     sides.forEach(([s, sg], i) => {
       k.arm(s, V3(sg * .22, .05, sh.z + .04), V3(sg * .5, .5, -.6), V3(0, -1, 0)); k.grip(s, 0);
       const t = (1 - Math.cos((u + i * .5) * Math.PI * 2)) / 2;
       const ankle = V3(sg * .14, L(.10, .16, t), L(-.85, -.10, t));
+      if (o.suspension) ankle.y = 2.25 - Math.sqrt(1.96 * 1.96 - (ankle.z + 1) ** 2);
       // Solve from a fixed floor anchor to the tucked foot, with one knee bend plane.
       k.leg(s, ankle, V3(sg * .15, -1, .7), sg * 5);
       k.aim('foot.' + s, V3(0, -.8, -.6).lerp(V3(0, -.2, -1), t).normalize());
@@ -1200,12 +1441,15 @@ window.MOVES3D = (() => {
     if (eq === 'suspension') o.suspension = 1;
     if ((o.cable || o.band) && m[0] === 'ohp') o.machine = 0;
     if (baseId === 'triceps.pushdown') o.rope = 1;
+    if (m[0] === 'overheadExt' && (o.machine || o.ez)) o.seat = 1;
     if (baseId === 'core.hangingRaise' && eq === 'machine') o.knees = 1;
     if (baseId === 'core.woodchopper' && eq === 'dumbbell') o.low = 1;
     if (baseId === 'quads.lunge' && eq === 'barbell') o.hold = 'back';
     if (['quads.lunge', 'quads.bulgarianSplitSquat', 'quads.stepUp'].includes(baseId) && ['barbell', 'smith'].includes(eq)) o.hold = 'back';
     if (baseId === 'back.rackPull' && o.trap) o.kind = 'trap';
-    const mv = M[m[0]](o);
+    const mv = o.suspension && ['raise', 'facePull'].includes(m[0]) ? M.suspensionUpper({...o, mode: m[0]}) : M[m[0]](o);
+    if (o.suspension && m[0] === 'pushup') mv.anchorZ = -.9;
+    if (o.suspension && m[0] === 'abWheel') mv.anchorZ = 1.1;
     // Complex sequences need time for every phase, not the duration of a single repetition.
     const steps = {clean: o.press ? 5 : 4, pushPress: 3, snatch: 4, burpee: 5, deadBug: 4};
     if (steps[m[0]]) mv.duration = mv.seg * steps[m[0]] * 1.35;
@@ -1226,6 +1470,21 @@ window.MOVES3D = (() => {
     mv.pose = (k, u) => {
       const V3 = k.V3, result = originalPose(k, u) || {}, tools = result.tools || [];
       let gear = tools;
+      if (o.band && m[0] === 'pushup') {
+        const back = sides.map(([s, sg]) => k.onBone('spine3', [sg * .18, 1.35, -.15]));
+        gear.push({t: 'line', a: back[0], b: back[1], r: .012, c: 0xe68842});
+        sides.forEach(([s], i) => gear.push({t: 'line', a: back[i], b: fist(k, s), r: .012, c: 0xe68842}));
+      }
+      if (o.band && m[0] === 'thrust') {
+        gear = gear.filter(t => !['bar', 'db', 'line'].includes(t.t));
+        const hip = k.onBone('root', P.hipFront);
+        gear.push({t: 'line', a: hip.clone().setX(-.24), b: hip.clone().setX(.24), r: .02, c: 0xe68842});
+        sides.forEach(([s, sg]) => gear.push({t: 'line', a: hip.clone().setX(sg * .24), b: V3(sg * .60, .04, hip.z), r: .012, c: 0xe68842}));
+      }
+      if (o.band && m[0] === 'nordic') {
+        const c = k.onBone('spine3', P.sternum).add(V3(0, 0, .04));
+        sides.forEach(([s, sg]) => gear.push({t: 'line', a: c.clone().setX(sg * .12), b: V3(0, 1.5, -.75), r: .012, c: 0xe68842}));
+      }
       // Some older variants shared a pose but accidentally kept the wrong prop.
       if ((o.cable || o.band) && !gear.some(t => t.t === 'cable') && gear.some(t => ['bar', 'db'].includes(t.t))) {
         let anchor = V3(0, .12, .85);
@@ -1248,8 +1507,10 @@ window.MOVES3D = (() => {
       if (o.plate && !gear.some(t => t.t === 'plate')) {
         const back = ['pushup', 'plank'].includes(m[0]), hanging = ['pull', 'hang', 'dip'].includes(m[0]);
         const p = hanging ? mid(k.wp('thigh.l'), k.wp('thigh.r')).add(V3(0, -.18, .12)) :
-          back ? k.onBone('spine2', [0, 1.22, -.14]) : k.onBone('spine3', P.sternum).add(V3(0, .06, .06));
-        gear.push({t: 'plate', p, n: hanging ? V3(0, 0, 1) : back ? V3(0, 1, 0) : V3(0, 0, 1), r: .15});
+          back ? k.onBone('spine2', [0, 1.22, -.14]) : k.onBone('spine3', [0, 1.33, .18]);
+        const normal = k.onBone('spine3', [0, 1.33, .3]).sub(k.onBone('spine3', [0, 1.33, 0])).normalize();
+        gear.push({t: 'plate', p, n: hanging ? V3(0, 0, 1) : back ? normal.clone().negate() : normal, r: .15});
+        if (!back && !hanging) sides.forEach(([side, sg]) => k.arm(side, p.clone().add(V3(sg * .14, 0, 0)), V3(sg, -.5, 0), V3(-sg, 0, 0)));
         if (hanging) sides.forEach(([side, sg]) => gear.push({t: 'line', a: k.wp('root').add(V3(sg * .1, 0, .12)), b: p, r: .008, c: 0x202c3a}));
       }
       if (o.db && m[0] === 'plank' && o.side) gear.push(db(fist(k, 'l'), V3(1, 0, 0)));
@@ -1257,7 +1518,7 @@ window.MOVES3D = (() => {
         gear = gear.filter(t => !['bar', 'db', 'cable'].includes(t.t));
         const feetInStraps = ['plank', 'climber'].includes(m[0]);
         sides.forEach(([side, sg]) => {
-          const p = feetInStraps ? k.wp('foot.' + side) : fist(k, side), anchor = V3(sg * .2, 2.25, feetInStraps ? -1 : .45);
+          const p = feetInStraps ? k.wp('foot.' + side) : fist(k, side), anchor = V3(sg * .2, 2.25, feetInStraps ? -1 : mv.anchorZ ?? .45);
           gear.push({t: 'line', a: p, b: anchor, r: .009, c: 0xe68842},
             {t: 'line', a: p.clone().add(V3(-.06, 0, 0)), b: p.clone().add(V3(.06, 0, 0)), r: .018, c: 0x202c3a});
         });
@@ -1268,12 +1529,20 @@ window.MOVES3D = (() => {
       const onlyCableFrame = ['curl', 'pushdown', 'straightArm', 'facePull', 'cross', 'cableCrunch', 'pallof', 'chop', 'pullThrough'].includes(m[0]);
       if (originalBuild && !(o.band && onlyCableFrame) && !(o.suspension && m[0] === 'invRow')) originalBuild(k, g);
       // Complete low/high pulley variants whose old pose contained a floating cable.
-      if (o.cable && !o.band && ['raise', 'fly', 'kickback', 'overheadExt', 'pullover', 'skull', 'row1', 'curlConc', 'wristCurl', 'uprightRow', 'shrug', 'pushFwd', 'ohp'].includes(m[0])) {
+      if (o.cable && !o.band && ['raise', 'fly', 'kickback', 'overheadExt', 'pullover', 'skull', 'row1', 'curlConc', 'curlPreacher', 'wristCurl', 'uprightRow', 'shrug', 'pushFwd', 'ohp'].includes(m[0])) {
         const result = mv.pose(k, 0), anchors = new Map();
         (result.tools || []).filter(t => t.t === 'cable').forEach(t => anchors.set(t.b.toArray().join(','), t.b));
         anchors.forEach(p => stack(k, g, p.z, p.x));
       }
-      if (o.suspension) k.post(g, k.V3(-.45, 2.25, ['plank', 'climber'].includes(m[0]) ? -1 : .45), k.V3(.45, 2.25, ['plank', 'climber'].includes(m[0]) ? -1 : .45), .035);
+      if (o.band && m[0] === 'nordic') {
+        k.post(g, k.V3(0, .02, -.75), k.V3(0, 1.6, -.75), .035); k.post(g, k.V3(-.4, .02, -.75), k.V3(.4, .02, -.75), .04);
+      }
+      if (o.suspension) {
+        const z = ['plank', 'climber'].includes(m[0]) ? -1 : mv.anchorZ ?? .45;
+        k.post(g, k.V3(-.8, 2.25, z), k.V3(.8, 2.25, z), .035);
+        sides.forEach(([s, sg]) => { k.post(g, k.V3(sg * .8, .02, z), k.V3(sg * .8, 2.25, z), .035);
+          k.post(g, k.V3(sg * .8, .02, z - .35), k.V3(sg * .8, .02, z + .35), .035); });
+      }
     };
     return mv;
   }

@@ -71,6 +71,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const audit = await page.evaluate(() => {
       guidePlayback(true);
       const original = MOVES3D.get, rows = [], joints = ['root', 'head', 'uarm.l', 'uarm.r', 'farm.l', 'farm.r', 'hand.l', 'hand.r', 'thigh.l', 'thigh.r', 'shin.l', 'shin.r', 'foot.l', 'foot.r'];
+      // Numeric sampling needs the actual pose/IK and props, not 20,000 GPU draws.
+      // Rendering and interactions are exercised above and in visual reviews.
+      const renderer = G3D.dbg().R, render = renderer.render;
+      renderer.render = () => {};
       let sampleU, captures, current;
       MOVES3D.get = (id, eq) => {
         const m = original(id, eq), pose = m.pose;
@@ -112,7 +116,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
             rows.push({id, eq, finite, grip, jump, discontinuity, toolCount}); current.dispose(); current = null;
           }
         }
-      } finally { current?.dispose(); MOVES3D.get = original; }
+      } finally { current?.dispose(); MOVES3D.get = original; renderer.render = render; }
       return rows;
     });
     fs.writeFileSync(path.join(out, 'poses.json'), JSON.stringify(audit, null, 2));
@@ -122,6 +126,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert.deepEqual(badGrips, [], 'hand target outside reach');
     assert.deepEqual(jumps, [], 'discontinuous movement');
     checks.push(`131 movements, ${audit.length} equipment combinations, 61 poses each`);
+    const fallback = await page.evaluate(() => {
+      const invalid = [];
+      for (const [id, base] of Object.entries(BASE)) for (const eq of new Set(base.variants.map(v => v.eq))) {
+        const d = gdef(id, eq);
+        for (let i = 0; i < 24; i++) if (/NaN|undefined|Infinity/.test(gsvg(d, gpose(d, gtimeline(d, 0).duration * i / 24), eq, false))) invalid.push({id, eq, i});
+      }
+      const wristRise = id => { const d = gdef(id, 'barbell'); return gsolve(d.poses[0]).w[1] - gsolve(d.poses.at(-1)).w[1]; };
+      const d = gdef('fullbody.pushPress', 'barbell'), top = gsolve(d.poses.at(-1));
+      return {invalid, rowRise: wristRise('back.bentOverRow'), cleanRise: wristRise('fullbody.powerClean'), pressAboveHead: top.w[1] < top.head[1]};
+    });
+    assert.deepEqual(fallback.invalid, []);
+    assert.ok(fallback.rowRise > 15 && fallback.cleanRise > 60 && fallback.pressAboveHead, JSON.stringify(fallback));
+    checks.push('SVG fallback: all equipment combinations finite; row, clean rack and overhead lockout regressions');
     assert.deepEqual(errors, []); assert.deepEqual(failures, []); assert.deepEqual(responses, []);
     console.log(JSON.stringify({checks, errors, failures, responses}, null, 2));
   } finally {

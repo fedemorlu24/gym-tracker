@@ -1508,6 +1508,7 @@ function sheetSummary() {
     ${recoveryPanel(Date.now(), {short: true})}
     <p class="sub h">${t('week')}</p><p>${t('weekStatus', st.week, st.t, st.n)}</p>
     <p class="note" style="padding:12px 0 0">${improved && compared ? t('beatNote', improved, compared) : ''}${t('nextNote')}</p>
+    ${summaryDonationCard(s)}
     <div class="gap"></div><button class="btn s wide" data-act="share" data-k="session" data-a="${s.id}" style="background:var(--card)">${icon('share')} ${t('shareSession')}</button>
     <div class="gap"></div><button class="btn p wide" data-act="finish">${t('close')}</button>`);
 }
@@ -1792,12 +1793,21 @@ let shareText = '';
 // pagina Buy Me a Coffee (donazione volontaria): vuoto = il pulsante non compare
 const DONATE_URL = 'https://buymeacoffee.com/fedemorlu24';
 const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
-function donationCard() {
+function donationCard(subtle = false) {
   if (!DONATE_URL) return '';
-  return `<aside class="donation-card" aria-label="${t('donateTitle')}">
-    <div class="donation-copy"><b>${t('donateTitle')}</b><span>${t('donateOptional')}</span><p>${t('donateFree')}</p></div>
-    <a class="donation-button" href="${DONATE_URL}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🍺</span> ${t('donateBtn')} ${icon('external')}</a>
+  return `<aside class="donation-card${subtle ? ' donation-summary' : ''}" aria-label="${t('donateTitle')}">
+    <div class="donation-copy"><p>${t('donateText')}</p><span>${t('donateOptional')}</span></div>
+    <a class="donation-button" href="${DONATE_URL}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☕</span> ${t('donateBtn')} ${icon('external')}</a>
   </aside>`;
+}
+function summaryDonationCard(s) {
+  if (!DONATE_URL || db.donationNudgeSeen) return '';
+  // Use the same recorded-session definition as progress/badges; drafts do not count.
+  const done = doneSessions().sort((a, b) => a.date.localeCompare(b.date) || order(a) - order(b));
+  if (done.length !== 3 || done[2].id !== s.id) return '';
+  db.donationNudgeSeen = true;
+  save(); // Persist with the backup so reopening the summary never repeats the invitation.
+  return donationCard(true);
 }
 function sheetInvite() {
   const msg = t('inviteMsg', nick() || '🙂') + '\n' + INVITE_URL;

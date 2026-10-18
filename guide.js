@@ -29,7 +29,7 @@ function gsolve(p) {
   const dl = p.abs === false ? p.to - 180 : 0;
   const rot = v => gv(Math.atan2(v[0], v[1]) * 180 / Math.PI + dl, Math.hypot(v[0], v[1]));
   const arm = (hand, hr, ua, fa, hs) => {
-    if (ua != null) { const e = gadd(sho, gv(ua + dl, GL.ua)); return {e, w: gadd(e, gv(fa + dl, GL.fa))}; }
+    if (!hand && !hr && !hs && ua != null) { const e = gadd(sho, gv(ua + dl, GL.ua)); return {e, w: gadd(e, gv(fa + dl, GL.fa))}; }
     const r = gik(sho, hs ? gadd(sho, hs) : hand || gadd(sho, rot(hr)), GL.ua, GL.fa, p.es || 1); return {e: r.m, w: r.e};
   };
   const a1 = arm(p.hand, p.hr, p.ua, p.fa, p.hs);
@@ -42,9 +42,12 @@ function gsolve(p) {
 }
 const gmix = (a, b, t) => {
   const o = {};
+  const angles = new Set(['to', 'hd', 'th', 'sh', 'th2', 'sh2', 'ua', 'fa', 'ua2', 'fa2', 'ft', 'ft2', 'hnd', 'aL', 'aR', 'lL', 'lR']);
   Object.keys({...a, ...b}).forEach(k => {
     const x = a[k] !== undefined ? a[k] : b[k], y = b[k] !== undefined ? b[k] : a[k];
-    o[k] = Array.isArray(x) ? x.map((v, i) => v + (y[i] - v) * t) : typeof x === 'number' && k !== 'es' ? x + (y - x) * t : (t < .5 ? x : y);
+    let delta = y - x;
+    if (angles.has(k) && Math.abs(delta) > 180) delta = ((delta + 540) % 360) - 180;
+    o[k] = Array.isArray(x) ? x.map((v, i) => v + (y[i] - v) * t) : typeof x === 'number' && k !== 'es' ? x + delta * t : (t < .5 ? x : y);
   });
   return o;
 };
@@ -371,7 +374,21 @@ function gdef(baseId, eq) {
   if (baseId === 'triceps.pushdown' && eq === 'machine') o.seat = 1;
   if (baseId === 'core.hangingRaise' && eq === 'machine') o.knees = 1;
   if (baseId === 'core.woodchopper' && eq === 'dumbbell') o.low = 1;
-  return A[m[0]](o);
+  const def = A[m[0]](o);
+  // A sequence must use one arm representation throughout. Copying missing
+  // angles into a target-based keyframe froze rows and prevented clean racks.
+  if (!def.front && def.poses.some(p => p.ua != null) && def.poses.some(p => p.ua == null)) {
+    def.poses = def.poses.map(p => {
+      const s = gsolve(p), q = {...p, abs: true}, angle = (a, b) => Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
+      ['hand', 'hand2', 'hr', 'hr2', 'hs', 'hs2'].forEach(key => delete q[key]);
+      return {...q, ua: angle(s.sho, s.e), fa: angle(s.e, s.w), ua2: angle(s.sho, s.e2), fa2: angle(s.e2, s.w2)};
+    });
+  }
+  // The rack and press use different target coordinate systems too.
+  if (!def.front && def.poses.some(p => p.hs) && def.poses.some(p => p.hand)) {
+    def.poses = def.poses.map(p => { const s = gsolve(p), q = {...p, hand: s.w, hand2: s.w2}; ['hs', 'hs2', 'hr', 'hr2'].forEach(key => delete q[key]); return q; });
+  }
+  return def;
 }
 // una immagine dell'omino: ragazzo o ragazza, con l'attrezzo della variante
 function gsvg(def, P, eq, girl) {
