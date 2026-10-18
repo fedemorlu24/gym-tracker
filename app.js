@@ -138,6 +138,7 @@ function rel(d) {
 }
 const I = {
   back: '<path d="M15 5l-7 7 7 7"/>',
+  timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 3h5"/>',
   flip: '<path d="M4 12a8 4 0 0 0 14 2.6"/><path d="M20 12a8 4 0 0 0-14-2.6"/><path d="M15 12.5l3 2.2-.6-3.6M9 11.5l-3-2.2.6 3.6"/>',
   chart: '<path d="M4 19h16"/><path d="M5 15l4-4 4 3 6-7"/>',
   more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
@@ -532,7 +533,8 @@ function activePlan(np) {
 function programCard(np) {
   const p = activePlan(np);
   if (!p) return `<div class="dcard prog"><h3>${t('myProgram')}</h3><p class="sub" style="margin-top:4px">${t('programEmpty')}</p>
-      <div class="opts" style="margin-top:12px"><button class="btn p" data-act="starterplan">${t('starterPlanBtn')}</button><button class="btn s" data-act="newplan" style="background:var(--fill)">${t('newPlan')}</button></div></div>`;
+      <div class="opts" style="margin-top:12px"><button class="btn p" data-act="starterplan">${t('starterPlanBtn')}</button><button class="btn s" data-act="newplan" style="background:var(--fill)">${t('newPlan')}</button></div>
+      <button class="btn s wide" data-act="impplan" style="margin-top:8px;background:var(--fill)">${icon('camera')} ${t('impPlanBtn')}</button></div>`;
   const nextI = np && np.p === p ? np.i : p.days.findIndex(d => d.ex.length);
   const lastOf = i => [...db.sessions].filter(s => s.plan && s.plan.id === p.id && s.plan.day === i && s.exercises.some(e => e.sets.length)).sort((a, b) => b.date.localeCompare(a.date))[0];
   const rows = p.days.map((d, i) => {
@@ -791,6 +793,7 @@ function exOpen(s, e) {
       <p class="last">${prev ? t('lastTime', fmtShort(prev.date), prev.sets.map(setTxt).join(' · ')) : e.target ? '' : t('firstTime')}</p>
       ${rows ? `<ol class="sets">${rows}</ol>` : ''}
       ${goal}${stepper(e.id)}
+      <button class="restchip" data-act="exrest" data-eid="${e.id}">${icon('timer')} ${t('exRestBtn', exRestTxt(e))}</button>
       <div class="err" id="err-${e.id}" aria-live="polite"></div>
       <button class="btn p wide" data-act="addset" data-eid="${e.id}">${t('logSet', i + 1)}</button>
     </div></section>`;
@@ -943,9 +946,10 @@ function settingsView() {
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
     <p class="glabel">${t('socialSettings')}</p>
     <div class="group"><button class="row" data-act="socialset"><div class="grow"><h3>${t('nickname')}</h3><div class="sub">${esc(nick()) || t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
-    <button class="row" data-act="socialset"><div class="grow"><h3>${t('groupLink')}</h3><div class="sub">${db.social && db.social.group ? 'chat.whatsapp.com' : t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button></div>
+    <button class="row" data-act="contacts"><div class="grow"><h3>${t('friendsWa')}</h3><div class="sub">${contacts().length ? t('friendsCount', contacts().length) : t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('restSetting')}</p>
-    <div class="opts three">${[0, 60, 90, 120, 180, 240].map(v => `<button class="chip" data-act="restset" data-v="${v}" aria-pressed="${restDefault() === v}">${v ? mmss(v) : t('restOff')}</button>`).join('')}</div>
+    <div class="opts"><button class="chip" data-act="restpower" data-on="1" aria-pressed="${!!restDefault()}">${t('restOn')}</button><button class="chip" data-act="restpower" data-on="0" aria-pressed="${!restDefault()}">${t('restOff')}</button></div>
+    ${restDefault() ? `<div class="opts three" style="margin-top:8px">${[60, 90, 120, 180, 240].map(v => `<button class="chip" data-act="restset" data-v="${v}" aria-pressed="${restDefault() === v}">${mmss(v)}</button>`).join('')}</div>` : ''}
     <p class="note" style="padding:8px 4px 0">${t('restText')} ${t('restScreen')}</p>
     <p class="glabel">${t('theme')}</p>
     <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'auto') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
@@ -1281,7 +1285,8 @@ function sheetBackup() {
   sheet(`<h2>${t('backup')}</h2>
     <p class="sub" style="margin-bottom:14px">${t('backupText')}</p>
     <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button><div class="gap"></div>
-    <button class="btn s wide" data-act="import">${t('importData')}</button>
+    <button class="btn s wide" data-act="import">${t('importData')}</button><div class="gap"></div>
+    <button class="btn s wide" data-act="impcsv">${t('impCsvBtn')}</button>
     <input type="file" id="imp" accept=".json,application/json" hidden>`);
   document.getElementById('imp').onchange = e => importData(e.target);
   prepareBackup().then(f => { const b = document.getElementById('exp-btn');
@@ -1483,21 +1488,31 @@ function openInstall() {
   const el = document.getElementById('install'), safari = isIOS && !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua);
   el.innerHTML = `<img class="logo-big" src="icons/icon-512.png" alt="">
     <h1>${t('installH')}</h1><p>${t('installP')}</p>
-    ${isIOS ? (safari ? `<ol class="steps">
-        <li><span>${t('iosStep1')}<small>${t('iosStep1b')}</small></span>${icon('share')}</li>
-        <li><span>${t('iosStep2')}</span>${icon('addsq')}</li>
-        <li><span>${t('iosStep3')}</span></li></ol>
-        ${navigator.share ? `<button class="btn p wide" data-act="nativeshare">${icon('share')} ${t('openShare')}</button><div class="gap"></div>` : ''}`
+    ${isIOS ? (safari ? `<ol class="steps">${iosSteps(true)}</ol>`
       : `<p class="warn" style="margin-top:20px">${t('notSafari')}</p>`)
     : installEvt ? `<div class="gap"></div><button class="btn p wide" data-act="installnow">${t('installNow')}</button><div class="gap"></div>`
       : `<p class="warn" style="margin-top:20px">${t('androidSteps')}</p>`}
     <p class="warn">${t('browserWarn')}</p>
-    <button class="btn s wide" data-act="installclose">${t('useInBrowser')}</button>
-    ${isIOS && safari ? `<div class="point">${icon('arrow')}</div>` : ''}`;
+    <button class="btn ${isIOS && safari ? 'p' : 's'} wide" data-act="installclose">${t('useInBrowser')}</button>`;
   el.hidden = false;
+}
+// passi per iPhone: prima si chiude questa guida, poi si usa il menu di Safari (⋯ in basso a destra)
+function iosSteps(withFirst) {
+  const li = (k, ic) => `<li><span>${t(k)}</span>${ic ? icon(ic) : ''}</li>`;
+  return (withFirst ? li('iosA') : '') + li('iosB', 'more') + li('iosC', 'share') + li('iosD', 'down') + li('iosE', 'addsq');
+}
+// promemoria che resta sopra Safari dopo "Continua nel browser", finché non lo chiudi
+function showInstallTip() {
+  if (document.getElementById('install-tip') || !isIOS || standalone()) return;
+  const el = document.createElement('div');
+  el.id = 'install-tip'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', t('tipTitle'));
+  el.innerHTML = `<b>${t('tipTitle')}</b><ol class="steps">${iosSteps(false)}</ol>
+    <button class="btn s wide" data-act="tipclose">${t('tipDone')}</button>`;
+  document.body.appendChild(el);
 }
 function closeInstall() {
   document.getElementById('install').hidden = true;
+  if (isIOS && !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua)) showInstallTip();
   try { sessionStorage.setItem('install-skip', '1'); } catch (e) {}
   if (!db.tourSeen) openTour();
 }
@@ -1530,10 +1545,32 @@ async function keepAwake(on) {
 }
 function startRest(name, next, planRest) {
   if (!restDefault()) return;   // spento dalle impostazioni: vale per tutti gli esercizi
-  const sec = (db.rest && db.rest[key(name)]) || planRest || restDefault();
+  const own = db.rest && db.rest[key(name)];
+  if (own === 0) return;   // spento per questo esercizio
+  const sec = own || planRest || restDefault();
   unlockAudio();
   rest = {name, next, total: sec, end: Date.now() + sec * 1000};
   keepRest(); keepAwake(true); drawRest();
+}
+// recupero che si userà per un esercizio: scelto da te, della scheda o predefinito (0 = nessun timer)
+function exRest(e) {
+  const own = db.rest && db.rest[key(e.name)];
+  if (!restDefault()) return {sec: 0, src: 'off'};
+  if (own === 0) return {sec: 0, src: 'exoff'};
+  if (own) return {sec: own, src: 'own'};
+  if (e.target && e.target.rest) return {sec: e.target.rest, src: 'plan'};
+  return {sec: restDefault(), src: 'default'};
+}
+const exRestTxt = e => { const r = exRest(e); return r.sec ? mmss(r.sec) : t('restOff'); };
+function sheetExRest(eid) {
+  const e = sess(view.id).exercises.find(x => x.id === eid), cur = db.rest && db.rest[key(e.name)];
+  const base = (e.target && e.target.rest) || restDefault() || 90;
+  const chip = (v, label, on) => `<button class="chip" data-act="exrestset" data-eid="${eid}" data-v="${v}" aria-pressed="${on}">${label}</button>`;
+  sheet(`<h2>${t('exRestTitle')}</h2><p class="sub" style="margin-bottom:12px">${esc(e.name)}</p>
+    <div class="opts three">${chip('auto', `${t('exRestAuto')} · ${mmss(base)}`, cur === undefined)}${chip('0', t('restOff'), cur === 0)}
+    ${[30, 45, 60, 90, 120, 150, 180, 240, 300].map(v => chip(v, mmss(v), cur === v)).join('')}</div>
+    ${restDefault() ? '' : `<p class="warn" style="margin-top:12px">${t('exRestMaster')}</p>`}
+    <p class="note" style="padding:12px 0 0">${t('exRestHint')}</p>`);
 }
 function adjustRest(d) {
   if (!rest || rest.done) return;
@@ -1624,7 +1661,6 @@ function friendsView() {
   const me = {...myChallenge(), n: nick() || t('you'), me: true}, fr = Object.values(db.friends || {});
   let html = `<div class="opts" style="margin-bottom:12px"><button class="btn p" data-act="sendchallenge">${t('challengeSend')}</button>
     <button class="btn s" data-act="pastechallenge">${t('challengePaste')}</button></div>`;
-  if (db.social && db.social.group) html += `<button class="btn s wide" data-act="opengroup" style="margin-bottom:12px">${t('openGroup')}</button>`;
   if (!fr.length) return html + `<div class="empty" style="padding:28px 12px">${t('boardEmpty')}</div>`;
   const all = [me, ...fr];
   const board = (title, val, fmtv) => `<p class="glabel">${title}</p><div class="group">${[...all].sort((a, b) => val(b) - val(a)).map((p, i) =>
@@ -1655,11 +1691,69 @@ function sheetSendChallenge() {
   const link = challengeLink(), msg = t('challengeMsg', nick()) + '\n' + link;
   sheet(`<h2>${t('challengeSend')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('challengeMsg', nick()))}</p>
     <button class="btn p wide" data-act="sharetext">${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
-    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a><div class="gap"></div>
+    ${friendsToSend(msg, sheetSendChallenge)}<div class="gap"></div>
     <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
   shareText = msg;
 }
 let shareText = '';
+
+// ---------- amici su WhatsApp, uno per uno (nessun gruppo: gli amici non si conoscono tra loro) ----------
+// I numeri restano solo sul telefono (e nel file di backup). wa.me apre la chat con quella persona.
+const contacts = () => db.contacts || (db.contacts = []);
+function waNumber(raw) {
+  let d = String(raw || '').trim();
+  const plus = d.startsWith('+'); d = d.replace(/\D/g, '');
+  if (!plus && d.startsWith('00')) d = d.slice(2);
+  else if (!plus && lang === 'it' && /^3\d{9}$/.test(d)) d = '39' + d;   // cellulare italiano senza prefisso
+  return d.length >= 8 && d.length <= 15 ? d : '';
+}
+const waLink = (c, msg) => `https://wa.me/${c && c.tel ? c.tel : ''}?text=${encodeURIComponent(msg)}`;
+let afterContact = null;  // cosa riaprire dopo aver aggiunto o modificato un amico
+// elenco degli amici con un pulsante WhatsApp ciascuno; «altra persona» lascia scegliere la chat a WhatsApp
+function friendsToSend(msg, reopen) {
+  afterContact = reopen;
+  const list = contacts();
+  return `<p class="glabel">${t('sendToFriend')}</p>` +
+    (list.length ? `<div class="list">${list.map(c => `<div class="row friendrow"><a class="grow" href="${waLink(c, msg)}" target="_blank" rel="noopener"><h3>${esc(c.n)}</h3>
+      <div class="sub">${c.tel ? '+' + c.tel : t('noNumber')}</div></a><button class="ib" data-act="editcontact" data-id="${c.id}" aria-label="${esc(t('edit'))}">${icon('more')}</button></div>`).join('')}</div>`
+      : `<p class="sub" style="margin-bottom:8px">${t('noFriendsYet')}</p>`) +
+    `<div class="opts" style="margin-top:8px"><button class="btn s" data-act="addcontact" style="background:var(--fill)">${icon('plus')} ${t('addFriendBtn')}</button>
+      <a class="btn s" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" style="background:var(--fill)">${t('waOther')}</a></div>`;
+}
+function sheetContacts() {
+  afterContact = sheetContacts;
+  const list = contacts();
+  sheet(`<h2>${t('friendsWa')}</h2><p class="sub" style="margin-bottom:12px">${t('friendsWaText')}</p>
+    ${list.length ? `<div class="list">${list.map(c => `<button class="row" data-act="editcontact" data-id="${c.id}"><div class="grow"><h3>${esc(c.n)}</h3><div class="sub">${c.tel ? '+' + c.tel : t('noNumber')}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div><div class="gap"></div>` : ''}
+    <button class="btn p wide" data-act="addcontact">${icon('plus')} ${t('addFriendBtn')}</button>`);
+}
+function sheetContact(id) {
+  const c = contacts().find(x => x.id === id) || {};
+  const canPick = 'contacts' in navigator && 'ContactsManager' in window;
+  sheet(`<h2>${c.id ? esc(c.n) : t('addFriendBtn')}</h2>
+    ${canPick ? `<button class="btn s wide" data-act="pickcontact" type="button" style="background:var(--fill);margin-bottom:12px">${t('pickContact')}</button>` : ''}
+    <form data-form="contact" data-id="${c.id || ''}"><label class="field">${t('name')}<input name="n" value="${esc(c.n || '')}" maxlength="30" autocomplete="off" ${c.id ? '' : 'data-focus'}></label>
+    <label class="field">${t('friendTel')}<input name="p" value="${c.tel ? '+' + c.tel : ''}" inputmode="tel" placeholder="+39 333 1234567" autocomplete="off"></label>
+    <p class="sub" style="margin-bottom:12px">${t('friendTelHint')}</p>
+    <button class="btn p wide">${t('save')}</button></form>
+    ${c.id ? `<div class="gap"></div><button class="btn d wide" data-act="delcontact" data-id="${c.id}">${t('removeContact')}</button>` : ''}`);
+}
+function pickContact() {
+  navigator.contacts.select(['name', 'tel'], {multiple: false}).then(r => {
+    const c = r && r[0]; if (!c) return;
+    const f = document.querySelector('[data-form=contact]');
+    if (f) { if (c.name && c.name[0]) f.n.value = c.name[0].slice(0, 30); if (c.tel && c.tel[0]) f.p.value = c.tel[0]; }
+  }).catch(() => {});
+}
+function saveContact(f) {
+  const n = f.n.value.trim().slice(0, 30), raw = f.p.value.trim(), tel = waNumber(raw);
+  if (!n) return f.n.focus();
+  if (raw && !tel) return alert(t('friendTelBad'));
+  const id = f.dataset.id, c = contacts().find(x => x.id === id);
+  if (c) { c.n = n; c.tel = tel; } else contacts().push({id: uid(), n, tel});
+  save(); closeSheet(); render(); toast(t('saved'));
+  if (afterContact) setTimeout(afterContact, 350);
+}
 function sheetPasteChallenge() {
   // prima prova a leggere gli appunti (iOS chiede conferma con "Incolla"), altrimenti campo di testo
   const ask = () => sheet(`<h2>${t('challengePaste')}</h2><form data-form="paste"><label class="field">${t('pastePrompt')}<textarea name="x" rows="4" data-focus></textarea></label>
@@ -1793,7 +1887,7 @@ async function openShare(kind, arg) {
     <img class="big-img" src="${url}" alt="" style="aspect-ratio:4/5;object-fit:cover">
     <div class="gap"></div><button class="btn p wide" data-act="sharefile">${t('shareImage')}</button><div class="gap"></div>
     <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a>
-    ${db.social && db.social.group ? `<div class="gap"></div><button class="btn s wide" data-act="opengroup">${t('openGroup')}</button>` : ''}`);
+`);
 }
 function shareNow() {
   if (shareFile && navigator.canShare && navigator.canShare({files: [shareFile]})) navigator.share({files: [shareFile], text: shareText}).catch(() => {});
@@ -1803,8 +1897,6 @@ function sheetSocialSettings() {
   const so = db.social || {};
   sheet(`<h2>${t('socialSettings')}</h2>
     <form data-form="social"><label class="field">${t('nickname')}<input name="n" value="${esc(so.name || '')}" placeholder="${esc(t('nicknamePh'))}" maxlength="30" autocomplete="nickname"></label>
-    <label class="field">${t('groupLink')}<input name="g" value="${esc(so.group || '')}" placeholder="https://chat.whatsapp.com/…" inputmode="url" autocomplete="off"></label>
-    <p class="sub">${t('groupLinkHint')}</p>
     <button class="btn p wide">${t('save')}</button></form>`);
 }
 
@@ -1828,7 +1920,8 @@ function plansSection() {
     ${ps.length ? `<div class="list">${ps.map(p => `<button class="row" data-act="plan" data-id="${p.id}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
       <div class="grow"><h3>${esc(p.name)}</h3><div class="sub">${p.author ? esc(t('planBy', p.author, p.role)) + ' · ' : ''}${t('daysN', p.days.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div>`
       : `<p class="sub" style="margin:0 2px 8px">${t('plansEmpty')}</p>`}
-    <div class="opts" style="margin:10px 0 18px"><button class="btn s" data-act="newplan">${icon('plus')} ${t('newPlan')}</button><button class="btn s" data-act="pasteplan">${t('pastePlan')}</button></div>
+    <div class="opts" style="margin:10px 0 8px"><button class="btn s" data-act="newplan">${icon('plus')} ${t('newPlan')}</button><button class="btn s" data-act="pasteplan">${t('pastePlan')}</button></div>
+    <button class="btn s wide" data-act="impplan" style="margin-bottom:18px">${icon('camera')} ${t('impPlanBtn')}</button>
     <p class="glabel">${t('tabWorkouts')}</p>`;
 }
 function planView() {
@@ -1929,7 +2022,7 @@ function sheetSendPlan(id) {
   shareText = t('planMsg', p.author || nick() || '🙂', p.name) + '\n' + APP_URL + '#scheda=' + b64e(planPayload(p));
   sheet(`<h2>${t('sendPlan')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('planMsg', p.author || nick() || '🙂', p.name))}</p>
     <button class="btn p wide" data-act="sharetext">${icon('share')} ${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
-    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a><div class="gap"></div>
+    ${friendsToSend(shareText, () => sheetSendPlan(id))}<div class="gap"></div>
     <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
 }
 // incolla: riconosce sia le schede sia le sfide
@@ -2035,6 +2128,11 @@ const acts = {
   toggle: b => { const y = window.scrollY; view.open = b.dataset.eid; render(); window.scrollTo(0, y);
     const el = document.getElementById('ex-' + b.dataset.eid); if (el) el.scrollIntoView({block: 'nearest', behavior: 'smooth'}); },
   exmenu: b => sheetExMenu(b.dataset.eid),
+  exrest: b => sheetExRest(b.dataset.eid),
+  exrestset: b => { const e = sess(view.id).exercises.find(x => x.id === b.dataset.eid), v = b.dataset.v;
+    db.rest = {...(db.rest || {})};
+    if (v === 'auto') delete db.rest[key(e.name)]; else db.rest[key(e.name)] = +v;
+    save(); closeSheet(); const y = window.scrollY; render(); window.scrollTo(0, y); toast(t('exRestSaved', esc(e.name), exRestTxt(e))); },
   delex: b => { const s = sess(view.id), eid = b.dataset.eid, n = s.exercises.find(e => e.id === eid).name; closeSheet();
     undoable(t('delExDone', esc(n)), () => { s.exercises = s.exercises.filter(e => e.id !== eid); }); },
   editset: b => sheetEditSet(b.dataset.eid, +b.dataset.i),
@@ -2076,6 +2174,7 @@ const acts = {
   tourend: closeTour,
   install: openInstall,
   installclose: closeInstall,
+  tipclose: () => { const e = document.getElementById('install-tip'); if (e) e.remove(); },
   installnow: () => { if (installEvt) installEvt.prompt(); },
   share: b => openShare(b.dataset.k, b.dataset.a),
   sharefile: shareNow,
@@ -2100,12 +2199,20 @@ const acts = {
   planexdel: b => { plans()[view.id].days[+b.dataset.i].ex.splice(+b.dataset.j, 1); save(); closeSheet(); render(); },
   friend: b => sheetFriend(b.dataset.id),
   delfriend: b => { const id = b.dataset.id, n = db.friends[id].n; closeSheet(); undoable(t('friendRemoved', esc(n)), () => { delete db.friends[id]; }); },
-  opengroup: () => { if (db.social && db.social.group) window.open(db.social.group, '_blank'); },
+  contacts: () => sheetContacts(),
+  addcontact: () => sheetContact(),
+  editcontact: b => sheetContact(b.dataset.id),
+  pickcontact: pickContact,
+  delcontact: b => { const id = b.dataset.id; closeSheet(); undoable(t('contactRemoved'), () => { db.contacts = contacts().filter(c => c.id !== id); }); },
   socialset: sheetSocialSettings,
   restless: () => adjustRest(-15),
   restmore: () => adjustRest(15),
   restskip: stopRest,
-  restset: b => { db.settings = {...(db.settings || {}), rest: +b.dataset.v}; save(); render(); },
+  restset: b => { db.settings = {...(db.settings || {}), rest: +b.dataset.v, restLast: +b.dataset.v}; save(); render(); },
+  // acceso/spento per tutta l'app: da spento nessun timer parte e quello in corso si ferma; riacceso, torna l'ultimo tempo scelto
+  restpower: b => { const on = b.dataset.on === '1', st = db.settings || {};
+    db.settings = {...st, rest: on ? (st.restLast || (st.rest || 90)) : 0, restLast: restDefault() || st.restLast || 90};
+    if (!on) stopRest(); save(); render(); },
   nativeshare: () => navigator.share({title: t('shareTitle'), url: location.href}).catch(() => {}),
 };
 const forms = {
@@ -2115,10 +2222,10 @@ const forms = {
   planex: f => { const x = plans()[view.id].days[+f.dataset.i].ex[+f.dataset.j];
     x.sets = Math.min(20, Math.max(1, parseInt(f.s.value, 10) || 3)); x.reps = f.r.value.trim().slice(0, 12) || x.reps;
     x.rest = Math.min(900, Math.max(0, parseInt(f.t.value, 10) || 0)); x.note = f.n.value.trim().slice(0, 120); save(); closeSheet(); render(); },
+  contact: f => saveContact(f),
   social: f => {
-    const n = f.n.value.trim(), g = f.g.value.trim();
-    if (g && !/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+/.test(g)) return alert(t('groupInvalid'));
-    social().name = n.slice(0, 30); social().group = g; save(); closeSheet(); render(); toast(t('saved'));
+    const n = f.n.value.trim();
+    social().name = n.slice(0, 30); save(); closeSheet(); render(); toast(t('saved'));
   },
   newsession: f => { const n = f.n.value.trim(); if (n) createSession(n); else f.n.focus(); },
   addex: f => { const n = f.n.value.trim(); if (!n) return f.n.focus();
