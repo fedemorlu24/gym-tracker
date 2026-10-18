@@ -1,10 +1,20 @@
-# Revisione sicurezza — v69
+# Revisione sicurezza — v69 / v70
 
 19 ottobre 2026. Candidato locale richiesto da Luca con «riesci a correggere?»
 dopo la verifica dei rischi residui della v68. **Non ancora pubblicato.**
 Gli esiti sotto riguardano le verifiche locali concluse; ricevute di pubblicazione
 e verifiche live saranno aggiunte separatamente. La sezione v68 seguente
 è storica e descrive il comportamento prima di queste modifiche.
+
+## v70: avvertenza del backup
+
+La verifica visiva live della v69 ha rilevato un testo rimasto al comportamento
+precedente: indicava che il backup JSON consentiva sempre di usare la chiave.
+Nella v70 l'avvertenza distingue, in tutte e cinque le lingue, la password della
+chat (chiave protetta) e la password del backup (intero file). Non cambia
+crittografia, migrazione o messaggistica. La verifica Playwright dedicata
+controlla testo, layout mobile, export utilizzabile e presenza del solo vault;
+prove e ricevute di pubblicazione in `artifacts/release-v70/`.
 
 ## Protezione locale della stessa identità chat
 

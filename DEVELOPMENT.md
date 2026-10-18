@@ -4,7 +4,7 @@ A free, offline-first workout diary for the gym, built as a Progressive Web App.
 
 **Live app:** https://fedemorlu24.github.io/gym-tracker/
 
-For the v69 vault and framing changes, see `SECURITY_REMEDIATION.md`. Local pre-release checks are documented there; publication and live upgrade receipts are kept separately in `artifacts/release-v69/`.
+For the v69 vault and framing changes and the v70 backup-warning clarification, see `SECURITY_REMEDIATION.md`. Local pre-release checks are documented there; publication and live upgrade receipts are kept separately in `artifacts/release-v69/` and `artifacts/release-v70/`.
 
 Open it on your phone and use *Add to Home Screen*. There is no account, no server, no subscription and no ads: everything stays on your device.
 
