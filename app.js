@@ -636,7 +636,7 @@ function stepper(eid) {
       <button data-act="step" data-eid="${eid}" data-f="${f}" data-d="-1" aria-label="${t('less', label)}">${icon('minus')}</button>
       <label><input id="${f}-${eid}" data-eid="${eid}" data-f="${f}" type="text" inputmode="${mode}" autocomplete="off" value="${val === '' ? '' : f === 'kg' ? fmtKg(val) : val}" placeholder="–" aria-label="${label}"><span class="u">${u}</span></label>
       <button data-act="step" data-eid="${eid}" data-f="${f}" data-d="1" aria-label="${t('more', label)}">${icon('plus')}</button></div>`;
-  return `<div class="entry" id="entry-${eid}">${one('reps', d.reps, t('reps'), 'numeric', t('reps'))}${one('kg', d.kg, 'kg', 'decimal', t('kgWord'))}</div>`;
+  return `<div class="entry" id="entry-${eid}">${one('reps', d.reps, t('repsShort'), 'numeric', t('reps'))}${one('kg', d.kg, 'kg', 'decimal', t('kgWord'))}</div>`;
 }
 
 // ---------- progressi esercizio ----------
@@ -1088,7 +1088,7 @@ function tourSlides() {
     [`<img class="logo-big" src="icons/icon-512.png" alt="">`, t('t1h'), t('t1p') +
       `<div class="chips">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>`],
     ['', t('t7h'), t('t7p') + `<form data-form="profile" data-tour="1">${profileFields(profile())}<button class="btn s wide" style="background:var(--fill)">${t('saveProfile')}</button></form>`],
-    [`<div class="mock"><h4>${bench}</h4><div class="entry">${mockStep(8, t('reps'))}${mockStep(70, 'kg')}</div><div class="btn p wide">${t('logSet', 1)}</div></div>`, t('t2h'), t('t2p')],
+    [`<div class="mock"><h4>${bench}</h4><div class="entry">${mockStep(8, t('repsShort'))}${mockStep(70, 'kg')}</div><div class="btn p wide">${t('logSet', 1)}</div></div>`, t('t2h'), t('t2p')],
     [`<div class="mock"><h4>${bench}</h4><p class="last">${t('lastTime', fmtShort(addDays(today(), -7)), `8 × 70 · 7 × 70`)}</p>
       <div class="setrow"><span class="n">1</span><span class="f">9 <small>${rs} ×</small> 70</span><span class="tag pr">${t('record')}</span></div>
       <div class="goal"><span class="chip" aria-pressed="true" style="display:inline-flex;align-items:center">8 × 70 kg</span><span class="chip" style="display:inline-flex;align-items:center">7 × 72${DEC}5 kg</span></div></div>`, t('t3h'), t('t3p')],

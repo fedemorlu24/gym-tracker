@@ -281,3 +281,15 @@ border-top:1px solid var(--line);padding:6px 8px calc(env(safe-area-inset-bottom
 .wk td.up{background:var(--up-soft);box-shadow:inset 0 0 0 1.5px var(--up)}
 .wk td.down{background:var(--down-soft);box-shadow:inset 0 0 0 1.5px var(--danger)}
 .wk td.none{background:none;color:var(--line);text-align:center;cursor:default}
+
+/* ripetizioni e kg su due righe: il numero ha sempre spazio anche con 3–4 cifre */
+.ex-body .entry,.mock .entry{grid-template-columns:1fr;gap:8px}
+.ex-body .step,.mock .step{height:58px}
+.ex-body .step button,.mock .step button{width:64px;height:58px}
+.ex-body .step label,.mock .step label{flex-direction:row;justify-content:center;align-items:baseline;gap:6px}
+.ex-body .step label,.mock .step label{min-width:0}
+.ex-body .step input,.mock .step input{flex:0 1 7ch;width:7ch;min-width:3.5ch}
+.ex-body .step .u,.mock .step .u{margin:0;font-size:14px;text-align:left;flex:none}
+@media(max-width:360px){.ex-body .step button,.mock .step button{width:48px}}
+
+.mock .step input{flex-basis:4ch;width:4ch}
