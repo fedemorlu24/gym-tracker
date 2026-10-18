@@ -818,12 +818,15 @@ window.MOVES3D = (() => {
     sides.forEach(([s, sg]) => k.arm(s, c.clone().add(V3(sg * .03, 0, 0)), V3(sg, -.6, 0), V3(-sg, 0, 0)));
     return {tools: [{t: 'line', a: V3(0, .04, 1.6), b: c, r: .016}, {t: 'plate', p: c.clone().add(V3(0, .06, -.1)), n: c.clone().sub(V3(0, .04, 1.6)).normalize(), r: .16}]};
   }});
-  M.deadBug = o => ({seg: 1600, cyc: true, view: [60, 22], pose(k, u) {
+  // dead bug: schiena a terra, braccia verso il soffitto, anche e ginocchia a 90° (tibie parallele al pavimento);
+  // si allungano braccio e gamba opposti fin quasi a terra, si torna e si cambia lato
+  M.deadBug = o => ({seg: 1500, cyc: true, view: [60, 22], pose(k, u) {
     const V3 = k.V3; floorBack(k, .1, false);
-    const [i, t] = phase(u, 4), ext = [0, t, 1, 1 - t][i] * (u < .5 ? 1 : 0) + [0, 0, 0, 0][i], ext2 = u >= .5 ? Math.sin((u - .5) * 2 * Math.PI) : 0, e1 = u < .5 ? Math.sin(u * 2 * Math.PI) : 0;
-    sides.forEach(([s, sg]) => { const e = s === 'l' ? e1 : ext2, a = L(90, 12, e) * k.RAD, kn = L(90, 0, e) * k.RAD;
-      k.legDir(s, V3(sg * .03, Math.sin(a), Math.cos(a)).normalize(), V3(0, Math.sin(a) - Math.sin(kn), Math.cos(a) + Math.cos(kn) * 0 + .001).normalize().lerp(V3(0, Math.sin(a), Math.cos(a)), e).normalize()); });
-    sides.forEach(([s, sg]) => { const e = s === 'l' ? ext2 : e1, a = L(0, 85, e) * k.RAD; const d = V3(sg * .1, Math.cos(a), -Math.sin(a)).normalize(); k.armDir(s, d, d, V3(-sg, 0, 0), .3); });
+    const [i, t] = phase(u, 4), e = [t, 1 - t, 0, 0][i], e2 = [0, 0, t, 1 - t][i];     // e: braccio sx + gamba dx, e2: braccio dx + gamba sx
+    const legOf = x => ({th: V3(0, 1, 0).lerp(V3(0, .22, 1).normalize(), x).normalize(), sh: V3(0, 0, 1).lerp(V3(0, .2, 1).normalize(), x).normalize()});
+    const armOf = x => V3(0, 1, 0).lerp(V3(0, .15, -1).normalize(), x).normalize();
+    [['l', 1, e2], ['r', -1, e]].forEach(([s, sg, x]) => { const L2 = legOf(x); k.legDir(s, L2.th.clone().add(V3(sg * .03, 0, 0)).normalize(), L2.sh, V3(0, .3, 1).normalize()); });
+    [['l', 1, e], ['r', -1, e2]].forEach(([s, sg, x]) => { const d = armOf(x).add(V3(sg * .06, 0, 0)).normalize(); k.armDir(s, d, d, V3(-sg, 0, 0), .3); });
     k.headTo(V3(0, .1, -1).normalize());
     return {tools: []};
   }});

@@ -269,6 +269,12 @@ for it in range(3):
     acc = np.zeros_like(W); cnt = np.zeros(len(W))
     np.add.at(acc, E[:, 0], W[E[:, 1]]); np.add.at(acc, E[:, 1], W[E[:, 0]]); np.add.at(cnt, E[:, 0], 1); np.add.at(cnt, E[:, 1], 1)
     W = .5 * W + .5 * acc / np.maximum(cnt, 1)[:, None]
+# sulle mani qualche passaggio in piu': le nocche si piegano senza che le dita sembrino pezzi staccati
+hm = np.isin(lab[:, 0], [KINDS.index('hand'), KINDS.index('wrist')])
+for it in range(6):
+    acc = np.zeros_like(W); cnt = np.zeros(len(W))
+    np.add.at(acc, E[:, 0], W[E[:, 1]]); np.add.at(acc, E[:, 1], W[E[:, 0]]); np.add.at(cnt, E[:, 0], 1); np.add.at(cnt, E[:, 1], 1)
+    W[hm] = .4 * W[hm] + .6 * (acc / np.maximum(cnt, 1)[:, None])[hm]
 W[W < .02] = 0; W /= W.sum(1, keepdims=True)
 
 # mappa dei muscoli dipinta sulla pelle: gruppo del muscolo superficiale piu' vicino + vicinanza

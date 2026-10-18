@@ -311,7 +311,7 @@ window.G3D = (() => {
     } finally { Object.assign(GL, save); }
     const bb = new T.Box3().setFromPoints(pts), c = bb.getCenter(new T.Vector3()), sz = bb.getSize(new T.Vector3());
     const rad = Math.max(.78, Math.hypot(sz.y, Math.max(sz.x, sz.z)) / 2 + .12);
-    return {c, rad};
+    return {c, sz, rad};
   }
 
   // ---------- tecnica 3D per esercizio ----------
@@ -444,7 +444,7 @@ window.G3D = (() => {
         (r.tools || []).forEach(t => { if (t.t === 'bar') pts.push(t.c.clone().setX(.8), t.c.clone().setX(-.8)); else if (t.p) pts.push(t.p); }); });
       if (cus.build) { reset(); cus.build(kit, bgG); bgG.updateMatrixWorld(true); new T.Box3().setFromObject(bgG).isEmpty() || (b3 => pts.push(b3.min, b3.max))(new T.Box3().setFromObject(bgG)); }
       const bb = new T.Box3().setFromPoints(pts.concat([V3(0, 0, 0)].map(p => p.setY(0).setZ(pts[0].z)))), c = bb.getCenter(new T.Vector3()), sz = bb.getSize(new T.Vector3());
-      fr = {c, rad: Math.max(.75, Math.hypot(sz.y, Math.max(sz.x, sz.z)) / 2 + .08)};
+      fr = {c, sz, rad: Math.max(.75, Math.hypot(sz.y, Math.max(sz.x, sz.z)) / 2 + .08)};
     } else { fr = frame(def, eq, opt); buildBg(def, eq, opt); }
     stage.innerHTML = ''; stage.appendChild(canvas);
     let az = (cus && cus.view ? cus.view[0] : 38) * RAD, el = (cus && cus.view ? cus.view[1] : 15) * RAD, drag = null;
@@ -470,7 +470,9 @@ window.G3D = (() => {
       view(a, e) { az = a * RAD; el = e * RAD; },
     };
     function finish() {
-      const dist = fr.rad / Math.sin(cam.fov * RAD / 2) * (cam.aspect < 1 ? 1 / cam.aspect : 1);
+      // distanza che fa stare la scena in altezza e in larghezza (la scena puo' girare: larghezza = lato maggiore in pianta)
+      const tv = Math.tan(cam.fov * RAD / 2), th = tv * cam.aspect, W = Math.max(fr.sz.x, fr.sz.z);
+      const dist = Math.max((fr.sz.y / 2 + .1) / tv, (W / 2 + .1) / th) + W * .35;
       cam.position.set(fr.c.x + Math.sin(az) * Math.cos(el) * dist, fr.c.y + Math.sin(el) * dist, fr.c.z + Math.cos(az) * Math.cos(el) * dist);
       cam.lookAt(fr.c);
       shadow.scale.set(2.4, 2.4, 1); shadow.position.set(fr.c.x, .002, fr.c.z);
