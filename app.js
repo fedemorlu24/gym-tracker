@@ -65,9 +65,10 @@ function storageWrite(stores, fn, expected = storageGeneration) {
 }
 function idbPut(v) { return storageWrite([STORE], tx => tx.objectStore(STORE).put(v, KEY)); }
 let backupFile = null;
+let backupRevision = 0, backupDialog = null;
 function save() {
   if (storageBusy) return;
-  db.ts = Date.now(); backupFile = null; libByName = null;
+  db.ts = Date.now(); invalidateBackupData(); libByName = null;
   const json = JSON.stringify(db);
   // Legacy users retain the existing mirrored format until their first restore.
   let ok = false;
@@ -81,6 +82,7 @@ let photos = [];
 function photoTx(mode, fn) {
   if (mode === 'readwrite') {
     if (storageBusy) return Promise.reject(new Error('storage busy'));
+    invalidateBackupData();
     return storageWrite([STORE, PHOTOS], tx => fn(tx.objectStore(PHOTOS)));
   }
   return idb().then(d => new Promise((res, rej) => {
@@ -109,7 +111,8 @@ function loadPhotos() {
 async function restore(initial = false) {
   if (storageBusy && !initial) return;
   storageBusy = true;
-  let paused = false;
+  invalidateBackupData();
+  let paused = false, restored = false;
   try {
     await Promise.allSettled([...pendingWrites]);
     const snap = await storageSnapshot();
@@ -125,7 +128,7 @@ async function restore(initial = false) {
     replacePhotos(photoViews(snap.photos));
     if (!snap.generation && (!o || (db.ts || 0) > (o.ts || 0)) && db.sessions.length)
       await idbPut(JSON.stringify(db));
-    libByName = null;
+    libByName = null; restored = true;
   } catch (e) {
     // An inaccessible IDB must never be replaced with an empty/fallback archive.
     // Keep this session's validated local copy; a restore itself requires IDB.
@@ -133,6 +136,8 @@ async function restore(initial = false) {
   } finally {
     storageBusy = false;
     if (paused && window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+    resumeBackupExport(restored);
   }
   setLang(); applyTheme(); render();
 }
@@ -778,7 +783,7 @@ function addPhoto(pose) {
   inp.onchange = () => {
     const f = inp.files[0]; inp.value = ''; if (!f) return;
     shrink(f).then(blob => photoTx('readwrite', st => st.put({id: uid(), date: today(), pose, blob})))
-      .then(() => { backupFile = null; return loadPhotos(); })
+      .then(() => loadPhotos())
       .then(() => { if (!celebrate()) toast(t('photoSaved', poseName(pose).toLowerCase())); })
       .catch(() => alert(t('photoFail')));
   };
@@ -1034,6 +1039,7 @@ function saveProfile(f) {
 // ---------- fogli (bottom sheet) e avvisi ----------
 let sheetCloseT;
 function sheet(html) {
+  disposeBackupDialog();
   clearTimeout(sheetCloseT);
   if (typeof guideStop === 'function') guideStop();
   const el = document.getElementById('sheet');
@@ -1064,6 +1070,7 @@ function dragDismiss(pane) {
   });
 }
 function closeSheet() {
+  disposeBackupDialog();
   const el = document.getElementById('sheet');
   if (el.hidden) return;
   if (typeof guideStop === 'function') guideStop();
@@ -1382,8 +1389,11 @@ async function decryptBackup(o, pwd) {
 }
 let bkPwd = '';
 const chatPhotoIds = o => new Set(Object.values(o.chat && o.chat.msgs || {}).flat().filter(m => m.k === 'img' && m.d).map(m => 'c:' + m.id));
-async function prepareBackup() {
-  const pwd = bkPwd, generation = storageGeneration, snapshot = JSON.parse(JSON.stringify(db));
+async function prepareBackup(pwd = bkPwd) {
+  const generation = storageGeneration, revision = backupRevision;
+  await Promise.all([...pendingWrites]);
+  if (storageBusy || generation !== storageGeneration || revision !== backupRevision) throw new Error('archive changed');
+  const snapshot = JSON.parse(JSON.stringify(db));
   const rows = await photoTx('readonly', st => st.getAll()), ids = chatPhotoIds(snapshot);
   const ph = [], chatPhotos = [];
   for (const p of rows) {
@@ -1393,8 +1403,69 @@ async function prepareBackup() {
   }
   const text = JSON.stringify({...snapshot, photos: ph, chatPhotos});
   const txt = pwd ? await encryptBackup(text, pwd) : text;
-  if (storageBusy || generation !== storageGeneration) throw new Error('archive changed');
-  return backupFile = new File([txt], 'gym-tracker-backup.json', {type: 'application/json'});
+  if (storageBusy || generation !== storageGeneration || revision !== backupRevision) throw new Error('archive changed');
+  // A producer never publishes to the UI. Only the current dialog request may.
+  return new File([txt], 'gym-tracker-backup.json', {type: 'application/json'});
+}
+function disposeBackupDialog() {
+  const ctx = backupDialog;
+  backupDialog = null; backupFile = null; bkPwd = '';
+  if (!ctx) return;
+  clearTimeout(ctx.timer); ctx.request++; ctx.ready = null;
+  ctx.exportTicket = null; ctx.sharing = false;
+  ctx.input.value = ''; ctx.button.disabled = true;
+}
+function invalidateBackupData() {
+  backupRevision++; backupFile = null;
+  if (backupDialog) queueBackup(backupDialog);
+}
+function currentBackupRequest(ctx, request, pwd, revision, generation) {
+  return backupDialog === ctx && ctx.request === request && ctx.input.isConnected &&
+    ctx.button.isConnected && ctx.input.value === pwd && bkPwd === pwd &&
+    revision === backupRevision && generation === storageGeneration && !storageBusy;
+}
+// A successful native share records a historical export, even if returning to
+// the foreground invalidated the prepared file. Never save while restore owns db.
+function finishBackupExport() {
+  const ctx = backupDialog, ticket = ctx && ctx.exportTicket;
+  if (!ticket || !ticket.succeeded || storageBusy) return;
+  if (ticket.storageFailed || ticket.generation !== storageGeneration ||
+      ticket.identity !== (db.chat && db.chat.pk || '') || !ctx.input.isConnected || !ctx.button.isConnected) {
+    ctx.exportTicket = null; ctx.sharing = false; queueBackup(ctx); return;
+  }
+  closeSheet();
+  if (!db.backup || (db.backup.last || 0) <= ticket.exportedAt) {
+    db.backup = {last: ticket.exportedAt, enc: ticket.encrypted}; save();
+  }
+  render(); toast(t('bkSaved'));
+}
+function resumeBackupExport(storageOK) {
+  const ticket = backupDialog && backupDialog.exportTicket;
+  if (ticket && !storageOK) ticket.storageFailed = true;
+  finishBackupExport();
+}
+function queueBackup(ctx, delay = 600) {
+  if (backupDialog !== ctx) return;
+  clearTimeout(ctx.timer);
+  const request = ++ctx.request;
+  ctx.ready = null; backupFile = null;
+  bkPwd = ctx.input.value;
+  ctx.button.disabled = true; ctx.button.textContent = bkPwd ? t('bkPrep') : t('preparing');
+  if (storageBusy) return; // restore/commit resumes preparation in its finally.
+  const run = () => {
+    ctx.timer = null;
+    if (backupDialog !== ctx || ctx.request !== request) return;
+    const pwd = ctx.input.value, revision = backupRevision, generation = storageGeneration;
+    prepareBackup(pwd).then(file => {
+      if (!currentBackupRequest(ctx, request, pwd, revision, generation)) return;
+      ctx.ready = {file, request, pwd, revision, generation}; backupFile = file;
+      ctx.button.disabled = ctx.sharing;
+      ctx.button.textContent = t('exportSize', fmt1(Math.max(.1, file.size / 1e6)));
+    }).catch(() => {
+      if (currentBackupRequest(ctx, request, pwd, revision, generation)) alert(t('bkNoCrypto'));
+    });
+  };
+  if (delay) ctx.timer = setTimeout(run, delay); else run();
 }
 // promemoria: i dati vivono solo sul telefono, quindi si invita a salvarne una copia
 const BK_DAYS = 7;
@@ -1425,24 +1496,39 @@ function sheetBackup() {
     <button class="btn s wide" data-act="impcsv">${t('impCsvBtn')}</button>
     <input type="file" id="imp" accept=".json,application/json" hidden>`);
   document.getElementById('imp').onchange = e => importData(e.target);
-  bkPwd = ''; let tm;
-  const run = () => {
-    const b = document.getElementById('exp-btn'); if (!b) return;
-    b.disabled = true; b.textContent = bkPwd ? t('bkPrep') : t('preparing');
-    const mine = bkPwd;
-    prepareBackup().then(f => { const x = document.getElementById('exp-btn');
-      if (x && mine === bkPwd) { x.disabled = false; x.textContent = t('exportSize', fmt1(Math.max(.1, f.size / 1e6))); } })
-      .catch(() => { alert(t('bkNoCrypto')); });
-  };
-  document.getElementById('bk-pwd').oninput = e => { bkPwd = e.target.value; backupFile = null; clearTimeout(tm); const b = document.getElementById('exp-btn'); b.disabled = true; b.textContent = bkPwd ? t('bkPrep') : t('preparing'); tm = setTimeout(run, 600); };
-  run();
+  const ctx = backupDialog = {input: document.getElementById('bk-pwd'), button: document.getElementById('exp-btn'), request: 0, ready: null, timer: null, sharing: false};
+  ctx.input.oninput = () => queueBackup(ctx); // Invalidate before the debounce.
+  queueBackup(ctx, 0);
 }
 function exportData() {
-  const file = backupFile;
-  if (!file) return;
-  const done = () => { db.backup = {last: Date.now(), enc: !!bkPwd}; save(); bkPwd = ''; closeSheet(); render(); toast(t('bkSaved')); };
-  if (navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: file.name}).then(done, () => {});
-  else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click(); done(); }
+  const ctx = backupDialog, ready = ctx && ctx.ready;
+  if (!ctx || ctx.sharing) return;
+  if (!ready || backupFile !== ready.file || pendingWrites.size ||
+      !currentBackupRequest(ctx, ready.request, ready.pwd, ready.revision, ready.generation)) {
+    queueBackup(ctx); return;
+  }
+  const file = ready.file;
+  const ticket = ctx.exportTicket = {generation: ready.generation, identity: db.chat && db.chat.pk || '',
+    exportedAt: Date.now(), encrypted: !!ready.pwd, succeeded: false, storageFailed: false};
+  const done = () => {
+    if (backupDialog !== ctx || ctx.exportTicket !== ticket) return;
+    ticket.succeeded = true; finishBackupExport();
+  };
+  const settled = () => {
+    if (backupDialog !== ctx || ctx.exportTicket !== ticket || ticket.succeeded) return;
+    ctx.exportTicket = null; ctx.sharing = false; queueBackup(ctx);
+  };
+  ctx.sharing = true; ctx.button.disabled = true;
+  // Keep the native share/download in the original user gesture (required on iOS).
+  try {
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      navigator.share({files: [file], title: file.name}).then(done, () => {}).finally(settled);
+    } else {
+      const a = document.createElement('a'), url = URL.createObjectURL(file);
+      try { a.href = url; a.download = file.name; a.click(); done(); }
+      finally { setTimeout(() => URL.revokeObjectURL(url), 60000); settled(); }
+    }
+  } catch (e) { settled(); }
 }
 async function stageBackup(f) {
   if (!f || f.size > BACKUP_MAX) throw new Error('backup size');
@@ -1473,6 +1559,7 @@ async function commitBackup(staged) {
   const {candidate, records, hasChatPhotos} = staged;
   if (storageBusy) throw new Error('storage busy');
   storageBusy = true;
+  invalidateBackupData();
   clearTimeout(planSaveT);
   let nextViews, committed = false;
   const draining = [...pendingWrites];
@@ -1511,7 +1598,7 @@ async function commitBackup(staged) {
     });
     committed = true;
     storageGeneration = generation; db = candidate; replacePhotos(nextViews); nextViews = null;
-    backupFile = null; libByName = null;
+    libByName = null;
     // IDB is the commit point. A failed cache write is repaired on next boot;
     // reporting importFail here would falsely claim that the old archive won.
     try { localStorage.setItem(KEY, json); } catch (e) {}
@@ -1519,6 +1606,8 @@ async function commitBackup(staged) {
     if (nextViews) nextViews.forEach(p => URL.revokeObjectURL(p.url));
     storageBusy = false;
     if (window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+    resumeBackupExport(committed);
   }
   return committed;
 }
@@ -1544,7 +1633,7 @@ function sheetPhoto(id) {
   document.getElementById('ph-date').onchange = ev => {
     const d = ev.target.value; if (!d || d > today()) return;
     photoTx('readwrite', st => st.put({id: p.id, date: d, pose: p.pose, blob: p.blob}))
-      .then(() => { backupFile = null; return loadPhotos(); }).then(() => { closeSheet(); toast(t('saved')); }).catch(() => alert(t('photoFail')));
+      .then(() => loadPhotos()).then(() => { closeSheet(); toast(t('saved')); }).catch(() => alert(t('photoFail')));
   };
 }
 function sheetCompare(pose) {
@@ -2437,7 +2526,7 @@ const acts = {
   photo: b => sheetPhoto(b.dataset.id),
   compare: b => sheetCompare(b.dataset.pose),
   delphoto: b => { const id = b.dataset.id; if (!confirm(t('delPhotoConfirm'))) return;
-    photoTx('readwrite', st => st.delete(id)).then(() => { backupFile = null; closeSheet(); return loadPhotos(); }); },
+    photoTx('readwrite', st => st.delete(id)).then(() => { closeSheet(); return loadPhotos(); }); },
   weekly: sheetWeekly,
   setweekly: b => { db.settings = {...(db.settings || {}), weekly: +b.dataset.n}; save(); closeSheet(); render(); celebrate(); },
   newgoal: b => { sheetGoal(b.dataset.name); if (b.dataset.t === 'body') acts.goaltype(document.querySelector('[data-act=goaltype][data-t=body]')); },

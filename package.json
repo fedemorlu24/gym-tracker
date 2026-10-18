@@ -6,6 +6,7 @@
     "test:donation": "node tests/donation.cjs",
     "test:update": "node tests/update.cjs",
     "test:security": "node tests/security.cjs",
+    "test:backup-keys": "node tests/backup-keys.cjs",
     "build:vendor": "node tools/vendor-build.mjs",
     "check:vendor": "node tools/vendor-build.mjs --check",
     "check:vendor-inventory": "node tools/vendor-build.mjs --inventory"

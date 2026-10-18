@@ -103,9 +103,10 @@ npm run test:donation
 npm run test:guides
 npm run test:update   # starts its own isolated release fixture
 npm run test:security # isolated origin, synthetic keys, no relay traffic
+npm run test:backup-keys # concurrent exports, native share and crypto/key-use checks
 ```
 
-The update fixture pins the released v66 commit and verifies v66 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
+The update fixture pins the released v67 commit and verifies v67 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
 
 Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Contacts display initials; profile photos, including legacy avatars, are no longer displayed, sent or accepted. Photos in messages from added contacts remain visible immediately and can be sent, enlarged and backed up. Normal messages from unknown or blocked keys are ignored; possession of your invite link can allow a new contact to join, so share it privately and rotate it if needed. Raster validation prevents malformed attachments; it does not classify sexual content. There is no automatic pornography detector or new photo restriction for known friends.
 

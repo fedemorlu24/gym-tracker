@@ -1,4 +1,91 @@
-# Revisione sicurezza — v67
+# Revisione sicurezza — v68
+
+18 ottobre 2026. Correzione successiva alla v67 pubblicata (`8369f9b`), richiesta
+da Luca con «correggilo» e verifica dell'uso delle chiavi. Prove locali sotto;
+la ricevuta di pubblicazione e i controlli live sono conservati separatamente in
+`artifacts/release-v68/`.
+
+## Export concorrenti e condivisione
+
+**V67-EXPORT-RACE, gravità media:** una preparazione in chiaro avviata prima
+dell'inserimento della password poteva terminare dopo quella cifrata e sostituire
+il file scaricabile. Riprodotto su v67 ritardando il completamento di una lettura
+IndexedDB reale; file scaricato e analizzato con dati/identità sintetici. Non è
+stata misurata la frequenza naturale né dimostrato un incidente con dati reali.
+Il difetto riguarda la selezione del file, non l'algoritmo AES.
+
+`prepareBackup` ora produce un file senza pubblicarlo nello stato condiviso.
+Solo la richiesta corrente del dialogo può renderlo esportabile: controlla
+password, numero richiesta, revisione dati e generazione dell'archivio. Modifica
+della password, salvataggi, scritture foto, restore e chiusura invalidano il file;
+il click ricontrolla tutto. Le vecchie risposte, inclusi gli errori, sono scartate.
+La chiusura cancella i riferimenti al file/password e il timer pendente; questo
+non promette la cancellazione fisica della memoria gestita da JavaScript.
+
+La chiamata alla condivisione nativa resta nel gesto dell'utente. Un ticket
+registra quale snapshot è stato condiviso e quando: il ritorno in foreground
+può rigenerare il file senza perdere l'esito della condivisione già riuscita.
+La registrazione attende lo storage, conserva un backup successivo e non passa
+a un nuovo dialogo, archivio importato o identità chat.
+
+## Uso delle chiavi: esito e limiti
+
+- **Chat:** chiave secp256k1 generata da Nostr Tools tramite la casualità
+  crittografica del browser. Il link invito contiene chiave pubblica, nome e token,
+  non la privata. I messaggi usano NIP-44/NIP-59; firme e destinatario sono
+  verificati nei percorsi applicativi. Nel test della busta in uscita non sono
+  presenti né chiave privata né testo in chiaro.
+- **Backup con password:** Web Crypto, AES-GCM 256 bit, PBKDF2-SHA256 con 250.000
+  iterazioni, salt casuale di 16 byte e IV casuale di 12 byte per export. La chiave
+  derivata è non estraibile dall'API Web Crypto. Password errata e modifica del
+  ciphertext sono rifiutate. Una password debole resta attaccabile offline.
+- **Limite locale aperto:** la chiave privata chat è una stringa in chiaro in
+  localStorage/IndexedDB; anche la copia rollback può contenerla. Non c'è uno
+  sblocco locale con password né un archivio hardware. Un XSS nell'origine o un
+  dispositivo/browser compromesso può leggere o usare la chiave. Gli altri siti
+  ordinari restano separati dalla same-origin policy. Cifrare con un'altra chiave
+  conservata nello stesso storage non risolverebbe questo problema.
+- **Limite del protocollo:** NIP-44 non offre forward secrecy: una chiave privata
+  compromessa può permettere la lettura delle conversazioni passate se le buste
+  cifrate sono disponibili. Non equivale alla sicurezza di un protocollo con
+  ratchet. [Specifica NIP-44](https://github.com/nostr-protocol/nips/blob/master/44.md#limitations).
+- **Inviti e backup in chiaro:** «Nuovo link d'invito» cambia il token, non la
+  chiave privata. L'export senza password rimane facoltativo e contiene la chiave,
+  come indicato dalla UI. Non è stata cambiata l'identità degli utenti esistenti.
+
+La chiave Web Crypto non estraibile limita `exportKey`, ma non rende inoffensivo
+codice malevolo eseguito nella stessa pagina.
+[Documentazione Web Crypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey).
+
+## Verifiche della correzione
+
+`npm run test:backup-keys`: **13 gruppi PASS**, Chromium/Playwright isolato,
+console/pageerror/HTTP/richieste fallite/WebSocket/uscite esterne zero.
+Include download reale dopo l'ordine di completamento che riproduceva il difetto,
+password A→B→A, chiusura/riapertura, errore obsoleto, modifica dati/foto, controllo
+finale della password e condivisione nativa simulata. La completion della share
+è provata prima, durante e dopo il restore; un import impedisce di registrare
+il vecchio export sul nuovo archivio. Screenshot del dialogo ispezionato.
+
+Le prove sulle chiavi includono casualità del browser, identità persistente,
+rotazione del solo invito, busta chat firmata/cifrata, vettore ufficiale NIP-44,
+salt/IV differenti, chiave non estraibile, password errata e ciphertext alterato.
+Il test verifica anche esplicitamente la presenza della chiave nello storage,
+per evitare che quel limite venga nascosto da una valutazione generica positiva.
+Prova: `artifacts/security/backup-keys-results.json`.
+
+Regressione `npm run test:security`: **10 gruppi PASS**, incluse foto degli amici,
+import atomico e protezioni XSS. `npm run test:update`: **67 → 68 → 69 → 70 PASS**,
+dati/foto identici, identità chat e bozza conservate, foreground e offline;
+console/pageerror/HTTP/richieste fallite zero. Sintassi JavaScript e diff PASS.
+
+Nessun messaggio a persone/relay reali, nessun dato o segreto reale nei test.
+La condivisione è simulata in Chromium: non è una prova su iPhone fisico.
+Restano aperti il limite delle chiavi locali e l'header HTTP `frame-ancestors`
+descritto sotto. I test mirati non costituiscono un audit completo crittografico.
+Le foto degli amici rimangono disponibili e i profili mostrano solo iniziali.
+
+# Storico: revisione sicurezza — v67
 
 18 ottobre 2026. Base: v66, commit
 `f036e8dcfdd0000d04372691248caf6111833c15`. Correzioni del rapporto

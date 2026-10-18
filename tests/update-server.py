@@ -10,8 +10,8 @@ import tarfile
 import tempfile
 
 REPO = Path(__file__).resolve().parents[1]
-BASELINE = 'f036e8dcfdd0000d04372691248caf6111833c15'  # Released v66, not moving HEAD.
-BASE_VERSION = 66
+BASELINE = '8369f9b91fbc4c616a3e8e9d3e905525fb033a39'  # Released v67, not moving HEAD.
+BASE_VERSION = 67
 CANDIDATE = int(re.search(r"const VERSION = '(\d+)'", (REPO / 'sw.js').read_text())[1])
 phase = BASE_VERSION
 
