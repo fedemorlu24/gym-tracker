@@ -515,7 +515,7 @@ function todayView() {
   // corpo del giorno
   const bd = bodyOf(day), ph = photos.filter(p => p.date === day);
   html += `<p class="glabel">${t('bodyCard')}</p><div class="dcard">`;
-  if (bd && bd.weight) html += `<div class="dbody"><div><b>${fmtKg(bd.weight)}</b><span>kg</span></div></div>`;
+  if (bd && (bd.weight || bd.kcal)) html += `<div class="dbody">${bd.weight ? `<div><b>${fmtKg(bd.weight)}</b><span>kg</span></div>` : ''}${bd.kcal ? `<div><b>${fmtInt(bd.kcal)}</b><span>kcal</span></div>` : ''}</div>`;
   else html += `<p class="sub">${t('noBodyDay')}</p>`;
   if (ph.length) html += `<div class="grid" style="padding:10px 0 0">${ph.map(p => `<button data-act="photo" data-id="${p.id}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}"><img src="${p.url}" alt=""><span>${poseName(p.pose)}</span></button>`).join('')}</div>`;
   html += `<button class="btn s wide" data-act="bodylog" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('logBody')}</button></div>`;
@@ -657,7 +657,7 @@ function progressListBody() {
   return html + `<div class="gap"></div>` + badgeGrid();
 }
 
-// ---------- corpo: peso e foto ----------
+// ---------- corpo: peso, calorie, foto ----------
 const POSES = ['front', 'side', 'back'];
 const poseName = k => t(k === 'back' ? 'backPose' : k);
 function weightAt(date) {
@@ -666,7 +666,7 @@ function weightAt(date) {
   return best && Math.abs(daysBetween(best.date, date)) <= 7 ? best.weight : null;
 }
 function bodyView() {
-  const b = body(), w = b.filter(x => x.weight > 0);
+  const b = body(), w = b.filter(x => x.weight > 0), kc = b.filter(x => x.kcal > 0);
   let html = '';
   if (w.length) {
     const l = w[w.length - 1], f = w[0];
@@ -681,7 +681,13 @@ function bodyView() {
       <p class="note">${fb.why ? fb.why : t('trendBody', sign(Math.round(fb.b * 7 * 10) / 10), fmt1(fb.at(daysBetween(fb.d0, fb.last) + 42)))}
       ${bg ? `<br><b>${t('goalWLabel', fmtKg(bg.weight))}</b> ${goalState(bg).eta}` : ''}</p></div>`;
   }
-  if (!w.length && !photos.length) html = `<div class="empty">${t('bodyEmpty')}</div>`;
+  if (kc.length) {
+    const last7 = kc.filter(x => daysBetween(x.date, today()) < 7), avg = last7.length ? last7.reduce((s, x) => s + x.kcal, 0) / last7.length : 0;
+    html += `<div class="panel-c"><h2>${t('calories')}</h2><p class="sub">${t('avg7')}</p>
+      <div class="deltas" style="padding:10px 4px 4px"><span>${avg ? `${fmtInt(avg)} kcal` : t('noDataWeek')}</span></div>
+      ${kc.length > 1 ? barChart(kc.slice(-14).map(x => ({d: x.date, v: x.kcal, dir: 'n'})), 'kcal') : ''}</div>`;
+  }
+  if (!w.length && !kc.length && !photos.length) html = `<div class="empty">${t('bodyEmpty')}</div>`;
   return html + photoPanel();
 }
 function photoPanel() {
@@ -1409,6 +1415,8 @@ function sheetBodyLog(day) {
     <form data-form="bodylog">
       <label class="field">${t('date')}<input name="d" type="date" value="${d}"></label>
       <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${v(cur.weight)}" placeholder="78${DEC}4" autocomplete="off" data-focus></label>
+      <label class="field">${t('bodyK')}<input name="k" inputmode="numeric" value="${cur.kcal > 0 ? Math.round(cur.kcal) : ''}" placeholder="${t('optional')}" autocomplete="off"></label>
+      <p class="sub">${t('bodyHint')}</p>
       <button class="btn p wide">${t('save')}</button></form>`);
 }
 function sheetWeekly() {
@@ -2343,10 +2351,14 @@ const forms = {
     { const z = sess(view.id).exercises.find(e => e.id === f.dataset.eid).sets; z[+f.dataset.i] = {...z[+f.dataset.i], reps: r, kg: k}; }
     save(); closeSheet(); const y = window.scrollY; render(); window.scrollTo(0, y); },
   bodylog: f => {
-    const w = num(f.w.value), d = f.d.value || today();
-    if (!(w >= 25 && w <= 300)) return alert(t('weightOut'));
+    const w = num(f.w.value), k = num(f.k.value), d = f.d.value || today();
+    if (!(w > 0) && !(k > 0)) return alert(t('needOne'));
+    // un valore scritto ma non valido non deve cancellare quello gia' salvato
+    if (f.w.value.trim() && !(w >= 25 && w <= 300)) return alert(t('weightOut'));
+    if (f.k.value.trim() && !(k > 0 && k < 20000)) return alert(t('invalidKcal'));
+    const cur = (db.body || []).find(x => x.date === d) || {};
     db.body = (db.body || []).filter(x => x.date !== d);
-    db.body.push({date: d, weight: w});
+    db.body.push({...cur, date: d, weight: w > 0 ? w : cur.weight || 0, kcal: k > 0 ? k : 0});
     save(); closeSheet(); render(); if (!celebrate()) toast(t('saved'));
   },
   goal: f => {

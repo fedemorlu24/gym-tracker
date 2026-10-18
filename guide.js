@@ -403,7 +403,7 @@ function guideStart() {
   };
   draw(0); gfRaf = requestAnimationFrame(tick);
   // modello anatomico 3D: si carica in un secondo momento e prende il posto dell'omino SVG
-  if (typeof G3D !== 'undefined' && G3D.supported()) G3D.load().then(() => {
+  if (window.G3D && G3D.supported()) G3D.load().then(() => {
     if (document.getElementById('gf-stage') !== st || el.dataset.eq !== eq) return;
     gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); el.classList.add('gf3'); draw(gfMs);
   }).catch(() => {});
