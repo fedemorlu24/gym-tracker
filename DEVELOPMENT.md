@@ -51,7 +51,7 @@ Open it on your phone and use *Add to Home Screen*. There is no account, no serv
 
 ### Other
 - 5 languages: Italian, English, Spanish, French, German.
-- Light, dark or automatic theme.
+- Dark theme by default; light and automatic remain available. Existing explicit preferences are preserved.
 - Works fully offline (service worker).
 - Beginner-friendly tutorial.
 - Backup: export / import everything as a JSON file.
@@ -100,7 +100,7 @@ npm run test:guides
 npm run test:update   # starts its own isolated release fixture
 ```
 
-The update fixture pins the released v64 commit and verifies v64 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data.
+The update fixture pins the released v65 commit and verifies v65 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data.
 
 Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Profile photo is a 112 px JPEG sent to friends.
 

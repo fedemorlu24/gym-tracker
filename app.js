@@ -107,9 +107,9 @@ function setLang() {
   DEC = (1.5).toLocaleString(locale).charAt(1);
   document.documentElement.lang = lang;
 }
-// tema: automatico (segue il telefono), chiaro o scuro
+// Tema scuro predefinito; conserva la scelta esplicita, incluso automatico.
 function applyTheme() {
-  const th = (db.settings && db.settings.theme) || 'auto', root = document.documentElement;
+  const th = (db.settings && db.settings.theme) || 'dark', root = document.documentElement;
   if (th === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', th);
   const dark = th === 'dark' || (th === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelectorAll('meta[name=theme-color]').forEach(m => { m.content = dark ? '#0e0f11' : '#f2f2f7'; });
@@ -954,7 +954,7 @@ function settingsView() {
     <div class="opts"><button class="chip" data-act="guideset" data-on="1" aria-pressed="${!(db.guide && db.guide.off)}">${t('restOn')}</button><button class="chip" data-act="guideset" data-on="0" aria-pressed="${!!(db.guide && db.guide.off)}">${t('restOff')}</button></div>
     <p class="note" style="padding:8px 4px 0">${t('guideAnimText')}</p>
     <p class="glabel">${t('theme')}</p>
-    <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'auto') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
+    <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'dark') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
     <p class="glabel">${t('backup')}</p>
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
