@@ -107,7 +107,7 @@ window.G3D = (() => {
   const LEN = {th: dist(JR['hip.l'], JR['knee.l']), sh: dist(JR['knee.l'], JR['ankle.l']), ua: dist(JR['shoulder.l'], JR['elbow.l']), fa: dist(JR['elbow.l'], JR['wrist.l'])};
   const RAD = Math.PI / 180;
 
-  function reset() { for (const n in bones) bones[n].quaternion.copy(rest[n].lq); bones.root.position.copy(rest.root.lp); fig.updateMatrixWorld(true); }
+  function reset() { clavLift.l = clavLift.r = 0; for (const n in bones) bones[n].quaternion.copy(rest[n].lq); bones.root.position.copy(rest.root.lp); fig.updateMatrixWorld(true); }
   function limbs(S, hips, opt) {
     // gambe: (S.k,S.a,S.toe) = lato sinistro, (S.k2,S.a2,S.toe2) = destro
     [['l', S.k, S.a, S.toe], ['r', S.k2, S.a2, S.toe2]].forEach(([s, k, a, toe]) => {
@@ -355,8 +355,19 @@ window.G3D = (() => {
     const fd = rest['foot.' + s].dir.clone().applyAxisAngle(V3(0, 1, 0), yaw * RAD);
     aim('foot.' + s, fd); aim('toe.' + s, fd);
   }
+  // ritmo scapolo-omerale: oltre ~60° di elevazione del braccio la clavicola (e la scapola) salgono, fino a ~30°
+  const clavLift = {};
+  function scapula(s, ua) {
+    const down = curDir('spine3').negate(), e = Math.acos(Math.max(-1, Math.min(1, ua.clone().normalize().dot(down)))) / RAD;
+    const lift = Math.min(30, Math.max(0, (e - 60) * .33)), prev = clavLift[s] || 0;
+    if (Math.abs(lift - prev) < .3) return false;
+    const fwdNow = V3(0, 0, 1).applyQuaternion(wq('spine3').multiply(rest.spine3.q.clone().invert()));
+    worldDelta('clav.' + s, new T.Quaternion().setFromAxisAngle(fwdNow, (s === 'l' ? 1 : -1) * (lift - prev) * RAD));
+    clavLift[s] = lift; return true;
+  }
   function arm(s, at, pole, palmN) {   // la mano afferra il punto at: l'attrezzo sta nel palmo, non nel polso
-    const sh = wp('uarm.' + s); let tgt = at.clone();
+    let sh = wp('uarm.' + s), tgt = at.clone();
+    { const r0 = ik2(sh, tgt, LEN.ua, LEN.fa, pole); if (scapula(s, r0.mid.clone().sub(sh))) sh = wp('uarm.' + s); }
     for (let it = 0; it < 3; it++) {
       const r = ik2(sh, tgt, LEN.ua, LEN.fa, pole);
       aim('uarm.' + s, r.mid.clone().sub(sh)); aim('farm.' + s, r.end.clone().sub(r.mid));
@@ -416,7 +427,7 @@ window.G3D = (() => {
   const post = (g, a, b, r = .025) => { const o = seg(a, b, r, steel()); o && g.add(o); };
   const kit = {get T() { return T; }, V3, JR, LEN, U, FLOOR, FOFF, RAD, m3, torso, shift, leg, arm, headTo, onBone, wp, curDir, aim, worldDelta, alignPalm, grip, flat,
     restDir: n => rest[n].dir.clone(), pad, post, steel, mat, box, seg, sph, disc, mPlate, mProp,
-    armDir(s, ua, fa, palm, close) { aim('uarm.' + s, ua); aim('farm.' + s, fa || ua); if (palm) alignPalm(s, palm); if (close) grip(s, close); },
+    armDir(s, ua, fa, palm, close) { scapula(s, ua); aim('uarm.' + s, ua); aim('farm.' + s, fa || ua); if (palm) alignPalm(s, palm); if (close) grip(s, close); },
     legDir(s, th, sh, foot) { aim('thigh.' + s, th); aim('shin.' + s, sh || th); const fd = foot || rest['foot.' + s].dir; aim('foot.' + s, fd); aim('toe.' + s, fd); },
     ay: JR['ankle.l'][1]};
 
