@@ -13,6 +13,9 @@ const CHAT_KEEP = 400;            // messaggi tenuti per conversazione
 let NT = null, ntLoading = null;
 let chatPaused = false, chatReady = false, chatEpoch = 0;
 const chatOperations = new Set();
+const CHAT_RECEIVE_CONCURRENCY = 2, CHAT_RECEIVE_MAX_PENDING = 64, CHAT_RECEIVE_MAX_CHARS = 4000000;
+const chatReceiveQueue = [], chatWrapsInFlight = new Map(), chatRumorsInFlight = new Set();
+let chatReceiveActive = 0, chatReceiveChars = 0, chatSyncBlocked = false;
 const chatDataBusy = () => chatPaused || !chatReady || !!(window.gymStorageBusy && window.gymStorageBusy());
 const chatVaultStatus = () => window.ChatVault ? ChatVault.status() : 'error';
 const chatBusy = () => chatDataBusy() || chatVaultStatus() !== 'unlocked';
@@ -24,6 +27,9 @@ function chatOperation(fn) {
 }
 function chatDisconnect() {
   chatEpoch++;
+  // Queued work belongs to the old identity/session. Active work checks its epoch.
+  chatReceiveQueue.splice(0).forEach(item => chatReceiveFinish(item, null));
+  chatSyncBlocked = false;
   Object.values(relays).forEach(r => {
     clearTimeout(r.timer); r.open = false; r.q = [];
     if (r.ws) { r.ws.onopen = r.ws.onmessage = r.ws.onclose = r.ws.onerror = null; try { r.ws.close(); } catch (_) {} }
@@ -33,6 +39,7 @@ function chatDisconnect() {
 }
 async function gymChatPause() {
   chatPaused = true; chatDisconnect();
+  gymChatClearMedia();
   await Promise.allSettled([...chatOperations]);
 }
 function gymChatResume() {
@@ -179,12 +186,15 @@ const relays = {};   // url → {ws, open, tries, timer, q}
 let chatTimer = null;
 function chatOnline() { return Object.values(relays).filter(r => r.open).length; }
 function relayConnect(url) {
-  if (chatBusy()) return;
+  if (chatBusy() || !chat().relays.includes(url)) return;
   const r = relays[url] || (relays[url] = {open: false, tries: 0, q: []});
+  if (r.receiveRetryAt && Date.now() < r.receiveRetryAt) {
+    clearTimeout(r.timer); r.timer = setTimeout(() => relayConnect(url), r.receiveRetryAt - Date.now()); return;
+  }
   if (r.ws && (r.ws.readyState === 0 || r.ws.readyState === 1)) return;
   let ws; try { ws = new WebSocket(url); } catch (e) { return; }
   r.ws = ws;
-  const epoch = chatEpoch; let subscriptionStarted = 0;
+  const epoch = chatEpoch; let subscriptionStarted = 0, receiveOverflow = false;
   ws.onopen = () => {
     if (chatBusy() || epoch !== chatEpoch) { ws.close(); return; }
     r.open = true; r.tries = 0; subscriptionStarted = nowSec();
@@ -193,13 +203,26 @@ function relayConnect(url) {
     chatRefresh();
   };
   ws.onmessage = e => {
-    if (chatBusy() || epoch !== chatEpoch || typeof e.data !== 'string' || e.data.length > 200000) return;
+    if (chatBusy() || epoch !== chatEpoch || receiveOverflow || typeof e.data !== 'string' || e.data.length > 200000) return;
     let m; try { m = JSON.parse(e.data); } catch (x) { return; }
     if (!Array.isArray(m)) return;
-    if (m[0] === 'EVENT' && m[2]) chatReceive(m[2]).catch(() => {});
-    else if (m[0] === 'OK') chatAcked(m[1], m[2], url);
-    else if (m[0] === 'EOSE') Promise.allSettled([...chatOperations]).then(() => {
-      if (!chatBusy() && epoch === chatEpoch && r.ws === ws) { chat().sync = Math.max(chat().sync || 0, subscriptionStarted); save(); }
+    if (m[0] === 'EVENT' && m.length === 3 && m[1] === 'gt' && m[2]) chatReceive(m[2]).catch(error => {
+      if (error.code !== 'CHAT_RECEIVE_OVERFLOW' || receiveOverflow || epoch !== chatEpoch || r.ws !== ws) return;
+      receiveOverflow = true; r.open = false;
+      const delay = Math.min(60000, 2500 * Math.pow(2, Math.min(r.receiveTries || 0, 5)));
+      r.receiveTries = (r.receiveTries || 0) + 1; r.receiveRetryAt = Date.now() + delay;
+      clearTimeout(r.timer); ws.onmessage = ws.onclose = ws.onerror = null;
+      try { ws.close(); } catch (_) {}
+      r.timer = setTimeout(() => relayConnect(url), delay); chatRefresh();
+    });
+    else if (m[0] === 'OK' && m.length === 4 && typeof m[2] === 'boolean' && typeof m[3] === 'string') chatAcked(m[1], m[2], url);
+    else if (m[0] === 'EOSE' && m.length === 2 && m[1] === 'gt') Promise.allSettled([...chatOperations]).then(() => {
+      if (!chatBusy() && epoch === chatEpoch && r.ws === ws && !receiveOverflow) {
+        r.receiveTries = 0; r.receiveRetryAt = 0;
+        // A different relay's EOSE cannot skip events rejected during overload.
+        // Keep the old cursor for this session; reconnects replay and deduplicate.
+        if (!chatSyncBlocked) { chat().sync = Math.max(chat().sync || 0, subscriptionStarted); save(); }
+      }
     }).catch(chatFailure);
   };
   ws.onclose = ws.onerror = () => {
@@ -213,7 +236,7 @@ function relayConnect(url) {
 function chatConnect() {
   if (chatBusy()) return;
   chat().relays.forEach(relayConnect);
-  Object.keys(relays).forEach(u => { if (!chat().relays.includes(u)) { try { relays[u].ws.close(); } catch (e) {} delete relays[u]; } });
+  Object.keys(relays).forEach(u => { if (!chat().relays.includes(u)) { clearTimeout(relays[u].timer); try { relays[u].ws.close(); } catch (e) {} delete relays[u]; } });
 }
 function relaySend(ev) {
   if (chatBusy()) return;
@@ -225,7 +248,7 @@ window.addEventListener('online', () => { if (db.chat && !chatBusy()) chatConnec
 const pending = {};   // id del wrap → id del messaggio (per la spunta di consegna)
 function chatAcked(wrapId, ok, url) {
   if (chatBusy() || !CHAT_HEX.test(wrapId)) return;
-  const mid = pending[wrapId]; if (!mid || !ok) return;
+  const mid = pending[wrapId]; if (!mid || ok !== true) return;
   Object.values(chat().msgs).forEach(l => { const m = l.find(x => x.id === mid); if (m && !m.ok) { m.ok = 1; } });
   save(); chatRefresh();
 }
@@ -297,7 +320,43 @@ function chatOpen(wrap) {
   if (!chatEventShape(rumor, 14, false) || rumor.pubkey !== seal.pubkey || !chatRecipient(rumor) || NT.getEventHash(rumor) !== rumor.id) return null;
   return rumor;
 }
-function chatReceive(wrap) { return chatOperation(() => chatReceiveImpl(wrap)); }
+function chatReceiveFinish(item, error) {
+  chatReceiveChars -= item.chars;
+  if (chatWrapsInFlight.get(item.key) === item) chatWrapsInFlight.delete(item.key);
+  if (error) item.reject(error); else item.resolve(null);
+}
+function chatReceiveDrain() {
+  while (chatReceiveActive < CHAT_RECEIVE_CONCURRENCY && chatReceiveQueue.length) {
+    const item = chatReceiveQueue.shift();
+    if (chatBusy() || item.epoch !== chatEpoch) { chatReceiveFinish(item, null); continue; }
+    chatReceiveActive++;
+    Promise.resolve().then(() => {
+      if (!chatBusy() && item.epoch === chatEpoch) return chatReceiveImpl(item.wrap);
+    }).then(() => chatReceiveFinish(item, null), error => chatReceiveFinish(item, error)).finally(() => {
+      chatReceiveActive--; chatReceiveDrain();
+    });
+  }
+}
+function chatReceive(wrap) {
+  if (chatBusy() || !chatEventShape(wrap, 1059, true) || !chatRecipient(wrap) || chat().seen.includes(wrap.id)) return Promise.resolve(null);
+  // Include every signed field: an invalid event claiming a valid id must not
+  // reserve that id and suppress a different, authentic copy from another relay.
+  const key = JSON.stringify([chatEpoch, wrap.id, wrap.pubkey, wrap.created_at, wrap.kind, wrap.tags, wrap.content, wrap.sig]);
+  const existing = chatWrapsInFlight.get(key);
+  if (existing) return existing.promise;
+  if (chatWrapsInFlight.size >= CHAT_RECEIVE_MAX_PENDING || chatReceiveChars + key.length > CHAT_RECEIVE_MAX_CHARS) {
+    chatSyncBlocked = true;
+    const error = new Error('Chat receive queue full'); error.code = 'CHAT_RECEIVE_OVERFLOW';
+    return Promise.reject(error);
+  }
+  const item = {wrap, key, chars: key.length, epoch: chatEpoch};
+  item.promise = new Promise((resolve, reject) => { item.resolve = resolve; item.reject = reject; });
+  chatWrapsInFlight.set(key, item); chatReceiveChars += item.chars;
+  chatOperations.add(item.promise);
+  item.promise.then(() => chatOperations.delete(item.promise), () => chatOperations.delete(item.promise));
+  chatReceiveQueue.push(item); chatReceiveDrain();
+  return item.promise;
+}
 async function chatReceiveImpl(wrap) {
   const c = chat(), epoch = chatEpoch;
   if (!chatEventShape(wrap, 1059, true) || c.seen.includes(wrap.id)) return;
@@ -313,45 +372,64 @@ async function chatReceiveImpl(wrap) {
     return; // Profile pictures, including legacy pf messages, are deliberately unsupported.
   }
   const f = c.friends[from]; if (!f) return;
-  const m = {id: r.id, from: 'them', t: Math.min(r.created_at, nowSec()), k: b.k, x: b.x || '', to: b.to || '',
-    e: b.e || '', ex: b.ex || '', kg: b.kg || 0, rp: b.rp || 0};
-  if (m.k === 'img') {
-    try {
-      const image = await GymMedia.decodeInlineImage(b.d, CHAT_MEDIA_LIMITS);
-      if (chatBusy() || epoch !== chatEpoch) return;
-      await imgPut(r.id, image.data); m.d = 1; m.w = image.width; m.h = image.height;
-    } catch (_) { return; }
-  }
-  if (chatBusy() || epoch !== chatEpoch || c !== db.chat || c.blocked.includes(from) || c.friends[from] !== f) return;
-  if (!chatStore(from, m)) return;
-  c.seen.push(wrap.id); if (c.seen.length > 3000) c.seen.splice(0, 500);
-  if (f.hid && m.k !== 'rx') f.hid = 0;
-  if (m.k !== 'rx' && !(view.name === 'chat' && view.id === from && !document.hidden)) f.unread = (f.unread || 0) + 1;
-  save(); chatRefresh();
-  if (view.name === 'chat' && view.id === from && !document.hidden && (m.k === 'rx' || m.k === 'em')) setTimeout(() => {
-    if (epoch === chatEpoch && !chatBusy()) chatBurst(m.k === 'rx' ? m.e : [...m.x][0], chatMessageElement(m.k === 'rx' ? m.to : m.id));
-  }, 60);
+  const rumorKey = epoch + ':' + r.id;
+  if ((c.msgs[from] || []).some(m => m.id === r.id) || chatRumorsInFlight.has(rumorKey)) return;
+  chatRumorsInFlight.add(rumorKey);
+  try {
+    const m = {id: r.id, from: 'them', t: Math.min(r.created_at, nowSec()), k: b.k, x: b.x || '', to: b.to || '',
+      e: b.e || '', ex: b.ex || '', kg: b.kg || 0, rp: b.rp || 0};
+    if (m.k === 'img') {
+      try {
+        const image = await GymMedia.decodeInlineImage(b.d, CHAT_MEDIA_LIMITS);
+        if (chatBusy() || epoch !== chatEpoch) return;
+        await imgPut(r.id, image.data); m.d = 1; m.w = image.width; m.h = image.height;
+      } catch (_) { return; }
+    }
+    if (chatBusy() || epoch !== chatEpoch || c !== db.chat || c.blocked.includes(from) || c.friends[from] !== f) return;
+    if (!chatStore(from, m)) return;
+    c.seen.push(wrap.id); if (c.seen.length > 3000) c.seen.splice(0, 500);
+    if (f.hid && m.k !== 'rx') f.hid = 0;
+    if (m.k !== 'rx' && !(view.name === 'chat' && view.id === from && !document.hidden)) f.unread = (f.unread || 0) + 1;
+    save(); chatRefresh();
+    if (view.name === 'chat' && view.id === from && !document.hidden && (m.k === 'rx' || m.k === 'em')) setTimeout(() => {
+      if (epoch === chatEpoch && !chatBusy()) chatBurst(m.k === 'rx' ? m.e : [...m.x][0], chatMessageElement(m.k === 'rx' ? m.to : m.id));
+    }, 60);
+  } finally { chatRumorsInFlight.delete(rumorKey); }
 }
 
 // ---------- foto ----------
 const imgCache = Object.create(null);
+const chatPreviewURLs = new Map();
+const chatMediaContext = () => ({archive: archiveEpoch, generation: storageGeneration});
+const chatMediaCurrent = context => context.archive === archiveEpoch && context.generation === storageGeneration && !archiveLocked && !chatDataBusy();
+function gymChatClearMedia() {
+  Object.keys(imgCache).forEach(id => delete imgCache[id]);
+  chatOutImg = null; chatOutLink = '';
+  for (const [url, image] of chatPreviewURLs) {
+    image.onload = image.onerror = null; image.src = CHAT_BLANK; URL.revokeObjectURL(url);
+  }
+  chatPreviewURLs.clear();
+}
+window.gymChatClearMedia = gymChatClearMedia;
 async function imgPut(id, data) {
   if (!CHAT_HEX.test(id) || chatBusy()) throw new Error('Invalid image id');
-  const epoch = chatEpoch, image = await GymMedia.decodeInlineImage(data, CHAT_MEDIA_LIMITS);
-  if (chatBusy() || epoch !== chatEpoch) throw new Error('Chat paused');
+  const epoch = chatEpoch, context = chatMediaContext(), image = await GymMedia.decodeInlineImage(data, CHAT_MEDIA_LIMITS);
+  if (chatBusy() || epoch !== chatEpoch || !chatMediaCurrent(context)) throw new Error('Chat paused');
   await photoTx('readwrite', st => st.put({id: 'c:' + id, date: today(), pose: 'chat', data: image.data, blob: image.blob}));
-  if (!chatBusy() && epoch === chatEpoch) imgCache[id] = image.data;
+  if (!chatBusy() && epoch === chatEpoch && chatMediaCurrent(context)) imgCache[id] = image.data;
 }
 function imgDel(id) { if (!CHAT_HEX.test(id) || chatBusy()) return; delete imgCache[id]; photoTx('readwrite', st => st.delete('c:' + id)).catch(() => {}); }
 async function imgGet(id) {
-  if (!CHAT_HEX.test(id) || chatDataBusy()) return '';
+  const context = chatMediaContext();
+  if (!CHAT_HEX.test(id) || !chatMediaCurrent(context)) return '';
   const epoch = chatEpoch;
   if (imgCache[id]) return imgCache[id];
   try {
     const r = await photoTx('readonly', st => st.get('c:' + id));
+    if (epoch !== chatEpoch || !chatMediaCurrent(context)) return '';
     if (r && r.data) {
       const image = await GymMedia.decodeInlineImage(r.data, CHAT_MEDIA_LIMITS);
-      if (!chatDataBusy() && epoch === chatEpoch) return imgCache[id] = image.data;
+      if (epoch === chatEpoch && chatMediaCurrent(context)) return imgCache[id] = image.data;
     }
   } catch (e) {}
   return '';
@@ -508,9 +586,10 @@ function chatRefresh(toBottom) {
 }
 // la foto vera si carica da IndexedDB: nel frattempo c'è un'immagine trasparente, mai un'icona rotta
 function chatImgs() {
-  const epoch = chatEpoch;
+  const epoch = chatEpoch, context = chatMediaContext();
+  if (!chatMediaCurrent(context)) return;
   document.querySelectorAll('img[data-imgid]').forEach(i => { if (!i.dataset.ok) imgGet(i.dataset.imgid).then(d => {
-    if (d && epoch === chatEpoch && !chatDataBusy() && i.isConnected) { i.src = d; i.dataset.ok = '1'; }
+    if (d && epoch === chatEpoch && chatMediaCurrent(context) && i.isConnected) { i.src = d; i.dataset.ok = '1'; }
   }); });
 }
 function chatEnter(pk) {
@@ -520,8 +599,8 @@ function chatEnter(pk) {
   chatConnect();
   const file = document.getElementById('cfile');
   if (file) file.onchange = async () => {
-    const epoch = chatEpoch, x = file.files[0]; file.value = ''; if (!x) return;
-    try { const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy()) return; await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); chatRefresh(true); } catch (e) { alert(t('chatPhotoFail')); }
+    const epoch = chatEpoch, context = chatMediaContext(), x = file.files[0]; file.value = ''; if (!x || !chatMediaCurrent(context)) return;
+    try { const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy() || !chatMediaCurrent(context)) return; await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); if (epoch === chatEpoch && chatMediaCurrent(context)) chatRefresh(true); } catch (e) { if (epoch === chatEpoch && chatMediaCurrent(context)) alert(t('chatPhotoFail')); }
   };
 }
 // tastiera su iPhone: la barra sale sopra la tastiera
@@ -612,17 +691,22 @@ function chatLinkTargets(msg) {
 // invia un'immagine (card dell'allenamento o dei progressi, foto del fisico) a un amico della chat
 let chatOutImg = null;
 function sheetChatPickImg(blob, warn) {
-  if (chatBusy()) { chatEnsureUnlocked().then(ok => { if (ok) sheetChatPickImg(blob, warn); }).catch(chatFailure); return; }
+  const context = chatMediaContext();
+  if (!chatMediaCurrent(context)) return;
+  if (chatBusy()) { chatEnsureUnlocked().then(ok => { if (ok && chatMediaCurrent(context)) sheetChatPickImg(blob, warn); }).catch(chatFailure); return; }
   const fr = chatFriends();
   if (!fr.length) { sheetChatInvite(); return; }
   chatOutImg = blob;
   sheet(`<h2>${t('chatShareHere')}</h2>${warn ? `<p class="warn">${t('photoShareWarn')}</p>` : ''}
     <div id="chat-image-preview"></div><div class="gap"></div>
     <div class="list">${fr.map(f => `<button class="row chatrow" data-act="chatimgto" data-pk="${esc(f.pk)}">${ava(f.n, 40)}<div class="grow"><h3>${esc(f.n)}</h3></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div>`);
+  const preview = document.getElementById('chat-image-preview');
+  if (!preview || !chatMediaCurrent(context)) return;
   const image = document.createElement('img'), url = URL.createObjectURL(blob);
+  chatPreviewURLs.set(url, image);
   image.className = 'big-img'; image.alt = ''; image.style.cssText = 'max-height:36vh;object-fit:contain';
-  image.onload = image.onerror = () => URL.revokeObjectURL(url); image.src = url;
-  document.getElementById('chat-image-preview').appendChild(image);
+  image.onload = image.onerror = () => { URL.revokeObjectURL(url); chatPreviewURLs.delete(url); }; image.src = url;
+  preview.appendChild(image);
 }
 // invia un record o un esercizio a un amico della chat
 function sheetChatPick(card) {
@@ -647,9 +731,9 @@ Object.assign(acts, {
   },
   chatcardpick: b => sheetChatPick({ex: b.dataset.ex, kg: +b.dataset.kg, rp: +b.dataset.rp}),
   chatimgto: async b => {
-    const pk = b.dataset.pk, x = chatOutImg; if (!x) return;
-    try { if (!await chatEnsureUnlocked()) return; const epoch = chatEpoch; closeSheet(); const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy()) return; const sent = await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); if (!sent || epoch !== chatEpoch) return; chatOutImg = null; go({name: 'chat', id: pk, from: 'chat'}); }
-    catch (e) { alert(t('chatPhotoFail')); }
+    const pk = b.dataset.pk, x = chatOutImg, context = chatMediaContext(); if (!x || !chatMediaCurrent(context)) return;
+    try { if (!await chatEnsureUnlocked() || !chatMediaCurrent(context)) return; const epoch = chatEpoch; closeSheet(); const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy() || !chatMediaCurrent(context)) return; const sent = await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); if (!sent || epoch !== chatEpoch || !chatMediaCurrent(context)) return; chatOutImg = null; go({name: 'chat', id: pk, from: 'chat'}); }
+    catch (e) { if (chatMediaCurrent(context)) alert(t('chatPhotoFail')); }
   },
   chatopen: b => { go({name: 'chat', id: b.dataset.pk, from: 'chat'}); },
   chatmenu: b => sheetChatMenu(b.dataset.pk),
@@ -663,11 +747,12 @@ Object.assign(acts, {
   },
   chatpick: () => { if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; } document.getElementById('cfile').click(); },
   chatimg: async b => {
-    const epoch = chatEpoch, d = await imgGet(b.dataset.imgid);
-    if (!d || epoch !== chatEpoch || chatDataBusy()) return;
+    const epoch = chatEpoch, context = chatMediaContext(), d = await imgGet(b.dataset.imgid);
+    if (!d || epoch !== chatEpoch || !chatMediaCurrent(context)) return;
     sheet('<div id="chat-image-view"></div>');
+    const preview = document.getElementById('chat-image-view'); if (!preview) return;
     const image = document.createElement('img'); image.className = 'big-img'; image.alt = ''; image.src = d;
-    document.getElementById('chat-image-view').appendChild(image);
+    preview.appendChild(image);
   },
   // elimina la conversazione e la toglie dall'elenco (ricompare se l'amico riscrive); le foto si cancellano dopo il tempo per annullare
   chatclear: b => { const epoch = chatEpoch, pk = b.dataset.pk, old = (chat().msgs[pk] || []).slice(); closeSheet(); go({name: 'home', tab: 'chat'});

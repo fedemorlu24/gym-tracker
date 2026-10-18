@@ -1,23 +1,35 @@
 const KEY = 'gym-tracker-v1';
 const APP_VERSION = new URL(document.currentScript.src).searchParams.get('v') || '0';
+let archiveExpected = false;
 let db = load();
 let view = {name: 'home', tab: 'today'};
 
 function load() {
-  try { return clean(JSON.parse(localStorage.getItem(KEY))) || {sessions: []}; }
+  try {
+    const cached = JSON.parse(localStorage.getItem(KEY));
+    if (cached && Object.hasOwn(cached, 'archiveProtection')) { archiveExpected = true; return {sessions: []}; }
+    return clean(cached) || {sessions: []};
+  }
   catch (e) { return {sessions: []}; }
 }
 // All storage and backup entry points share the same schema boundary.
 function clean(o) { return window.GymData.clean(o); }
 const IDB = 'gym-tracker', STORE = 'kv', PHOTOS = 'photos';
 const STORAGE_META = 'restore-generation', STORAGE_ROLLBACK = 'restore-rollback';
+const ARCHIVE_HEADER = 'archive-protection', PHOTO_REVISION = 'photos-revision';
+let archiveHeader = null, archiveSession = null, archiveLocked = archiveExpected, archiveEpoch = 0;
+let archiveSaveChain = Promise.resolve(), archivePhotoChain = Promise.resolve(), archiveResumePending = false, archiveLifecycleTask = null, archiveAuthEpoch = 0, archiveSetupPending = false;
 let storageGeneration = null, storageBusy = true;
 let vaultCachePending = false;
-window.gymStorageBusy = () => storageBusy;
+window.gymStorageBusy = () => storageBusy || archiveResumePending;
 // Capture before per-element handlers, including forms inside open sheets.
 for (const type of ['click', 'input', 'change', 'submit', 'keydown']) {
   document.addEventListener(type, e => {
-    if (storageBusy) {
+    if (storageBusy || archiveLocked || archiveResumePending) {
+      const retry = document.getElementById('archive-resume-retry');
+      if (retry && e.target.closest && e.target.closest('button') === retry && retry.parentElement.id === 'archive-resume-guard' &&
+          (type === 'click' || type === 'keydown' && (e.key === 'Enter' || e.key === ' '))) return;
+      if (e.target.closest && e.target.closest('#archive-gate, #archive-setup-form')) return;
       // Only the active password dialog's cancellation controls may interrupt
       // a pending KDF; edits and submissions remain blocked while storage moves.
       const cancel = typeof window.gymChatVaultCancelTarget === 'function' && window.gymChatVaultCancelTarget(e.target);
@@ -45,14 +57,38 @@ function idb() {
     r.onblocked = () => rej(new Error('storage blocked'));
   });
 }
-function storageSnapshot(includeRollback = false) {
+function storageRawSnapshot(includeRollback = false) {
   return idb().then(d => new Promise((res, rej) => {
     const tx = d.transaction([STORE, PHOTOS]), kv = tx.objectStore(STORE);
-    const data = kv.get(KEY), meta = kv.get(STORAGE_META), rollback = includeRollback ? kv.get(STORAGE_ROLLBACK) : null, ph = tx.objectStore(PHOTOS).getAll();
-    tx.oncomplete = () => { d.close(); res({json: data.result, generation: meta.result || null, rollback: rollback && rollback.result, photos: ph.result || []}); };
+    const data = kv.get(KEY), meta = kv.get(STORAGE_META), protection = kv.get(ARCHIVE_HEADER), revision = kv.get(PHOTO_REVISION);
+    const rollback = includeRollback ? kv.get(STORAGE_ROLLBACK) : null, ph = tx.objectStore(PHOTOS).getAll();
+    tx.oncomplete = () => { d.close(); res({json: data.result, generation: meta.result || null, header: protection.result || null,
+      photoRevision: revision.result || null, rollback: rollback && rollback.result, photos: ph.result || []}); };
     tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('storage read')); };
   }));
 }
+async function decodeStorageSnapshot(raw, session = archiveSession) {
+  const snapshot = {...raw, rawJson: raw.json, rawPhotos: raw.photos, rawRollback: raw.rollback};
+  if (!raw.header) {
+    if (archiveExpected || archiveHeader) throw vaultFailure('ARCHIVE_LOCKED');
+    return snapshot;
+  }
+  archiveExpected = true; archiveHeader = raw.header;
+  archiveHeader = ArchiveVault.validate(raw.header);
+  if (!session || session.fingerprint !== ArchiveVault.fingerprint(raw.header)) throw vaultFailure('ARCHIVE_LOCKED');
+  const epoch = archiveEpoch;
+  snapshot.json = await session.open(JSON.parse(raw.json), 'archive', KEY);
+  snapshot.photos = await Promise.all(raw.photos.map(row => session.open(row.sealed, 'photo', row.id)));
+  if (raw.rollback) snapshot.rollback = await session.open(raw.rollback, 'rollback', STORAGE_ROLLBACK);
+  if (epoch !== archiveEpoch) throw vaultFailure('ARCHIVE_LOCKED');
+  return snapshot;
+}
+async function storageSnapshot(includeRollback = false) { return decodeStorageSnapshot(await storageRawSnapshot(includeRollback)); }
+async function archiveJSON(json, session = archiveSession) { return session ? JSON.stringify(await session.seal(json, 'archive', KEY)) : json; }
+async function archivePhotos(rows, session = archiveSession) {
+  return session ? Promise.all(rows.map(async row => ({id: row.id, sealed: await session.seal(row, 'photo', row.id)}))) : rows;
+}
+async function archiveRollback(value, session = archiveSession) { return session && value ? session.seal(value, 'rollback', STORAGE_ROLLBACK) : value; }
 function idbGet() { return storageSnapshot().then(s => s.json); }
 // Compare the restore generation inside EVERY write transaction. An older tab
 // must not overwrite an archive restored by another tab.
@@ -70,23 +106,50 @@ function storageWrite(stores, fn, expected = storageGeneration) {
     };
   })));
 }
-function idbPut(v) { return storageWrite([STORE], tx => tx.objectStore(STORE).put(v, KEY)); }
-function cacheArchive(json) {
-  const archive = JSON.parse(json), protectedKey = archive.chat && archive.chat.vault && !archive.chat.sk;
-  try {
-    localStorage.setItem(KEY, json);
-    if (localStorage.getItem(KEY) !== json) throw new Error('cache verification');
-    vaultCachePending = false; return true;
-  } catch (_) {
-    if (!protectedKey) return false;
-    // IDB is authoritative after protection. An absent cache is safe; retaining
-    // a previous plaintext private key is not a completed migration.
-    try {
-      localStorage.removeItem(KEY);
-      if (localStorage.getItem(KEY) !== null) throw new Error('cache cleanup');
-      vaultCachePending = false; return true;
-    } catch (_) { vaultCachePending = true; return false; }
-  }
+function idbPut(value, expected = storageGeneration) {
+  const session = archiveSession;
+  if (archiveLocked || archiveHeader && !session) return Promise.reject(vaultFailure('ARCHIVE_LOCKED'));
+  const task = archiveSaveChain.then(async () => {
+    const stored = await archiveJSON(value, session);
+    await storageWrite([STORE], tx => tx.objectStore(STORE).put(stored, KEY), expected);
+    return stored;
+  });
+  archiveSaveChain = task.catch(() => {});
+  return trackWrite(task);
+}
+function cacheArchive(json, expected = storageGeneration) {
+  // Cache only while a readonly transaction fences newer IDB writes. Checking
+  // before starting this transaction leaves a delayed-completion cross-tab race.
+  return trackWrite(idb().then(d => new Promise((resolve, reject) => {
+    const tx = d.transaction(STORE), kv = tx.objectStore(STORE);
+    const data = kv.get(KEY), meta = kv.get(STORAGE_META), protection = kv.get(ARCHIVE_HEADER);
+    let ok = false;
+    protection.onsuccess = () => {
+      if ((meta.result || null) !== expected || data.result !== json) return;
+      const protectedArchive = !!protection.result;
+      let protectedKey = protectedArchive;
+      try { const value = JSON.parse(json); protectedKey = protectedKey || !!(value.chat && value.chat.vault && !value.chat.sk); } catch (_) {}
+      const value = protectedArchive ? JSON.stringify({archiveProtection: protection.result, encrypted: json}) : json;
+      try {
+        localStorage.setItem(KEY, value);
+        if (localStorage.getItem(KEY) !== value) throw new Error('cache verification');
+        if (protectedArchive) {
+          localStorage.removeItem('gym-rest');
+          if (localStorage.getItem('gym-rest') !== null) throw new Error('cache cleanup');
+        }
+        vaultCachePending = false; ok = true;
+      } catch (_) {
+        if (!protectedKey) return;
+        try {
+          localStorage.removeItem(KEY); localStorage.removeItem('gym-rest');
+          if (localStorage.getItem(KEY) !== null || localStorage.getItem('gym-rest') !== null) throw new Error('cache cleanup');
+          vaultCachePending = false; ok = true;
+        } catch (_) { vaultCachePending = true; }
+      }
+    };
+    tx.oncomplete = () => { d.close(); resolve(ok); };
+    tx.onabort = tx.onerror = () => { d.close(); reject(tx.error || new Error('cache read')); };
+  })));
 }
 function vaultFailure(code) { const e = new Error(code); e.code = code; return e; }
 async function protectArchiveIdentity(source, password, allowCreate = false, preserveInvalid = false) {
@@ -133,13 +196,14 @@ async function protectChatIdentity(password, isCurrent = () => true) {
     const candidate = await protectArchiveIdentity(db, password, true);
     await ChatVault.verify(candidate.chat.vault, password, candidate.chat.pk);
     let rollback = before.rollback;
-    if (rollback) {
+    if (rollback && !rollback.opaqueArchive) {
       if (typeof rollback.json !== 'string') throw vaultFailure('VAULT_INVALID');
       const protectedRollback = await protectArchiveIdentity(JSON.parse(rollback.json), password, false, true);
       rollback = {...rollback, json: JSON.stringify(protectedRollback)};
     }
     candidate.ts = Date.now();
     const json = JSON.stringify(candidate), generation = crypto.randomUUID();
+    const storedJson = await archiveJSON(json), storedRollback = await archiveRollback(rollback);
     if (!isCurrent()) throw vaultFailure('VAULT_STALE');
     await storageWrite([STORE], tx => {
       const kv = tx.objectStore(STORE), previous = kv.get(KEY), oldRollback = kv.get(STORAGE_ROLLBACK);
@@ -147,14 +211,14 @@ async function protectChatIdentity(password, isCurrent = () => true) {
         try {
           // Encryption is staged outside the transaction. Compare every source
           // before committing so another tab's newer key/data cannot be erased.
-          if (!isCurrent() || previous.result !== before.json || JSON.stringify(oldRollback.result) !== JSON.stringify(before.rollback)) { tx.abort(); return; }
-          kv.put(json, KEY); kv.put(generation, STORAGE_META);
-          if (rollback) kv.put(rollback, STORAGE_ROLLBACK);
+          if (!isCurrent() || previous.result !== before.rawJson || JSON.stringify(oldRollback.result) !== JSON.stringify(before.rawRollback)) { tx.abort(); return; }
+          kv.put(storedJson, KEY); kv.put(generation, STORAGE_META);
+          if (rollback) kv.put(storedRollback, STORAGE_ROLLBACK);
         } catch (_) { tx.abort(); }
       };
     });
     committed = true; storageGeneration = generation; db = candidate;
-    if (!cacheArchive(json)) throw vaultFailure('VAULT_CLEANUP');
+    if (!await cacheArchive(storedJson, generation)) throw vaultFailure('VAULT_CLEANUP');
     if (!isCurrent()) throw vaultFailure('VAULT_STALE');
     await ChatVault.unlock(password);
     return db.chat;
@@ -168,28 +232,76 @@ async function protectChatIdentity(password, isCurrent = () => true) {
 let backupFile = null;
 let backupRevision = 0, backupDialog = null;
 function save() {
-  if (storageBusy) return;
+  if (storageBusy || archiveLocked) return;
   db.ts = Date.now(); invalidateBackupData(); libByName = null;
   const json = JSON.stringify(db);
   // Cache only AFTER the generation-checked commit: a stale tab must not put
   // a pre-migration private key back into localStorage before IDB rejects it.
-  idbPut(json).then(() => { cacheArchive(json); }, () => {
-    alert(t('saveFail'));
+  const expected = storageGeneration;
+  const task = trackWrite(idbPut(json, expected).then(stored => cacheArchive(stored, expected)));
+  task.catch(() => {
+    if (!archiveResumePending) alert(t('saveFail'));
     restore().catch(() => {});
   });
+  return task;
 }
 let photos = [];
 function photoTx(mode, fn) {
+  if (archiveLocked) return Promise.reject(vaultFailure('ARCHIVE_LOCKED'));
+  if (!archiveSession) {
+    if (mode === 'readwrite') {
+      if (storageBusy) return Promise.reject(new Error('storage busy'));
+      invalidateBackupData();
+      return storageWrite([STORE, PHOTOS], tx => {
+        tx.objectStore(STORE).put(crypto.randomUUID(), PHOTO_REVISION);
+        return fn(tx.objectStore(PHOTOS));
+      });
+    }
+    return idb().then(d => new Promise((res, rej) => {
+      const tx = d.transaction(PHOTOS), out = fn(tx.objectStore(PHOTOS));
+      tx.oncomplete = () => { d.close(); res(out && out.result); };
+      tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('photo read')); };
+    }));
+  }
+  // The app's photo callbacks use get/getAll/put/delete. Collect their operations
+  // synchronously, then perform Web Crypto outside the IDB write transaction.
+  const operations = [], session = archiveSession, expected = storageGeneration, epoch = archiveEpoch;
+  const proxy = Object.fromEntries(['get', 'getAll', 'put', 'delete'].map(method => [method, value => {
+    const request = {result: undefined}; operations.push({method, value, request}); return request;
+  }]));
+  let request;
+  try { request = fn(proxy); } catch (e) { return Promise.reject(e); }
   if (mode === 'readwrite') {
     if (storageBusy) return Promise.reject(new Error('storage busy'));
     invalidateBackupData();
-    return storageWrite([STORE, PHOTOS], tx => fn(tx.objectStore(PHOTOS)));
+    const task = archivePhotoChain.then(async () => {
+      for (const operation of operations) if (operation.method === 'put') operation.stored = (await archivePhotos([operation.value], session))[0];
+      if (epoch !== archiveEpoch) throw vaultFailure('ARCHIVE_LOCKED');
+      return storageWrite([STORE, PHOTOS], tx => {
+        const store = tx.objectStore(PHOTOS); tx.objectStore(STORE).put(crypto.randomUUID(), PHOTO_REVISION);
+        for (const operation of operations) {
+          if (operation.method === 'put') store.put(operation.stored);
+          else if (operation.method === 'delete') store.delete(operation.value);
+          else throw new Error('Unsupported photo write');
+        }
+      }, expected);
+    });
+    archivePhotoChain = task.catch(() => {});
+    return trackWrite(task);
   }
-  return idb().then(d => new Promise((res, rej) => {
-    const tx = d.transaction(PHOTOS), out = fn(tx.objectStore(PHOTOS));
-    tx.oncomplete = () => { d.close(); res(out && out.result); };
-    tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('photo read')); };
-  }));
+  return (async () => {
+    const raw = await storageRawSnapshot();
+    if (raw.generation !== expected || !raw.header || ArchiveVault.fingerprint(raw.header) !== session.fingerprint) throw vaultFailure('ARCHIVE_LOCKED');
+    for (const operation of operations) {
+      if (operation.method === 'getAll') operation.request.result = await Promise.all(raw.photos.map(row => session.open(row.sealed, 'photo', row.id)));
+      else if (operation.method === 'get') {
+        const row = raw.photos.find(row => row.id === operation.value);
+        operation.request.result = row ? await session.open(row.sealed, 'photo', row.id) : undefined;
+      } else throw new Error('Unsupported photo read');
+    }
+    if (epoch !== archiveEpoch || archiveLocked) throw vaultFailure('ARCHIVE_LOCKED');
+    return request && request.result;
+  })();
 }
 function photoViews(list) {
   const next = [];
@@ -222,28 +334,332 @@ async function restore(initial = false) {
     if (switched && window.gymChatPause) { paused = true; await window.gymChatPause(); }
     if (o && (snap.generation || (o.ts || 0) > (db.ts || 0))) {
       db = o;
-      cacheArchive(snap.json);
+      if (!await cacheArchive(snap.rawJson, snap.generation) && snap.header) throw vaultFailure('ARCHIVE_CLEANUP');
     }
     storageGeneration = snap.generation;
     ChatVault.sync();
     replacePhotos(photoViews(snap.photos));
     if (!snap.generation && (!o || (db.ts || 0) > (o.ts || 0)) && db.sessions.length)
       await idbPut(JSON.stringify(db));
+    if (Object.hasOwn(db, 'archiveRest') || snap.header) rest = db.archiveRest || null;
+    else if (rest) {
+      // Migrate the legacy timer only after the authoritative archive is read.
+      db.archiveRest = rest;
+      const stored = await idbPut(JSON.stringify(db));
+      await cacheArchive(stored, storageGeneration);
+    }
+    try { localStorage.removeItem('gym-rest'); } catch (_) {}
     libByName = null; restored = true;
   } catch (e) {
-    // An inaccessible IDB must never be replaced with an empty/fallback archive.
-    // Keep this session's validated local copy; a restore itself requires IDB.
-    if (!initial) throw e;
+    if (archiveHeader || archiveExpected || e.code === 'ARCHIVE_LOCKED') {
+      archiveLocked = true; archiveEpoch++;
+      if (archiveSession) archiveSession.close(); archiveSession = null;
+      if (window.gymChatPause) await window.gymChatPause();
+      clearArchiveMemory(); showArchiveGate(e.code === 'ARCHIVE_CLEANUP' ? 'archiveCleanup' : '');
+    } else if (!initial) throw e;
   } finally {
-    storageBusy = false;
-    if (paused && window.gymChatResume) window.gymChatResume();
+    storageBusy = archiveLocked;
+    if (!archiveLocked && paused && window.gymChatResume) window.gymChatResume();
     if (backupDialog) queueBackup(backupDialog);
     resumeBackupExport(restored);
   }
+  if (archiveLocked) {
+    if (initial) await new Promise(resolve => { archiveBootResolve = resolve; });
+    return;
+  }
   setLang(); applyTheme(); render();
 }
+// ---------- password protection of the whole local archive ----------
+let archiveBootResolve = null;
+function clearArchiveMemory() {
+  db = {sessions: []}; view = {name: 'home', tab: 'today'}; libByName = null;
+  Object.keys(drafts).forEach(key => delete drafts[key]);
+  disposeBackupDialog(); clearTimeout(planSaveT); clearTimeout(sheetCloseT); clearTimeout(toastT);
+  replacePhotos([]);
+  if (window.gymChatClearMedia) window.gymChatClearMedia();
+  if (typeof imgCache !== 'undefined') Object.keys(imgCache).forEach(key => delete imgCache[key]);
+  if (typeof chatOutImg !== 'undefined') chatOutImg = null;
+  if (typeof chatOutLink !== 'undefined') chatOutLink = '';
+  shareRequest++; shareFile = null; shareText = '';
+  if (sharePreviewURL) URL.revokeObjectURL(sharePreviewURL); sharePreviewURL = '';
+  shareDownloadURLs.forEach(url => URL.revokeObjectURL(url)); shareDownloadURLs.clear();
+  [...shareLoadingImages].forEach(entry => entry.cancel());
+  ChatVault.lock();
+  rest = null; clearInterval(restTick); restTick = null; keepAwake(false);
+  for (const id of ['app', 'tabbar', 'sheet', 'toast', 'rest', 'tour', 'install']) {
+    const element = document.getElementById(id); if (element) { element.innerHTML = ''; element.hidden = id !== 'app' && id !== 'toast'; }
+  }
+  document.body.classList.remove('tabs', 'resting');
+}
+function showArchiveGate(error = '') {
+  const app = document.getElementById('app');
+  app.innerHTML = `<section id="archive-gate" style="max-width:460px;margin:8vh auto;padding:24px">
+    <h1>${t('archiveLocked')}</h1><p class="note" style="margin:16px 0">${t('archiveLockedText')}</p>
+    <form id="archive-unlock-form"><label class="field">${t('archivePassword')}<input name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
+    <p class="warn" id="archive-error" role="alert">${error ? t(error) : ''}</p>
+    <button class="btn p wide" type="submit">${t('archiveUnlock')}</button></form>
+    <div class="gap"></div><button class="btn s wide" id="archive-recovery">${t('archiveRecover')}</button>
+    <input id="archive-recovery-file" type="file" accept=".json,application/json" hidden>
+    <p class="note" style="margin-top:16px">${t('archiveRecoveryHint')}</p></section>`;
+  const form = document.getElementById('archive-unlock-form');
+  form.onsubmit = async event => {
+    event.preventDefault(); if (form.dataset.busy) return;
+    form.dataset.busy = '1'; form.querySelector('button').disabled = true;
+    let password = form.elements.password.value; form.reset();
+    try { await unlockArchive(password); }
+    catch (error) {
+      const label = document.getElementById('archive-error');
+      if (label) label.textContent = t(error.code === 'ARCHIVE_CLEANUP' ? 'archiveCleanup' : 'archiveUnlockFailed');
+    } finally { password = ''; delete form.dataset.busy; if (form.isConnected) form.querySelector('button').disabled = false; }
+  };
+  const file = document.getElementById('archive-recovery-file');
+  document.getElementById('archive-recovery').onclick = () => { if (!form.dataset.busy) file.click(); };
+  file.onchange = async () => {
+    const backup = file.files[0]; file.value = ''; if (!backup || form.dataset.busy) return;
+    form.dataset.busy = '1';
+    try { await recoverArchiveBackup(backup); }
+    catch (_) { showArchiveGate('archiveRecoveryFailed'); }
+    finally { delete form.dataset.busy; }
+  };
+}
+function archiveRecoveryPassword(message, creating = false) {
+  return new Promise(resolve => {
+    const gate = document.getElementById('archive-gate');
+    gate.innerHTML = `<h2>${t('archiveRecover')}</h2><p class="note" style="margin:16px 0">${esc(message)}</p>
+      <form id="archive-recovery-password"><label class="field">${t('archiveRecoveryPasswordLabel')}<input name="password" type="password" autocomplete="${creating ? 'new-password' : 'current-password'}" ${creating ? 'minlength="12"' : ''} maxlength="1024" required></label>
+      ${creating ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>` : ''}
+      <p id="archive-recovery-password-error" class="warn" role="alert"></p><button class="btn p wide" type="submit">${t('vaultContinue')}</button>
+      <div class="gap"></div><button class="btn s wide" type="button" id="archive-recovery-cancel">${t('close')}</button></form>`;
+    const form = gate.querySelector('form'); let settled = false;
+    const finish = value => { if (settled) return; settled = true; form.reset(); resolve(value); };
+    form.onsubmit = event => {
+      event.preventDefault();
+      const password = form.elements.password.value;
+      if (creating && (password.length < 12 || password !== form.elements.confirm.value)) {
+        gate.querySelector('#archive-recovery-password-error').textContent = t(password.length < 12 ? 'vaultPasswordHint' : 'vaultMismatch'); return;
+      }
+      finish(password);
+    };
+    gate.querySelector('#archive-recovery-cancel').onclick = () => finish(null);
+  });
+}
+async function recoverArchiveBackup(file) {
+  let staged, session = null, committed = false, nextViews;
+  try {
+    staged = await stageBackup(file, true);
+    if (!staged || !confirm(t('archiveRecoveryConfirm') + '\n\n' + t('importConfirm', staged.candidate.sessions.length))) { showArchiveGate(); return; }
+    let password = await archiveRecoveryPassword(t('archiveRecoveryNewPassword'), true);
+    if (password == null) { showArchiveGate(); return; }
+    try { session = await ArchiveVault.create(password); } finally { password = ''; }
+    const raw = await storageRawSnapshot(true);
+    if (!raw.header && !archiveExpected) throw vaultFailure('ARCHIVE_LOCKED');
+    const candidate = staged.candidate; candidate.ts = Date.now();
+    const json = JSON.stringify(candidate), storedJson = await archiveJSON(json, session), rows = await archivePhotos(staged.records, session);
+    // Keep the entire previous encrypted archive, including its own key wrapper.
+    // Its old password remains necessary; recovery never silently drops it.
+    const rollback = await archiveRollback({opaqueArchive: raw}, session);
+    if (await session.open(JSON.parse(storedJson), 'archive', KEY) !== json) throw vaultFailure('ARCHIVE_FORMAT');
+    for (const row of rows) await session.open(row.sealed, 'photo', row.id);
+    await session.open(rollback, 'rollback', STORAGE_ROLLBACK);
+    nextViews = photoViews(staged.records);
+    const generation = crypto.randomUUID();
+    await storageWrite([STORE, PHOTOS], tx => {
+      const kv = tx.objectStore(STORE), photos = tx.objectStore(PHOTOS);
+      const previous = kv.get(KEY), revision = kv.get(PHOTO_REVISION), oldRollback = kv.get(STORAGE_ROLLBACK), header = kv.get(ARCHIVE_HEADER);
+      header.onsuccess = () => {
+        try {
+          if (!archiveSourceMatches(previous.result, raw, revision.result, oldRollback.result, header.result)) { tx.abort(); return; }
+          kv.put(storedJson, KEY); kv.put(session.header, ARCHIVE_HEADER); kv.put(generation, STORAGE_META);
+          kv.put(rollback, STORAGE_ROLLBACK); kv.put(crypto.randomUUID(), PHOTO_REVISION);
+          photos.clear(); rows.forEach(row => photos.put(row));
+        } catch (_) { tx.abort(); }
+      };
+    }, raw.generation);
+    committed = true; archiveSession = session; session = null; archiveHeader = archiveSession.header;
+    archiveExpected = true; storageGeneration = generation;
+    if (!await cacheArchive(storedJson, generation)) throw vaultFailure('ARCHIVE_CLEANUP');
+    db = candidate; replacePhotos(nextViews); nextViews = null;
+    archiveLocked = false; storageBusy = false; rest = db.archiveRest || null;
+    setLang(); applyTheme(); render(); if (rest) drawRest();
+    if (window.gymChatResume) window.gymChatResume();
+    if (archiveBootResolve) { const resolve = archiveBootResolve; archiveBootResolve = null; resolve(); }
+  } catch (error) {
+    if (committed) {
+      archiveLocked = true; archiveEpoch++; archiveSession.close(); archiveSession = null;
+      clearArchiveMemory(); showArchiveGate('archiveCleanup');
+    }
+    throw error;
+  } finally {
+    if (staged) staged.vaultPassword = '';
+    if (session) session.close();
+    if (nextViews) nextViews.forEach(photo => URL.revokeObjectURL(photo.url));
+  }
+}
+
+async function unlockArchive(password) {
+  if (!archiveLocked) return;
+  const authEpoch = archiveAuthEpoch;
+  const raw = await storageRawSnapshot(true);
+  if (!raw.header) throw vaultFailure('ARCHIVE_LOCKED');
+  let session = await ArchiveVault.unlock(raw.header, password), nextViews;
+  try {
+    if (authEpoch !== archiveAuthEpoch) throw vaultFailure('ARCHIVE_STALE');
+    const snapshot = await decodeStorageSnapshot(raw, session);
+    const candidate = clean(JSON.parse(snapshot.json));
+    if (!candidate) throw vaultFailure('ARCHIVE_FORMAT');
+    nextViews = photoViews(snapshot.photos);
+    if (!await cacheArchive(raw.json, raw.generation)) throw vaultFailure('ARCHIVE_CLEANUP');
+    if (authEpoch !== archiveAuthEpoch) throw vaultFailure('ARCHIVE_STALE');
+    archiveSession = session; session = null; archiveHeader = raw.header; archiveExpected = true;
+    storageGeneration = raw.generation; db = candidate; replacePhotos(nextViews); nextViews = null;
+    rest = db.archiveRest || null; archiveLocked = false; storageBusy = false;
+    setLang(); applyTheme(); render(); if (rest) drawRest();
+    if (window.gymChatResume) window.gymChatResume();
+    if (archiveBootResolve) { const resolve = archiveBootResolve; archiveBootResolve = null; resolve(); }
+  } finally { if (session) session.close(); if (nextViews) nextViews.forEach(photo => URL.revokeObjectURL(photo.url)); }
+}
+function archiveSourceMatches(previous, raw, photoRevision, rollback, header) {
+  return previous === raw.json && (photoRevision || null) === raw.photoRevision &&
+    JSON.stringify(rollback) === JSON.stringify(raw.rollback) && JSON.stringify(header || null) === JSON.stringify(raw.header);
+}
+async function protectWholeArchive(password) {
+  if (storageBusy || archiveLocked || archiveHeader) throw vaultFailure('ARCHIVE_LOCKED');
+  archiveSetupPending = true;
+  storageBusy = true; invalidateBackupData(); clearTimeout(planSaveT);
+  let session = null, committed = false;
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all([...pendingWrites]);
+    const raw = await storageRawSnapshot(true);
+    if (raw.header || raw.generation !== storageGeneration) throw vaultFailure('ARCHIVE_STALE');
+    const prior = raw.json && JSON.parse(raw.json);
+    if (prior && (prior.ts || 0) > (db.ts || 0)) throw vaultFailure('ARCHIVE_STALE');
+    const candidate = JSON.parse(JSON.stringify(db)); candidate.archiveRest = rest; candidate.ts = Date.now();
+    session = await ArchiveVault.create(password);
+    const json = JSON.stringify(candidate), storedJson = await archiveJSON(json, session);
+    if (await session.open(JSON.parse(storedJson), 'archive', KEY) !== json) throw vaultFailure('ARCHIVE_FORMAT');
+    const rows = await archivePhotos(raw.photos, session), rollback = await archiveRollback(raw.rollback, session);
+    for (const row of rows) await session.open(row.sealed, 'photo', row.id);
+    if (rollback) await session.open(rollback, 'rollback', STORAGE_ROLLBACK);
+    const generation = crypto.randomUUID();
+    await storageWrite([STORE, PHOTOS], tx => {
+      const kv = tx.objectStore(STORE), photos = tx.objectStore(PHOTOS);
+      const previous = kv.get(KEY), photoRevision = kv.get(PHOTO_REVISION), oldRollback = kv.get(STORAGE_ROLLBACK), header = kv.get(ARCHIVE_HEADER);
+      header.onsuccess = () => {
+        try {
+          if (!archiveSourceMatches(previous.result, raw, photoRevision.result, oldRollback.result, header.result)) { tx.abort(); return; }
+          kv.put(storedJson, KEY); kv.put(session.header, ARCHIVE_HEADER); kv.put(generation, STORAGE_META); kv.put(crypto.randomUUID(), PHOTO_REVISION);
+          if (rollback) kv.put(rollback, STORAGE_ROLLBACK);
+          photos.clear(); rows.forEach(row => photos.put(row));
+        } catch (_) { tx.abort(); }
+      };
+    }, raw.generation);
+    committed = true; archiveSession = session; session = null; archiveHeader = archiveSession.header;
+    archiveExpected = true; storageGeneration = generation; db = candidate;
+    if (!await cacheArchive(storedJson, generation)) throw vaultFailure('ARCHIVE_CLEANUP');
+    closeSheet(); render();
+  } catch (error) {
+    if (committed) {
+      archiveLocked = true; archiveEpoch++; archiveSession.close(); archiveSession = null;
+      clearArchiveMemory(); showArchiveGate('archiveCleanup');
+    }
+    throw error;
+  } finally {
+    password = ''; if (session) session.close(); archiveSetupPending = false; storageBusy = archiveLocked;
+    if (!archiveLocked && window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+  }
+}
+function sheetArchiveProtection() {
+  if (archiveHeader) return;
+  sheet(`<h2>${t('archiveProtect')}</h2><p class="note" style="margin:12px 0">${t('archiveProtectText')}</p>
+    <p class="warn" style="margin:12px 0">${t('archivePasswordWarning')}</p><p class="note" style="margin:12px 0">${t('archiveChatSeparate')}</p>
+    <p class="note" style="margin:12px 0">${t('vaultMigrationNote')}</p>
+    <form id="archive-setup-form"><label class="field">${t('archivePassword')}<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
+    <label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
+    <p class="note">${t('vaultPasswordHint')}</p><p class="warn" id="archive-setup-error" role="alert"></p>
+    <button class="btn p wide" type="submit">${t('archiveProtect')}</button></form>`);
+  const form = document.getElementById('archive-setup-form');
+  form.onsubmit = async event => {
+    event.preventDefault(); if (form.dataset.busy) return;
+    const error = form.querySelector('#archive-setup-error');
+    if (form.elements.password.value !== form.elements.confirm.value) { error.textContent = t('vaultMismatch'); return; }
+    let password = form.elements.password.value;
+    form.dataset.busy = '1'; form.querySelector('button').disabled = true; error.textContent = t('archiveWorking'); form.reset();
+    try { await protectWholeArchive(password); }
+    catch (_) { if (form.isConnected) error.textContent = t('archiveProtectFailed'); }
+    finally { password = ''; delete form.dataset.busy; if (form.isConnected) form.querySelector('button').disabled = false; }
+  };
+}
+async function lockWholeArchive() {
+  if (!archiveHeader || archiveLocked || storageBusy) return;
+  const flush = save(); // Keep this promise even if it settles during chat pause.
+  const draining = [...pendingWrites];
+  storageBusy = true; invalidateBackupData(); clearTimeout(planSaveT);
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all([flush, ...draining, ...pendingWrites]);
+    archiveLocked = true; archiveEpoch++;
+    if (archiveSession) archiveSession.close(); archiveSession = null;
+    clearArchiveMemory(); showArchiveGate();
+  } catch (_) {
+    storageBusy = false; if (window.gymChatResume) window.gymChatResume();
+    if (!archiveResumePending) alert(t('archiveLockFailed'));
+  }
+}
+
+// A page restored from BFCache retains its JS realm. Mask immediately on
+// pagehide; drain accepted saves before discarding keys, then reveal only the
+// password gate on pageshow. A mere visibility/background change does not lock.
+function archiveLifecycleLock() {
+  if (archiveLifecycleTask) return archiveLifecycleTask;
+  const task = (async () => {
+    const cancel = document.getElementById('chat-vault-cancel');
+    if (cancel) cancel.click(); // Cancel password-waiting imports before draining.
+    await Promise.resolve();
+    while ((storageBusy || archiveSetupPending) && !archiveLocked) await new Promise(resolve => setTimeout(resolve, 20));
+    await lockWholeArchive();
+    return archiveLocked;
+  })();
+  archiveLifecycleTask = task;
+  task.finally(() => { if (archiveLifecycleTask === task) archiveLifecycleTask = null; }).catch(() => {});
+  return task;
+}
+async function archiveResumeFromPage() {
+  if (!archiveResumePending) return;
+  let locked = false;
+  try { locked = await archiveLifecycleLock(); } catch (_) {}
+  // A first-time setup may abort before committing any protection. In that
+  // case the untouched legacy archive remains usable; do not trap it behind a
+  // password gate for a key that was never created. A committed header instead
+  // always goes through lockWholeArchive before anything is revealed.
+  const setupAborted = !archiveHeader && !archiveExpected && !archiveSetupPending && !storageBusy;
+  if (locked || setupAborted) {
+    archiveResumePending = false;
+    const guard = document.getElementById('archive-resume-guard'); if (guard) guard.remove();
+    document.getElementById('app').hidden = false; document.body.hidden = false;
+    if (setupAborted) { render(); if (window.gymChatResume) window.gymChatResume(); }
+    return;
+  }
+  // A storage failure must not discard unsaved data or reveal it after a back
+  // navigation. Keep the existing state masked and offer a save/lock retry.
+  for (const id of ['app', 'tabbar', 'sheet', 'toast', 'rest', 'tour', 'install']) document.getElementById(id).hidden = true;
+  let guard = document.getElementById('archive-resume-guard');
+  if (!guard) { guard = document.createElement('section'); guard.id = 'archive-resume-guard'; document.body.appendChild(guard); }
+  guard.style.cssText = 'max-width:460px;margin:8vh auto;padding:24px';
+  guard.innerHTML = `<h1>${t('archiveLocked')}</h1><p class="warn" style="margin:16px 0">${t('archiveResumeFailed')}</p><button id="archive-resume-retry" class="btn p wide" type="button">${t('vaultRetry')}</button>`;
+  guard.querySelector('button').onclick = () => { document.body.hidden = true; void archiveResumeFromPage(); };
+  document.body.hidden = false;
+}
+addEventListener('pagehide', () => {
+  if (!archiveHeader && !archiveExpected && !archiveSetupPending) return;
+  archiveAuthEpoch++; archiveResumePending = true; document.body.hidden = true;
+  void archiveLifecycleLock().catch(() => {});
+});
+addEventListener('pageshow', () => { if (archiveResumePending) void archiveResumeFromPage(); });
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') restore().catch(() => {});
+  if (document.visibilityState === 'visible' && !archiveLocked && !archiveResumePending) restore().catch(() => {});
 });
 // chiede al browser di non eliminare mai questi dati
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
@@ -597,6 +1013,7 @@ function go(v) {
   else if (!sameView) window.scrollTo(0, 0);
 }
 function render() {
+  if (archiveLocked || archiveResumePending) return;
   const app = document.getElementById('app');
   let tabs = false;
   if (view.name === 'session' && sess(view.id)) app.innerHTML = sessionView();
@@ -1107,6 +1524,8 @@ function settingsView() {
     <p class="note" style="padding:8px 4px 0">${t('guideAnimText')}</p>
     <p class="glabel">${t('theme')}</p>
     <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'dark') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
+    <p class="glabel">${t('archiveSecurity')}</p>
+    <div class="group"><button class="row" data-act="${archiveHeader ? 'archivelock' : 'archiveprotect'}"><div class="grow"><h3>${t(archiveHeader ? 'archiveLock' : 'archiveProtect')}</h3><div class="sub">${t(archiveHeader ? 'archiveProtected' : 'archiveProtectSummary')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('backup')}</p>
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
@@ -1140,6 +1559,7 @@ function saveProfile(f) {
 // ---------- fogli (bottom sheet) e avvisi ----------
 let sheetCloseT;
 function sheet(html) {
+  if (archiveLocked || archiveResumePending) return;
   disposeBackupDialog();
   clearTimeout(sheetCloseT);
   if (typeof guideStop === 'function') guideStop();
@@ -1180,6 +1600,7 @@ function closeSheet() {
 }
 let toastT;
 function toast(msg, action, fn) {
+  if (archiveLocked || archiveResumePending) return;
   const el = document.getElementById('toast');
   el.innerHTML = `<span>${msg}</span>${action ? `<button>${action}</button>` : ''}`;
   if (action) el.querySelector('button').onclick = () => { el.classList.remove('on'); fn(); };
@@ -1465,14 +1886,31 @@ const toDataURL = blob => new Promise((res, rej) => { const r = new FileReader()
 // cifratura facoltativa: password → chiave (PBKDF2) → AES-GCM; senza password il file resta in chiaro
 const b64of = async buf => (await toDataURL(new Blob([buf]))).split(',')[1];
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-const BK_IT = 250000;
-const bkKey = (pwd, salt, it, use) => crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveKey'])
-  .then(km => crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256'}, km, {name: 'AES-GCM', length: 256}, false, [use]));
+const BK_IT = 600000;
+function backupPasswordCheck(pwd) {
+  if (typeof pwd !== 'string' || pwd.length < 12 || pwd.length > 1024) throw vaultFailure('BACKUP_PASSWORD_LENGTH');
+}
+async function bkKey(pwd, salt, it, use) {
+  const bytes = new TextEncoder().encode(pwd);
+  try {
+    const material = await crypto.subtle.importKey('raw', bytes, 'PBKDF2', false, ['deriveKey']);
+    return await crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256'}, material,
+      {name: 'AES-GCM', length: 256}, false, [use]);
+  } finally { bytes.fill(0); }
+}
+const backupAAD = o => new TextEncoder().encode(JSON.stringify(['gym-tracker-backup', o.gym, o.enc, o.kdf, o.it, o.salt, o.iv]));
 async function encryptBackup(text, pwd) {
+  backupPasswordCheck(pwd);
   if (!(window.crypto && crypto.subtle)) throw new Error('nocrypto');
   const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await bkKey(pwd, salt, BK_IT, 'encrypt'), new TextEncoder().encode(text));
-  return JSON.stringify({gym: 1, enc: 'AES-GCM', kdf: 'PBKDF2-SHA256', it: BK_IT, salt: await b64of(salt), iv: await b64of(iv), data: await b64of(ct)});
+  const envelope = {gym: 2, enc: 'AES-GCM', kdf: 'PBKDF2-SHA256', it: BK_IT, salt: await b64of(salt), iv: await b64of(iv)};
+  const bytes = new TextEncoder().encode(text);
+  try {
+    const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv, additionalData: backupAAD(envelope), tagLength: 128},
+      await bkKey(pwd, salt, BK_IT, 'encrypt'), bytes);
+    envelope.data = await b64of(ct);
+    return JSON.stringify(envelope);
+  } finally { bytes.fill(0); }
 }
 const BACKUP_MAX = 96 * 1024 * 1024, BACKUP_BYTES = 48 * 1024 * 1024, BACKUP_PHOTOS = 1000;
 function backupBase64(s, max) {
@@ -1482,15 +1920,24 @@ function backupBase64(s, max) {
   return bytes;
 }
 async function decryptBackup(o, pwd) {
-  if (o.gym !== 1 || o.enc !== 'AES-GCM' || o.kdf !== 'PBKDF2-SHA256' || !Number.isInteger(o.it) || o.it < 100000 || o.it > 1000000) throw new Error('envelope');
+  if (!o || typeof o !== 'object' || Array.isArray(o) || ![1, 2].includes(o.gym) || o.enc !== 'AES-GCM' || o.kdf !== 'PBKDF2-SHA256' || !Number.isInteger(o.it) || o.it < 100000 || o.it > 1000000) throw new Error('envelope');
+  if (o.gym === 2 && (o.it !== BK_IT || Object.keys(o).sort().join(',') !== 'data,enc,gym,it,iv,kdf,salt')) throw new Error('envelope');
   const salt = backupBase64(o.salt, 16), iv = backupBase64(o.iv, 12), data = backupBase64(o.data, BACKUP_MAX);
   if (salt.length !== 16 || iv.length !== 12 || data.length < 16) throw new Error('envelope');
-  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, await bkKey(pwd, salt, o.it, 'decrypt'), data);
-  return new TextDecoder('utf-8', {fatal: true}).decode(pt);
+  // Version 1 remains readable with its original password, including short
+  // legacy passwords. New exports always use the authenticated v2 envelope.
+  const algorithm = {name: 'AES-GCM', iv, tagLength: 128};
+  if (o.gym === 2) algorithm.additionalData = backupAAD(o);
+  const pt = new Uint8Array(await crypto.subtle.decrypt(algorithm, await bkKey(pwd, salt, o.it, 'decrypt'), data));
+  try { return new TextDecoder('utf-8', {fatal: true}).decode(pt); }
+  finally { pt.fill(0); }
 }
 let bkPwd = '';
 const chatPhotoIds = o => new Set(Object.values(o.chat && o.chat.msgs || {}).flat().filter(m => m.k === 'img' && m.d).map(m => 'c:' + m.id));
 async function prepareBackup(pwd = bkPwd) {
+  if (archiveLocked) throw vaultFailure('ARCHIVE_LOCKED');
+  if (archiveHeader && !pwd) throw vaultFailure('ARCHIVE_BACKUP_PASSWORD');
+  if (pwd) backupPasswordCheck(pwd);
   const generation = storageGeneration, revision = backupRevision;
   await Promise.all([...pendingWrites]);
   if (storageBusy || generation !== storageGeneration || revision !== backupRevision) throw new Error('archive changed');
@@ -1553,6 +2000,10 @@ function queueBackup(ctx, delay = 600) {
   ctx.ready = null; backupFile = null;
   bkPwd = ctx.input.value;
   ctx.button.disabled = true; ctx.button.textContent = bkPwd ? t('bkPrep') : t('preparing');
+  if (archiveHeader && !bkPwd) { ctx.button.textContent = t('archiveBackupPassword'); return; }
+  if (bkPwd && (bkPwd.length < 12 || bkPwd.length > 1024)) {
+    ctx.button.textContent = t('bkPasswordLength'); return;
+  }
   if (storageBusy) return; // restore/commit resumes preparation in its finally.
   const run = () => {
     ctx.timer = null;
@@ -1565,7 +2016,9 @@ function queueBackup(ctx, delay = 600) {
       ctx.button.textContent = t('exportSize', fmt1(Math.max(.1, file.size / 1e6)));
     }).catch(e => {
       if (currentBackupRequest(ctx, request, pwd, revision, generation)) {
-        if (e && e.code === 'VAULT_BACKUP_PASSWORD') ctx.button.textContent = t('vaultBackupPassword');
+        if (e && e.code === 'ARCHIVE_BACKUP_PASSWORD') ctx.button.textContent = t('archiveBackupPassword');
+        else if (e && e.code === 'BACKUP_PASSWORD_LENGTH') ctx.button.textContent = t('bkPasswordLength');
+        else if (e && e.code === 'VAULT_BACKUP_PASSWORD') ctx.button.textContent = t('vaultBackupPassword');
         else alert(t('bkNoCrypto'));
       }
     });
@@ -1593,8 +2046,8 @@ function sheetBackup() {
   sheet(`<h2>${t('backup')}</h2>
     <p class="sub" style="margin-bottom:6px">${t('backupText')}</p>
     <p class="note" style="padding:0 0 10px">${backupDays() == null ? t('bkNever') : backupDays() === 0 ? t('bkToday') : t('bkLast', backupDays())}</p>
-    <label class="field">${t('bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" maxlength="100"></label>
-    <p class="note" style="padding:0 0 12px">${t('bkPwdHint')}</p><p class="note">${t('bkPrivateKey')}</p>
+    <label class="field">${t(archiveHeader ? 'archiveBackupPassword' : 'bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" minlength="12" maxlength="1024" aria-describedby="bk-password-hint"></label>
+    <p class="note" id="bk-password-hint" style="padding:0 0 12px">${t('bkPwdHint')}</p><p class="note">${t('bkPrivateKey')}</p>
     <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button>
     <p class="note" style="padding:8px 2px 12px">${t('bkHow')}</p>
     <button class="btn s wide" data-act="import">${t('importData')}</button><div class="gap"></div>
@@ -1635,12 +2088,12 @@ function exportData() {
     }
   } catch (e) { settled(); }
 }
-async function stageBackup(f) {
+async function stageBackup(f, recovery = false) {
   if (!f || f.size > BACKUP_MAX) throw new Error('backup size');
   let o;
   try { o = JSON.parse(await f.text()); } catch (e) { throw t('importBadJson'); }
   if (o && o.enc) {
-    const pw = prompt(t('bkAsk')); if (pw == null) return null;
+    const pw = recovery ? await archiveRecoveryPassword(t('bkAsk')) : prompt(t('bkAsk')); if (pw == null) return null;
     try { o = JSON.parse(await decryptBackup(o, pw)); } catch (e) { throw t('bkBad'); }
   }
   if (!o || !Array.isArray(o.sessions)) throw t('importNoSessions');
@@ -1663,7 +2116,8 @@ async function stageBackup(f) {
   let vaultPassword = '', protectedCandidate = candidate;
   if (chat && (chat.sk || Object.hasOwn(chat, 'vault')) || db.chat && db.chat.sk) {
     if (typeof window.gymRequestVaultPassword !== 'function') throw vaultFailure('VAULT_UNAVAILABLE');
-    vaultPassword = await window.gymRequestVaultPassword(chat && chat.vault ? 'import-unlock' : 'import');
+    vaultPassword = recovery ? await archiveRecoveryPassword(t(chat && chat.vault ? 'vaultImportUnlockText' : 'vaultImportText'), !(chat && chat.vault)) :
+      await window.gymRequestVaultPassword(chat && chat.vault ? 'import-unlock' : 'import');
     if (vaultPassword == null) return null;
     if (chat && chat.vault) await ChatVault.verify(chat.vault, vaultPassword, chat.pk);
     protectedCandidate = await protectArchiveIdentity(candidate, vaultPassword);
@@ -1698,17 +2152,17 @@ async function commitBackup(staged) {
     const rollbackSource = prior && (prior.ts || 0) > (db.ts || 0) ? prior : JSON.parse(oldJson);
     const rollbackJson = JSON.stringify(await protectArchiveIdentity(rollbackSource, staged.vaultPassword, false, true));
     candidate.ts = Date.now(); const json = JSON.stringify(candidate);
+    const storedJson = await archiveJSON(json), storedRecords = await archivePhotos(records);
+    const storedRollback = await archiveRollback({json: rollbackJson, photos: before.photos, generation: storageGeneration});
     await storageWrite([STORE, PHOTOS], tx => {
       const kv = tx.objectStore(STORE), ps = tx.objectStore(PHOTOS);
-      // Read the rollback in the SAME transaction as replacement, not a stale
-      // preflight snapshot. Structured clone retains the original photo blobs.
-      const previous = kv.get(KEY), oldPhotos = ps.getAll();
-      oldPhotos.onsuccess = () => {
+      const previous = kv.get(KEY), revision = kv.get(PHOTO_REVISION);
+      revision.onsuccess = () => {
         try {
-          if (previous.result !== before.json) { tx.abort(); return; }
-          kv.put({json: rollbackJson, photos: oldPhotos.result, generation: storageGeneration}, STORAGE_ROLLBACK);
-          kv.put(json, KEY); kv.put(generation, STORAGE_META);
-          ps.clear(); records.forEach(r => ps.put(r));
+          if (previous.result !== before.rawJson || (revision.result || null) !== before.photoRevision) { tx.abort(); return; }
+          kv.put(storedRollback, STORAGE_ROLLBACK);
+          kv.put(storedJson, KEY); kv.put(generation, STORAGE_META); kv.put(crypto.randomUUID(), PHOTO_REVISION);
+          ps.clear(); storedRecords.forEach(r => ps.put(r));
         } catch (e) { tx.abort(); }
       };
     });
@@ -1718,7 +2172,7 @@ async function commitBackup(staged) {
     libByName = null;
     // IDB is the commit point. A failed cache write is repaired on next boot;
     // reporting importFail here would falsely claim that the old archive won.
-    cacheArchive(json);
+    await cacheArchive(storedJson, generation);
   } finally {
     staged.vaultPassword = '';
     if (nextViews) nextViews.forEach(p => URL.revokeObjectURL(p.url));
@@ -1953,8 +2407,13 @@ function closeInstall() {
 // ---------- timer di recupero ----------
 const restDefault = () => { const v = db.settings && db.settings.rest; return v === undefined ? 90 : v; };
 let rest = null, restTick = null, wake = null, actx = null;
-try { rest = JSON.parse(localStorage.getItem('gym-rest')); } catch (e) {}
-const keepRest = () => { try { rest ? localStorage.setItem('gym-rest', JSON.stringify(rest)) : localStorage.removeItem('gym-rest'); } catch (e) {} };
+try { if (!archiveExpected) rest = Object.hasOwn(db, 'archiveRest') ? db.archiveRest : JSON.parse(localStorage.getItem('gym-rest')); } catch (e) {}
+const keepRest = () => {
+  // Never recreate this plaintext side cache, including from a stale tab that
+  // has not yet noticed another tab's archive-protection migration.
+  try { localStorage.removeItem('gym-rest'); } catch (_) {}
+  if (!archiveLocked && !storageBusy) { db.archiveRest = rest; save(); }
+};
 const mmss = s => `${Math.floor(s / 60)}:${pad2(s % 60)}`;
 // l'audio va sbloccato durante un tocco: lo prepariamo quando parte il timer
 function unlockAudio() {
@@ -2135,14 +2594,14 @@ function sheetSendChallenge() {
 }
 let shareText = '';
 // invito: il link mostra su WhatsApp l'anteprima con logo e titolo (tag og: in index.html)
-// pagina Buy Me a Coffee (donazione volontaria): vuoto = il pulsante non compare
-const DONATE_URL = 'https://buymeacoffee.com/fedemorlu24';
+// Pagina Buy Me a Coffee: destinazione fissa, senza dati o parametri di tracking.
+const DONATE_URL = window.GymExternalLinks.donationURL;
 const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
 function donationCard(subtle = false) {
   if (!DONATE_URL) return '';
   return `<aside class="donation-card${subtle ? ' donation-summary' : ''}" aria-label="${t('donateTitle')}">
     <div class="donation-copy"><p>${t('donateText')}</p><span>${t('donateOptional')}</span></div>
-    <a class="donation-button" href="${esc(DONATE_URL)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">☕</span> ${t('donateBtn')} ${icon('external')}</a>
+    <a class="donation-button" href="${esc(DONATE_URL)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><span aria-hidden="true">☕</span> ${t('donateBtn')} ${icon('external')}</a>
   </aside>`;
 }
 function summaryDonationCard(s) {
@@ -2266,7 +2725,8 @@ function handleChallengeHash() {
 }
 
 // ---------- immagini da condividere ----------
-let shareFile = null;
+let shareFile = null, sharePreviewURL = '', shareRequest = 0;
+const shareDownloadURLs = new Set(), shareLoadingImages = new Set();
 const FONT = '-apple-system, system-ui, sans-serif';
 function cardCanvas(draw) {
   const c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
@@ -2293,7 +2753,17 @@ function statBox(g, x, y, w, val, label, accent) {
   g.fillStyle = accent ? '#111114' : '#f2f2f4'; fitText(g, val, w - 48, 64, 800); g.fillText(val, x + 24, y + 92);
   g.fillStyle = accent ? '#111114' : '#9a9aa3'; g.font = `600 28px ${FONT}`; g.fillText(label, x + 24, y + 140);
 }
-const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+const loadImg = src => new Promise(res => {
+  const img = new Image(); let settled = false;
+  const finish = value => { if (settled) return; settled = true; img.onload = img.onerror = null; shareLoadingImages.delete(entry); res(value); };
+  const entry = {cancel() { img.src = ''; finish(null); }};
+  shareLoadingImages.add(entry); img.onload = () => finish(img); img.onerror = () => finish(null); img.src = src;
+});
+function downloadSharedFile(file) {
+  const a = document.createElement('a'), url = URL.createObjectURL(file);
+  shareDownloadURLs.add(url); a.href = url; a.download = file.name; a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); shareDownloadURLs.delete(url); }, 60000);
+}
 function sessionCard(s, logo) {
   const {c, g} = cardCanvas(), sets = s.exercises.reduce((a, e) => a + e.sets.length, 0), v = s.exercises.reduce((a, e) => a + vol(e.sets), 0);
   let recs = 0;
@@ -2352,12 +2822,20 @@ async function compareCard(pose, logo) {
 }
 // prepara l'immagine, poi la mostra: il tocco su "Condividi" la invia subito (iOS lo richiede)
 async function openShare(kind, arg) {
+  if (archiveLocked || archiveResumePending || storageBusy) return;
+  const epoch = archiveEpoch, generation = storageGeneration, request = ++shareRequest;
+  const current = () => !archiveLocked && !archiveResumePending && !storageBusy && epoch === archiveEpoch && generation === storageGeneration && request === shareRequest;
   const logo = await loadImg('icons/icon-192.png');
+  if (!current()) return;
   const r = kind === 'session' ? sessionCard(sess(arg), logo) : kind === 'progress' ? progressCard(arg, logo) : await compareCard(arg, logo);
+  if (!current()) { r.c.width = r.c.height = 0; return; }
   const blob = await new Promise(res => r.c.toBlob(res, 'image/jpeg', .9));
+  r.c.width = r.c.height = 0;
+  if (!current() || !blob) return;
   shareFile = new File([blob], `gym-${kind}-${today()}.jpg`, {type: 'image/jpeg'});
   shareText = r.text + '\n' + APP_URL;
-  const url = URL.createObjectURL(blob);
+  if (sharePreviewURL) URL.revokeObjectURL(sharePreviewURL);
+  const url = sharePreviewURL = URL.createObjectURL(blob);
   sheet(`<h2>${t('sharePreview')}</h2>${kind === 'compare' ? `<p class="warn">${t('photoShareWarn')}</p>` : ''}
     <img class="big-img" src="${url}" alt="" style="aspect-ratio:4/5;object-fit:cover">
     <div class="gap"></div>${typeof sheetChatPickImg === 'function' ? `<button class="btn p wide" data-act="sharechat" data-w="${kind === 'compare' ? 1 : ''}">${t('chatShareHere')}</button><div class="gap"></div>` : ''}
@@ -2365,8 +2843,9 @@ async function openShare(kind, arg) {
 `);
 }
 function shareNow() {
+  if (archiveLocked || archiveResumePending || storageBusy) return;
   if (shareFile && navigator.canShare && navigator.canShare({files: [shareFile]})) navigator.share({files: [shareFile], text: shareText}).catch(() => {});
-  else if (shareFile) { const a = document.createElement('a'); a.href = URL.createObjectURL(shareFile); a.download = shareFile.name; a.click(); }
+  else if (shareFile) downloadSharedFile(shareFile);
 }
 function sheetSocialSettings() {
   const so = db.social || {};
@@ -2511,13 +2990,17 @@ function sheetSendPlan(id) {
 }
 // la scheda in PDF con il logo: si allega dal menu di condivisione (WhatsApp non accetta allegati da un link)
 async function sharePlanPdf(id) {
+  if (archiveLocked || archiveResumePending || storageBusy) return;
+  const epoch = archiveEpoch, generation = storageGeneration;
+  const current = () => !archiveLocked && !archiveResumePending && !storageBusy && epoch === archiveEpoch && generation === storageGeneration;
   const p = plans()[id], b = document.getElementById('pdf-btn');
   if (b) { b.disabled = true; b.textContent = t('pdfMaking'); }
   try {
     const f = await planPdf(p);
+    if (!current()) return;
     if (navigator.canShare && navigator.canShare({files: [f]})) await navigator.share({files: [f], text: shareText}).catch(() => {});
-    else { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }
-  } catch (e) { alert(t('pdfFail')); }
+    else downloadSharedFile(f);
+  } catch (e) { if (current()) alert(t('pdfFail')); }
   if (b) { b.disabled = false; b.innerHTML = `${icon('share')} ${t('pdfBtn')}`; }
 }
 // incolla: riconosce sia le schede sia le sfide
@@ -2595,6 +3078,8 @@ function addExercise(name, lib) {
 }
 
 const acts = {
+  archiveprotect: () => sheetArchiveProtection(),
+  archivelock: () => { lockWholeArchive().catch(() => alert(t('archiveLockFailed'))); },
   tab: b => go({name: 'home', tab: b.dataset.tab, ptab: view.ptab, wf: view.wf}),
   bklater: () => { db.backup = {...(db.backup || {}), snooze: Date.now() + 3 * 864e5}; save(); render(); },
   ptab: b => go({name: 'home', tab: 'progress', ptab: b.dataset.v, wf: view.wf}),

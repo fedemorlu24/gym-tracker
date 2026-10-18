@@ -1,10 +1,173 @@
-# Revisione sicurezza — v69 / v70
+# Revisione sicurezza — v71
 
-19 ottobre 2026. Candidato locale richiesto da Luca con «riesci a correggere?»
-dopo la verifica dei rischi residui della v68. **Non ancora pubblicato.**
-Gli esiti sotto riguardano le verifiche locali concluse; ricevute di pubblicazione
-e verifiche live saranno aggiunte separatamente. La sezione v68 seguente
-è storica e descrive il comportamento prima di queste modifiche.
+19 ottobre 2026. Richiesta di Luca: «risolvi tutte le vulnerabilità. proteggi
+anche la comunicazione con buymeacoffee», seguita dalla verifica dei dati bancari.
+Le modifiche v71 sono implementate e le verifiche locali elencate sono concluse. Questo documento
+riporta le prove locali e non attesta una pubblicazione: le ricevute di rilascio
+e le verifiche live sono conservate separatamente quando disponibili in `artifacts/release-v71/`.
+Gli esiti storici v69/v70 sotto non sono prove della v71; nessuna delle suite
+equivale a un audit completo o all'assenza di ogni vulnerabilità.
+
+## Buy Me a Coffee: collegamento e confine dei dati bancari
+
+Il collegamento precedente usava già la destinazione HTTPS fissa
+`https://buymeacoffee.com/fedemorlu24`, `target="_blank"`, `rel="noopener noreferrer"`
+e una policy globale `no-referrer`. Non è stata riprodotta una fuga di dati
+attraverso quel collegamento. `external-links.js` aggiunge protezioni preventive:
+centralizza la destinazione immutabile, ripristina gli attributi prima delle
+interazioni sul link e rimuove `ping`, `attributionsrc` e `download`. Il link
+dichiara anche `referrerpolicy="no-referrer"`. Rimane una navigazione volontaria,
+senza widget, SDK, API di pagamento, preconnect o parametri contenenti dati
+dell'app. Tutorial e funzioni restano indipendenti dalle donazioni.
+
+Le risposte di navigazione controllate dal service worker aggiungono
+`Referrer-Policy: no-referrer` e `X-DNS-Prefetch-Control: off`; quest'ultimo è
+presente anche come meta. Il controllo DNS è non standard e dipende dal browser,
+quindi non è una garanzia universale contro ogni connessione anticipata.
+Il ripristino degli attributi non è una difesa da JavaScript malevolo già in
+esecuzione nella stessa pagina. Riferimenti: [MDN, attributi dei link](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a)
+e [MDN, X-DNS-Prefetch-Control](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-DNS-Prefetch-Control).
+
+`tests/outbound.cjs` verifica con Playwright navigazione tramite click e tastiera,
+attributi alterati, assenza di referrer/opener/dati applicativi e assenza di
+traffico Buy Me a Coffee prima dell'interazione. Verifica inoltre i gestori di
+menu contestuale e `auxclick`. Esito PASS in
+`artifacts/security/outbound-results.json`, con destinazione intercettata e
+senza pagamenti reali. **La navigazione reale tramite middle-click non è
+verificata:** il tentativo ha causato un crash del target Chromium; la prova
+del gestore `auxclick` non equivale a quella navigazione.
+
+Separatamente, l'ispezione in sola lettura della pagina pubblica Buy Me a Coffee
+ha osservato HTTP 200, TLS 1.3 con certificato valido, HSTS
+`max-age=31536000; includeSubDomains` e un iframe da `js.stripe.com`.
+Prova: `artifacts/security/banking/public-page.json`. Non sono stati inseriti
+dati di carte, IBAN o credenziali, aperti account o eseguiti pagamenti.
+Gym Tracker non contiene campi o API per acquisire/inviare carta o IBAN:
+l'utente apre la pagina pubblica del provider. Dopo l'apertura, il browser
+comunica con quel provider e con i servizi da esso caricati; i controlli locali
+non attestano il trattamento interno dei dati né le successive transazioni.
+
+Secondo la [privacy policy di Buy Me a Coffee](https://buymeacoffee.com/privacy-policy),
+i dati della carta del sostenitore vengono trasmessi direttamente a Stripe;
+Buy Me a Coffee riceve un token e informazioni limitate, fra cui tipo,
+scadenza e ultime quattro cifre. I dati bancari per gli accrediti al creator
+seguono un flusso distinto, con alcuni dati forniti direttamente a Stripe.
+La [guida ufficiale di sicurezza Stripe](https://docs.stripe.com/security/guide)
+dichiara per Stripe la certificazione PCI Service Provider Level 1.
+Sono dichiarazioni dei provider: non certificano indipendentemente Buy Me a
+Coffee, un account bancario o l'intero percorso di pagamento osservato.
+
+## Backup e ricezione chat
+
+I nuovi backup cifrati usano un envelope v2 con AES-GCM, PBKDF2-SHA256 a
+600.000 iterazioni, password di 12–1.024 caratteri e metadati autenticati come
+AAD. L'import conserva il supporto dei backup cifrati v1 storici; non aumenta
+retroattivamente la protezione dei file già esportati. La suite Playwright
+backup/chiavi passa 14 gruppi, inclusi compatibilità v1, password deboli rifiutate,
+integrità, concorrenza e condivisione (`artifacts/security/backup-keys-results.json`).
+
+La ricezione chat deduplica le buste in elaborazione e i messaggi
+prima delle operazioni sulle foto. Limita il lavoro a due operazioni attive,
+64 buste complessivamente in lavorazione/attesa e 4.000.000 caratteri di coda.
+In caso di overflow ferma l'avanzamento del cursore di sincronizzazione e
+applica attesa prima della riconnessione; accetta ACK booleani e l'identificatore
+di sottoscrizione atteso. Il test Node ha ridotto venti replay concorrenti a una
+sola operazione media (`artifacts/security/chat-receive-node/`). La suite
+Playwright passa quattro gruppi: replay concorrenti, limiti/overflow/cursore,
+annullamento al blocco e validazione di sottoscrizione/ACK
+(`artifacts/security/chat-queue-results.json`).
+
+## Scritture concorrenti e protezione dell'intero archivio
+
+È stata riprodotta sulla v70 una race: una scrittura IndexedDB termina, la
+completion della cache localStorage viene ritardata, un'altra scheda protegge
+la chiave chat e la completion precedente riscrive la vecchia chiave in chiaro
+nella cache. Prove: `artifacts/security/cache-race.cjs` e
+`artifacts/security/cache-race-reproduced.json`. La scrittura della cache ora
+confronta lo stato corrente sotto una transazione IndexedDB di lettura prima
+di pubblicarlo. La regressione ripete l'interleaving e verifica chiave raw
+assente in localStorage e IndexedDB e vault valido:
+`artifacts/security/cache-race-fixed.json`.
+
+In Impostazioni, **Proteggi dati** permette di cifrare l'intero archivio con una
+password dell'app distinta da quella della chat. `archive-vault.js` genera una
+chiave dati casuale AES-GCM 256 bit, protetta con una chiave derivata dalla
+password mediante PBKDF2-SHA256 a 600.000 iterazioni; salt/IV sono casuali e i
+metadati sono autenticati. La password non è persistita e la chiave dati non
+viene salvata in chiaro. Sono cifrati dati, foto, copia di rollback e cache;
+il timer di riposo è conservato dentro l'archivio protetto.
+
+La configurazione richiede una password scelta dall'utente (12–1.024 caratteri):
+il solo aggiornamento non abilita la protezione. La migrazione conserva identità
+chat, amici e foto. Un archivio protetto richiede anche una password per il
+backup esportato. Il recupero da backup conserva il precedente archivio cifrato
+come copia opaca, senza doverne decifrare o scartare i dati. Le operazioni foto
+mantengono l'ordine delle chiamate, così una cifratura ritardata non annulla una
+cancellazione successiva.
+
+Il blocco manuale e il ricaricamento richiedono un nuovo sblocco. Su `pagehide`
+la UI viene mascherata subito, le scritture accettate vengono completate prima
+di rilasciare le chiavi e il ritorno tramite `pageshow` mostra il gate password;
+un errore di salvataggio mantiene la maschera con possibilità di riprovare.
+I risultati di condivisioni o letture foto avviate nella sessione precedente
+non possono ripristinare anteprime dopo un blocco. Le prove del ciclo di vita
+usano eventi `pagehide`/`pageshow` simulati; il reload è reale, ma non è una
+certificazione di ogni comportamento BFCache o sospensione del sistema operativo.
+
+Quattordici gruppi archivio sono confermati PASS, inclusi letture foto ritardate,
+uscita durante la cifratura e salvataggio fallito con recupero delle modifiche
+tramite il pulsante di retry. Prove e screenshot sono in
+`artifacts/security/archive-vault-results.json`, `artifacts/security/archive-setup.png`
+e `artifacts/security/archive-locked.png`. Non è previsto un blocco automatico per semplice passaggio
+in background o inattività. La password non è recuperabile dall'app: conservarla
+e mantenere un backup utilizzabile. Aggiornare o chiudere le vecchie schede prima
+della migrazione; le copie storiche esterne non vengono cifrate retroattivamente.
+
+## Verifiche locali v71
+
+| Verifica | Esito confermato |
+| --- | --- |
+| Sicurezza | 10 gruppi PASS |
+| Backup e chiavi | 14 gruppi PASS |
+| Vault identità chat | 12 gruppi PASS |
+| Coda ricezione chat | 4 gruppi PASS |
+| Framing | 6 gruppi PASS |
+| Race cache tra schede | PASS, nessuna chiave raw nelle due copie |
+| Archivio completo | 14 gruppi PASS |
+| Aggiornamento | 70 → 71 → 72 → 73 PASS; dati/foto identici, bozza e offline preservati |
+| Collegamento donazione | PASS nei percorsi specificati sopra; middle-click reale non verificato |
+| Layout/regressioni donazioni | PASS su porta 8871, cinque lingue, layout, tutorial e condivisione |
+| Vendor build e inventario | PASS |
+
+La prima invocazione della regressione donazioni puntava alla porta 8765, già
+occupata da un server che serviva la v62: non è una prova della v71. Il run
+corretto sulla porta 8871 è terminato con PASS. Le prove locali non implicano
+un deploy e non usano account o pagamenti reali.
+
+## Dipendenze e limiti ancora aperti
+
+Gli audit npm aggiornati dell'app e di `vendor` riportano zero vulnerabilità
+note nei rispettivi inventari (`artifacts/security/npm-app-audit-latest.json`,
+`artifacts/security/npm-vendor-audit-latest.json`). Questo risultato non è un
+audit completo del codice, dei bundle browser o della crittografia.
+
+NIP-44 resta senza forward secrecy: un cambio di protezione locale non può
+rendere retroattivamente sicure vecchie buste cifrate dopo la compromissione
+dell'identità. Una futura migrazione richiede un protocollo verificato, una
+implementazione adatta al browser e compatibilità fra entrambi gli interlocutori;
+non viene introdotta crittografia proprietaria. [Limiti ufficiali NIP-44](https://github.com/nostr-protocol/nips/blob/master/44.md#limitations).
+Restano inoltre il rischio di XSS durante lo sblocco, i backup storici esterni
+e l'assenza degli header anti-framing nella prima risposta HTTP dell'hosting.
+Il gate di avvio e gli header aggiunti dal service worker mantengono i limiti
+descritti nella sezione storica seguente.
+
+# Storico: revisione sicurezza — v69 / v70 pubblicate
+
+19 ottobre 2026. La v69 (`9897b4c`) e la v70 (`86f54f8`) sono state pubblicate
+e verificate. Le ricevute separate sono in `artifacts/release-v69/` e
+`artifacts/release-v70/`, con sintesi in `MEMORY.md`. Le sezioni seguenti
+documentano le protezioni e le prove di quelle versioni; non sostituiscono
+le verifiche della v71.
 
 ## v70: avvertenza del backup
 

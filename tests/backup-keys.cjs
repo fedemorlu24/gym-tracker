@@ -98,17 +98,17 @@ async function holdFirstRead(page) {
     await page.evaluate(()=>{
       const encrypt=encryptBackup;let held=false;window.__oldDone=false;
       encryptBackup=async function(text,pwd){const value=await encrypt(text,pwd);
-        if(pwd==='synthetic-A'&&!held){held=true;await new Promise(resolve=>window.__releaseA=resolve);__oldDone=true;}return value;};
+        if(pwd==='synthetic-password-A'&&!held){held=true;await new Promise(resolve=>window.__releaseA=resolve);__oldDone=true;}return value;};
       sheetBackup();
     });
-    await page.locator('#bk-pwd').fill('synthetic-A');await page.waitForFunction(()=>typeof __releaseA==='function');
-    await page.locator('#bk-pwd').fill('synthetic-B');await waitExport(page);
-    await page.locator('#bk-pwd').fill('synthetic-A');await waitExport(page);
+    await page.locator('#bk-pwd').fill('synthetic-password-A');await page.waitForFunction(()=>typeof __releaseA==='function');
+    await page.locator('#bk-pwd').fill('synthetic-password-B');await waitExport(page);
+    await page.locator('#bk-pwd').fill('synthetic-password-A');await waitExport(page);
     await page.evaluate(()=>{window.__current=backupFile;__releaseA();});
     await page.waitForFunction(()=>__oldDone);
     assert.equal(await page.evaluate(()=>backupFile===__current),true);
     const envelope=await downloadBackup(page);
-    assert.equal(await page.evaluate(async o=>JSON.parse(await decryptBackup(o,'synthetic-A')).sessions.length,envelope),0);
+    assert.equal(await page.evaluate(async o=>JSON.parse(await decryptBackup(o,'synthetic-password-A')).sessions.length,envelope),0);
   });
   await test('closing and replacing the sheet invalidates old work and clears the password',async page=>{
     await holdFirstRead(page);
@@ -226,7 +226,29 @@ async function holdFirstRead(page) {
         tamper:await rejects(async()=>decryptBackup({...a,data:await b64of(ct)},pwd))};
     });
     assert.deepEqual(result,{algorithm:{name:'AES-GCM',length:256},extractable:false,usages:['encrypt'],
-      exportRejected:true,saltBytes:16,ivBytes:12,iterations:250000,unique:true,roundtrip:true,wrongPassword:true,tamper:true});
+      exportRejected:true,saltBytes:16,ivBytes:12,iterations:600000,unique:true,roundtrip:true,wrongPassword:true,tamper:true});
+  });
+  await test('new backups reject weak passwords while preserving old encrypted backups',async page=>{
+    const state=await page.evaluate(async()=>{
+      const rejects=async f=>{try{await f();return false;}catch{return true;}};
+      const text=JSON.stringify({sessions:[],tourSeen:1,badges:{}}),pwd='synthetic-modern-password';
+      const modern=JSON.parse(await encryptBackup(text,pwd));
+      const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+      const material=await crypto.subtle.importKey('raw',new TextEncoder().encode('x'),'PBKDF2',false,['deriveKey']);
+      const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt']);
+      const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(text));
+      const old={gym:1,enc:'AES-GCM',kdf:'PBKDF2-SHA256',it:250000,salt:await b64of(salt),iv:await b64of(iv),data:await b64of(encrypted)};
+      window.prompt=()=> 'x';const staged=await stageBackup(new File([JSON.stringify(old)],'old.json'));
+      return {format:modern.gym,iterations:modern.it,short:await rejects(()=>encryptBackup(text,'x')),long:await rejects(()=>encryptBackup(text,'x'.repeat(1025))),
+        downgrade:await rejects(()=>decryptBackup({...modern,gym:1},pwd)),changedCost:await rejects(()=>decryptBackup({...modern,it:250000},pwd)),extra:await rejects(()=>decryptBackup({...modern,extra:1},pwd)),legacy:await decryptBackup(old,'x')===text,legacyImport:!!staged&&staged.candidate.sessions.length===0};
+    });
+    assert.deepEqual(state,{format:2,iterations:600000,short:true,long:true,downgrade:true,changedCost:true,extra:true,legacy:true,legacyImport:true});
+    await page.evaluate(()=>sheetBackup());await waitExport(page);
+    await page.locator('#bk-pwd').fill('x');await page.waitForTimeout(700);
+    assert.equal(await page.locator('#exp-btn').isDisabled(),true);
+    assert.ok((await page.locator('#exp-btn').innerText()).includes('12'));
+    await page.locator('#bk-pwd').fill('synthetic-modern-password');await waitExport(page);
+    const envelope=await downloadBackup(page);assert.equal(envelope.gym,2);assert.equal(envelope.it,600000);
   });
   await test('chat key generation uses browser randomness; invite rotation preserves identity; protected storage preserves identity',async page=>{
     const r=await page.evaluate(async()=>{

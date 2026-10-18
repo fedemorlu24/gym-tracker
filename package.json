@@ -11,7 +11,10 @@
     "test:vault": "node tests/vault.cjs",
     "build:vendor": "node tools/vendor-build.mjs",
     "check:vendor": "node tools/vendor-build.mjs --check",
-    "check:vendor-inventory": "node tools/vendor-build.mjs --inventory"
+    "check:vendor-inventory": "node tools/vendor-build.mjs --inventory",
+    "test:archive-vault": "node tests/archive-vault.cjs",
+    "test:outbound": "node tests/outbound.cjs",
+    "test:chat-queue": "node tests/chat-queue.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

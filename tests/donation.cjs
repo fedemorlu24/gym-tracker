@@ -20,6 +20,7 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
   fs.mkdirSync('artifacts/donation', {recursive: true});
   try {
     const page = await context.newPage(); await page.goto(url);
+    await page.evaluate(async () => { await window.gymDataReady; });
     await page.evaluate(() => { document.getElementById('tour').hidden = true; document.getElementById('install').hidden = true; });
     assert.equal(await page.locator('a[href*="buymeacoffee.com"], .donation-card').count(), 0, 'No donation link in Today');
     await page.locator('[data-act=settings]').click();
