@@ -1,10 +1,10 @@
-// The local fixture serves pinned v71, the current candidate, then two future releases.
+// The local fixture serves pinned v72, the current candidate, then two future releases.
 const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const {spawn} = require('node:child_process');
 const path = require('node:path');
-const baseline = '71';
+const baseline = '72';
 const candidate = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8').match(/const VERSION = '(\d+)'/)[1];
 const next = String(Number(candidate) + 1), last = String(Number(candidate) + 2);
 let fixture;

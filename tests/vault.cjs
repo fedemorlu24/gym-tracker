@@ -58,7 +58,7 @@ async function test(name,fn,initial) {
     results.push({name,status:'pass',...f.diag}); console.log('PASS '+name);
   } catch(e) {console.error(name,f.diag);throw e;} finally {await f.context.close();}
 }
-const password='synthetic vault passphrase';
+const password='test1234'; // Exactly eight characters; synthetic test credential.
 async function fixture(page,rollback=false){
   await page.evaluate(async rollback=>{
     const nt=await nostrLoad(),sk=new Uint8Array(32).fill(11),friend=new Uint8Array(32).fill(12);
@@ -89,6 +89,43 @@ async function stable(page){return page.evaluate(async()=>({sessions:db.sessions
   photos:await Promise.all((await photoTx('readonly',s=>s.getAll())).map(async p=>({id:p.id,date:p.date,pose:p.pose,data:await toDataURL(p.blob)})))}));}
 (async()=>{
   browser=await chromium.launch();fs.mkdirSync(path.join(root,'artifacts/security'),{recursive:true});
+  await test('seven characters are rejected by the UI and crypto boundary; eight protect and unlock the same identity',async page=>{
+    await fixture(page);const before=await snapshot(page);
+    const failures=await page.evaluate(async password=>{
+      const rejected=async fn=>{try{await fn();return null;}catch(e){return e.code;}};
+      return {
+        setup:await rejected(()=>ChatVault.setup('test123')),
+        create:await rejected(()=>ChatVault.create('test123')),
+        seal:await rejected(()=>ChatVault.sealLegacy(chat().sk,'test123',chat().pk)),
+        archive:await rejected(()=>ArchiveVault.create(password)),
+        backup:await rejected(()=>encryptBackup('{}',password))
+      };
+    },password);
+    assert.deepEqual(failures,{setup:'VAULT_PASSWORD',create:'VAULT_PASSWORD',seal:'VAULT_PASSWORD',archive:'ARCHIVE_PASSWORD',backup:'BACKUP_PASSWORD_LENGTH'});
+    assert.deepEqual(await snapshot(page),before);
+    await startUnlock(page);await fillPassword(page,'test123');
+    assert.equal(await page.locator('#chat-vault-form [name=password]').evaluate(el=>el.validity.tooShort),true);
+    assert.equal(await page.evaluate(()=>ChatVault.status()),'setup');
+    // Also exercise the application guard when native HTML validation is bypassed.
+    await page.locator('#chat-vault-form').evaluate(form=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    assert.match(await page.locator('#chat-vault-error').innerText(),/8/);
+    assert.deepEqual(await snapshot(page),before);
+    const pk=await page.evaluate(()=>chat().pk);await fillPassword(page);await unlocked(page);
+    assert.equal(await page.evaluate(()=>chat().pk),pk);
+    await page.reload();await ready(page);assert.equal(await page.evaluate(()=>ChatVault.status()),'locked');
+    await startUnlock(page);await fillPassword(page);await unlocked(page);
+    assert.equal(await page.evaluate(()=>chat().pk),pk);
+  });
+  await test('existing longer chat passwords still unlock without rewriting the vault',async page=>{
+    await fixture(page);const previous='synthetic previous long password';
+    await page.evaluate(p=>ChatVault.setup(p),previous);await unlocked(page);
+    const vault=await page.evaluate(()=>JSON.stringify(chat().vault));
+    await page.reload();await ready(page);await startUnlock(page);await fillPassword(page);
+    await page.locator('#chat-vault-error').waitFor({state:'visible'});
+    assert.equal(await page.evaluate(()=>ChatVault.status()),'locked');
+    await fillPassword(page,previous);await unlocked(page);
+    assert.equal(await page.evaluate(()=>JSON.stringify(chat().vault)),vault);
+  });
   await test('UI migration preserves identity/data and encrypts both current and different rollback keys',async page=>{
     await fixture(page,true);const before=await stable(page);
     await page.evaluate(()=>{go({name:'home',tab:'chat'});sheetChatSettings();});
@@ -271,6 +308,9 @@ async function stable(page){return page.evaluate(async()=>({sessions:db.sessions
     await page.evaluate(()=>{db.chat={friends:{},msgs:{},relays:[],seen:[],blocked:[]};});
     for(const lang of ['it','en','es','fr','de']){
       await page.evaluate(lang=>{db.settings={lang};setLang();},lang);await startUnlock(page);
+      assert.equal(await page.locator('#chat-vault-form [name=password]').getAttribute('minlength'),'8');
+      assert.equal(await page.locator('#chat-vault-form [name=confirm]').getAttribute('minlength'),'8');
+      assert.equal(await page.evaluate(()=>document.querySelector('#chat-vault-form').textContent.includes(t('vaultPasswordHint'))&&t('vaultPasswordHint').includes('8')),true);
       for(const width of [320,390]){
         await page.setViewportSize({width,height:844});
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,lang+'/'+width);
@@ -278,6 +318,11 @@ async function stable(page){return page.evaluate(async()=>({sessions:db.sessions
         await page.locator('#chat-vault-cancel').scrollIntoViewIfNeeded();assert.equal(await page.locator('#chat-vault-cancel').isVisible(),true);
       }
       await page.locator('#chat-vault-cancel').click();
+      await page.locator('#sheet').waitFor({state:'hidden'});
+      await page.evaluate(()=>acts.archiveprotect());
+      assert.equal(await page.locator('#archive-setup-form [name=password]').getAttribute('minlength'),'12');
+      assert.equal(await page.evaluate(()=>document.querySelector('#archive-setup-form').textContent.includes(t('archivePasswordHint'))&&t('archivePasswordHint').includes('12')),true);
+      await page.locator('#sheet .sheetx').click();await page.locator('#sheet').waitFor({state:'hidden'});
     }
   });
   fs.writeFileSync(path.join(root,'artifacts/security/vault-results.json'),JSON.stringify({results},null,2));console.log(`${results.length} vault groups PASS`);

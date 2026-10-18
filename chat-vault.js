@@ -2,6 +2,7 @@
 // secret bytes never become archive fields; message crypto remains NIP-44/59.
 (function (root) {
   'use strict';
+  const MIN_PASSWORD_LENGTH = 8;
   const ITERATIONS = 600000, HEX = /^[0-9a-f]{64}$/;
   const ORDER = 'fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141';
   const encoder = new TextEncoder();
@@ -26,7 +27,7 @@
   const fingerprint = v => JSON.stringify(validate(v));
   const aad = v => encoder.encode(JSON.stringify(['gym-chat-vault', v.v, v.alg, v.kdf, v.it, v.pk]));
   function passwordCheck(password, creating = false) {
-    if (typeof password !== 'string' || password.length < (creating ? 12 : 1) || password.length > 1024) throw failure('VAULT_PASSWORD');
+    if (typeof password !== 'string' || password.length < (creating ? MIN_PASSWORD_LENGTH : 1) || password.length > 1024) throw failure('VAULT_PASSWORD');
   }
   async function key(password, salt, usage) {
     passwordCheck(password);
@@ -117,7 +118,7 @@
   }
   root.ChatVault = Object.freeze({
     configure(value) { if (config) throw failure('VAULT_CONFIGURED'); config = value; },
-    validate, sealLegacy, create,
+    MIN_PASSWORD_LENGTH, validate, sealLegacy, create,
     async verify(v, password, pk) { const bytes = await open(v, password, pk); bytes.fill(0); return v.pk; },
     status, isUnlocked, publicKey: () => record() && record().pk || '',
     setup(password) { const mine = ++epoch; return config.setup(password, () => mine === epoch); }, unlock, lock,

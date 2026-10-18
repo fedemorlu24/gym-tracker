@@ -1,5 +1,10 @@
 # Revisione sicurezza — v71
 
+Aggiornamento v73, 19 ottobre 2026: su richiesta di Luca il minimo della password
+della chat è ora 8 caratteri, anche per import e recupero. Le password esistenti
+restano valide; archivio e backup mantengono il minimo di 12. I riferimenti a 12
+per la chat nelle sezioni storiche descrivono le versioni precedenti.
+
 19 ottobre 2026. Richiesta di Luca: «risolvi tutte le vulnerabilità. proteggi
 anche la comunicazione con buymeacoffee», seguita dalla verifica dei dati bancari.
 Le modifiche v71 sono implementate e le verifiche locali elencate sono concluse. Questo documento

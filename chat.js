@@ -102,8 +102,8 @@ function chatPasswordSheet(mode) {
   sheet(`<h2>${t(importing ? 'vaultImportTitle' : setup ? 'vaultSetupTitle' : 'vaultUnlock')}</h2>
     <p class="sub" style="margin-bottom:12px">${t(mode === 'import-unlock' ? 'vaultImportUnlockText' : mode === 'import' ? 'vaultImportText' : mode === 'cleanup' ? 'vaultCleanup' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>
     <form id="chat-vault-form">
-      <label class="field">${t('vaultPassword')}<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" ${setup ? 'minlength="12"' : ''} maxlength="1024" required data-focus></label>
-      ${setup ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label><p class="note">${t('vaultPasswordHint')}</p><p class="warn" style="margin:12px 0">${t('vaultRecovery')}</p><p class="note" style="margin-bottom:12px">${t('vaultMigrationNote')}</p>` : ''}
+      <label class="field">${t('vaultPassword')}<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" ${setup ? `minlength="${ChatVault.MIN_PASSWORD_LENGTH}"` : ''} maxlength="1024" required data-focus></label>
+      ${setup ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="${ChatVault.MIN_PASSWORD_LENGTH}" maxlength="1024" required></label><p class="note">${t('vaultPasswordHint')}</p><p class="warn" style="margin:12px 0">${t('vaultRecovery')}</p><p class="note" style="margin-bottom:12px">${t('vaultMigrationNote')}</p>` : ''}
       <p class="sub" id="chat-vault-error" role="alert" hidden></p>
       <button class="btn p wide" type="submit">${t(importing ? 'vaultContinue' : setup ? 'vaultProtect' : 'vaultUnlock')}</button><div class="gap"></div>
       <button class="btn s wide" type="button" id="chat-vault-cancel">${t('close')}</button>
@@ -136,7 +136,7 @@ function chatPasswordSheet(mode) {
     const errorEl = form.querySelector('#chat-vault-error');
     const showError = key => { errorEl.textContent = t(key); errorEl.hidden = false; };
     let password = form.elements.password.value;
-    if (setup && password.length < 12) { showError('vaultPasswordHint'); return; }
+    if (setup && password.length < ChatVault.MIN_PASSWORD_LENGTH) { showError('vaultPasswordHint'); return; }
     if (setup && password !== form.elements.confirm.value) { showError('vaultMismatch'); return; }
     if (importing) { done(password); password = ''; closeSheet(); return; }
     form.dataset.busy = '1'; errorEl.hidden = true; form.reset();

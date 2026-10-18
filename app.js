@@ -422,12 +422,14 @@ function showArchiveGate(error = '') {
     finally { delete form.dataset.busy; }
   };
 }
-function archiveRecoveryPassword(message, creating = false) {
+function archiveRecoveryPassword(message, creating = false, chatPassword = false) {
+  const minimum = chatPassword ? ChatVault.MIN_PASSWORD_LENGTH : 12;
+  const passwordHint = chatPassword ? 'vaultPasswordHint' : 'archivePasswordHint';
   return new Promise(resolve => {
     const gate = document.getElementById('archive-gate');
     gate.innerHTML = `<h2>${t('archiveRecover')}</h2><p class="note" style="margin:16px 0">${esc(message)}</p>
-      <form id="archive-recovery-password"><label class="field">${t('archiveRecoveryPasswordLabel')}<input name="password" type="password" autocomplete="${creating ? 'new-password' : 'current-password'}" ${creating ? 'minlength="12"' : ''} maxlength="1024" required></label>
-      ${creating ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>` : ''}
+      <form id="archive-recovery-password"><label class="field">${t('archiveRecoveryPasswordLabel')}<input name="password" type="password" autocomplete="${creating ? 'new-password' : 'current-password'}" ${creating ? `minlength="${minimum}"` : ''} maxlength="1024" required></label>
+      ${creating ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="${minimum}" maxlength="1024" required></label>` : ''}
       <p id="archive-recovery-password-error" class="warn" role="alert"></p><button class="btn p wide" type="submit">${t('vaultContinue')}</button>
       <div class="gap"></div><button class="btn s wide" type="button" id="archive-recovery-cancel">${t('close')}</button></form>`;
     const form = gate.querySelector('form'); let settled = false;
@@ -435,8 +437,8 @@ function archiveRecoveryPassword(message, creating = false) {
     form.onsubmit = event => {
       event.preventDefault();
       const password = form.elements.password.value;
-      if (creating && (password.length < 12 || password !== form.elements.confirm.value)) {
-        gate.querySelector('#archive-recovery-password-error').textContent = t(password.length < 12 ? 'vaultPasswordHint' : 'vaultMismatch'); return;
+      if (creating && (password.length < minimum || password !== form.elements.confirm.value)) {
+        gate.querySelector('#archive-recovery-password-error').textContent = t(password.length < minimum ? passwordHint : 'vaultMismatch'); return;
       }
       finish(password);
     };
@@ -577,7 +579,7 @@ function sheetArchiveProtection() {
     <p class="note" style="margin:12px 0">${t('vaultMigrationNote')}</p>
     <form id="archive-setup-form"><label class="field">${t('archivePassword')}<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
     <label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
-    <p class="note">${t('vaultPasswordHint')}</p><p class="warn" id="archive-setup-error" role="alert"></p>
+    <p class="note">${t('archivePasswordHint')}</p><p class="warn" id="archive-setup-error" role="alert"></p>
     <button class="btn p wide" type="submit">${t('archiveProtect')}</button></form>`);
   const form = document.getElementById('archive-setup-form');
   form.onsubmit = async event => {
@@ -2169,7 +2171,7 @@ async function stageBackup(f, recovery = false) {
   let vaultPassword = '', protectedCandidate = candidate;
   if (chat && (chat.sk || Object.hasOwn(chat, 'vault')) || db.chat && db.chat.sk) {
     if (typeof window.gymRequestVaultPassword !== 'function') throw vaultFailure('VAULT_UNAVAILABLE');
-    vaultPassword = recovery ? await archiveRecoveryPassword(t(chat && chat.vault ? 'vaultImportUnlockText' : 'vaultImportText'), !(chat && chat.vault)) :
+    vaultPassword = recovery ? await archiveRecoveryPassword(t(chat && chat.vault ? 'vaultImportUnlockText' : 'vaultImportText'), !(chat && chat.vault), true) :
       await window.gymRequestVaultPassword(chat && chat.vault ? 'import-unlock' : 'import');
     if (vaultPassword == null) return null;
     if (chat && chat.vault) await ChatVault.verify(chat.vault, vaultPassword, chat.pk);

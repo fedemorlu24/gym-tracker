@@ -630,7 +630,7 @@ const CHAT_VAULT_TEXT = {
     vaultSetupTitle: 'Proteggi la chat', vaultSetupText: 'Scegli una password per usare la chat. I tuoi amici, messaggi e foto restano qui.',
     vaultLocked: 'Chat bloccata', vaultLockedText: 'Sblocca la chat per inviare e ricevere nuovi messaggi. Lo storico e le foto già salvate restano disponibili.',
     vaultUnlock: 'Sblocca la chat', vaultLock: 'Blocca la chat', vaultPassword: 'Password della chat', vaultConfirm: 'Conferma la password',
-    vaultPasswordHint: 'Usa almeno 12 caratteri. Puoi scegliere una frase lunga e facile da ricordare.',
+    vaultPasswordHint: 'Usa almeno 8 caratteri. Puoi scegliere una frase lunga e facile da ricordare.',
     vaultRecovery: 'Conserva questa password: non possiamo recuperarla. Se la perdi, non potrai usare questa identità per la chat.',
     vaultSession: 'La chat resta sbloccata fino alla chiusura o al ricaricamento dell’app. Puoi bloccarla quando vuoi.',
     vaultProtect: 'Proteggi e continua', vaultContinue: 'Continua', vaultMismatch: 'Le password non coincidono.',
@@ -645,7 +645,7 @@ const CHAT_VAULT_TEXT = {
     vaultSetupTitle: 'Protect your chat', vaultSetupText: 'Choose a password to use chat. Your friends, messages and photos stay here.',
     vaultLocked: 'Chat locked', vaultLockedText: 'Unlock chat to send and receive new messages. Saved messages and photos remain available.',
     vaultUnlock: 'Unlock chat', vaultLock: 'Lock chat', vaultPassword: 'Chat password', vaultConfirm: 'Confirm password',
-    vaultPasswordHint: 'Use at least 12 characters. A long, memorable phrase works well.',
+    vaultPasswordHint: 'Use at least 8 characters. A long, memorable phrase works well.',
     vaultRecovery: 'Keep this password safe: we cannot recover it. If you lose it, you cannot use this identity for chat.',
     vaultSession: 'Chat stays unlocked until you close or reload the app. You can lock it at any time.',
     vaultProtect: 'Protect and continue', vaultContinue: 'Continue', vaultMismatch: 'The passwords do not match.',
@@ -660,7 +660,7 @@ const CHAT_VAULT_TEXT = {
     vaultSetupTitle: 'Protege tu chat', vaultSetupText: 'Elige una contraseña para usar el chat. Tus amigos, mensajes y fotos se conservan.',
     vaultLocked: 'Chat bloqueado', vaultLockedText: 'Desbloquea el chat para enviar y recibir nuevos mensajes. Los mensajes y fotos guardados siguen disponibles.',
     vaultUnlock: 'Desbloquear el chat', vaultLock: 'Bloquear el chat', vaultPassword: 'Contraseña del chat', vaultConfirm: 'Confirmar contraseña',
-    vaultPasswordHint: 'Usa al menos 12 caracteres. Puedes elegir una frase larga y fácil de recordar.',
+    vaultPasswordHint: 'Usa al menos 8 caracteres. Puedes elegir una frase larga y fácil de recordar.',
     vaultRecovery: 'Guarda esta contraseña: no podemos recuperarla. Si la pierdes, no podrás usar esta identidad para el chat.',
     vaultSession: 'El chat permanece desbloqueado hasta que cierres o recargues la app. Puedes bloquearlo cuando quieras.',
     vaultProtect: 'Proteger y continuar', vaultContinue: 'Continuar', vaultMismatch: 'Las contraseñas no coinciden.',
@@ -675,7 +675,7 @@ const CHAT_VAULT_TEXT = {
     vaultSetupTitle: 'Protéger le chat', vaultSetupText: 'Choisissez un mot de passe pour utiliser le chat. Vos amis, messages et photos sont conservés.',
     vaultLocked: 'Chat verrouillé', vaultLockedText: 'Déverrouillez le chat pour envoyer et recevoir de nouveaux messages. Les messages et photos enregistrés restent disponibles.',
     vaultUnlock: 'Déverrouiller le chat', vaultLock: 'Verrouiller le chat', vaultPassword: 'Mot de passe du chat', vaultConfirm: 'Confirmer le mot de passe',
-    vaultPasswordHint: 'Utilisez au moins 12 caractères. Vous pouvez choisir une phrase longue et facile à retenir.',
+    vaultPasswordHint: 'Utilisez au moins 8 caractères. Vous pouvez choisir une phrase longue et facile à retenir.',
     vaultRecovery: 'Conservez ce mot de passe : nous ne pouvons pas le récupérer. Si vous le perdez, vous ne pourrez plus utiliser cette identité pour le chat.',
     vaultSession: 'Le chat reste déverrouillé jusqu’à la fermeture ou au rechargement de l’app. Vous pouvez le verrouiller à tout moment.',
     vaultProtect: 'Protéger et continuer', vaultContinue: 'Continuer', vaultMismatch: 'Les mots de passe ne correspondent pas.',
@@ -690,7 +690,7 @@ const CHAT_VAULT_TEXT = {
     vaultSetupTitle: 'Chat schützen', vaultSetupText: 'Wähle ein Passwort für den Chat. Deine Freunde, Nachrichten und Fotos bleiben erhalten.',
     vaultLocked: 'Chat gesperrt', vaultLockedText: 'Entsperre den Chat, um neue Nachrichten zu senden und zu empfangen. Gespeicherte Nachrichten und Fotos bleiben verfügbar.',
     vaultUnlock: 'Chat entsperren', vaultLock: 'Chat sperren', vaultPassword: 'Chat-Passwort', vaultConfirm: 'Passwort bestätigen',
-    vaultPasswordHint: 'Verwende mindestens 12 Zeichen. Ein langer, einprägsamer Satz eignet sich gut.',
+    vaultPasswordHint: 'Verwende mindestens 8 Zeichen. Ein langer, einprägsamer Satz eignet sich gut.',
     vaultRecovery: 'Bewahre dieses Passwort sicher auf: Wir können es nicht wiederherstellen. Wenn du es verlierst, kannst du diese Identität nicht mehr für den Chat nutzen.',
     vaultSession: 'Der Chat bleibt bis zum Schließen oder Neuladen der App entsperrt. Du kannst ihn jederzeit sperren.',
     vaultProtect: 'Schützen und fortfahren', vaultContinue: 'Weiter', vaultMismatch: 'Die Passwörter stimmen nicht überein.',
@@ -704,6 +704,7 @@ Object.entries(CHAT_VAULT_TEXT).forEach(([language, values]) => Object.assign(I1
 
 const ARCHIVE_PROTECTION_TEXT = {
   it: {
+    archivePasswordHint: 'Usa almeno 12 caratteri. Puoi scegliere una frase lunga e facile da ricordare.',
     archiveSecurity: 'Protezione dei dati', archiveProtect: 'Proteggi dati', archiveLock: 'Blocca app',
     archiveProtectSummary: 'Cifra allenamenti, messaggi e foto con una password.', archiveProtected: 'Archivio cifrato. Password richiesta alla riapertura.',
     archiveProtectText: 'Protegge sul dispositivo tutti gli allenamenti, i messaggi, le foto e la copia di ripristino. Dopo la chiusura o il blocco, la password serve per aprire l’app. La prima cifratura può richiedere tempo e spazio libero.',
@@ -719,6 +720,7 @@ const ARCHIVE_PROTECTION_TEXT = {
     archiveRecoveryPasswordLabel: 'Password', archiveRecoveryFailed: 'Ripristino non completato. Nessun archivio è stato eliminato. Verifica il file e le password e riprova.'
   },
   en: {
+    archivePasswordHint: 'Use at least 12 characters. A long, memorable phrase works well.',
     archiveSecurity: 'Data protection', archiveProtect: 'Protect data', archiveLock: 'Lock app',
     archiveProtectSummary: 'Encrypt workouts, messages and photos with a password.', archiveProtected: 'Encrypted archive. Password required when reopening.',
     archiveProtectText: 'Protects all workouts, messages, photos and the recovery copy on this device. After closing or locking, a password is required to open the app. Initial encryption may need time and free space.',
@@ -734,6 +736,7 @@ const ARCHIVE_PROTECTION_TEXT = {
     archiveRecoveryPasswordLabel: 'Password', archiveRecoveryFailed: 'Restore was not completed. No archive was deleted. Check the file and passwords and retry.'
   },
   es: {
+    archivePasswordHint: 'Usa al menos 12 caracteres. Puedes elegir una frase larga y fácil de recordar.',
     archiveSecurity: 'Protección de datos', archiveProtect: 'Proteger datos', archiveLock: 'Bloquear app',
     archiveProtectSummary: 'Cifra entrenamientos, mensajes y fotos con una contraseña.', archiveProtected: 'Archivo cifrado. Contraseña necesaria al volver a abrir.',
     archiveProtectText: 'Protege todos los entrenamientos, mensajes, fotos y la copia de recuperación en este dispositivo. Tras cerrar o bloquear, necesitarás la contraseña para abrir la app. El primer cifrado puede requerir tiempo y espacio libre.',
@@ -749,6 +752,7 @@ const ARCHIVE_PROTECTION_TEXT = {
     archiveRecoveryPasswordLabel: 'Contraseña', archiveRecoveryFailed: 'No se completó la restauración. No se eliminó ningún archivo. Revisa el archivo y las contraseñas e inténtalo de nuevo.'
   },
   fr: {
+    archivePasswordHint: 'Utilisez au moins 12 caractères. Vous pouvez choisir une phrase longue et facile à retenir.',
     archiveSecurity: 'Protection des données', archiveProtect: 'Protéger les données', archiveLock: 'Verrouiller l’app',
     archiveProtectSummary: 'Chiffrez entraînements, messages et photos avec un mot de passe.', archiveProtected: 'Archive chiffrée. Mot de passe requis à la réouverture.',
     archiveProtectText: 'Protège tous les entraînements, messages, photos et la copie de récupération sur cet appareil. Après fermeture ou verrouillage, le mot de passe est nécessaire pour ouvrir l’app. Le premier chiffrement peut demander du temps et de l’espace libre.',
@@ -764,6 +768,7 @@ const ARCHIVE_PROTECTION_TEXT = {
     archiveRecoveryPasswordLabel: 'Mot de passe', archiveRecoveryFailed: 'La restauration n’a pas été terminée. Aucune archive n’a été supprimée. Vérifiez le fichier et les mots de passe, puis réessayez.'
   },
   de: {
+    archivePasswordHint: 'Verwende mindestens 12 Zeichen. Ein langer, einprägsamer Satz eignet sich gut.',
     archiveSecurity: 'Datenschutz', archiveProtect: 'Daten schützen', archiveLock: 'App sperren',
     archiveProtectSummary: 'Training, Nachrichten und Fotos mit einem Passwort verschlüsseln.', archiveProtected: 'Verschlüsseltes Archiv. Passwort beim erneuten Öffnen erforderlich.',
     archiveProtectText: 'Schützt alle Trainingsdaten, Nachrichten, Fotos und die Wiederherstellungskopie auf diesem Gerät. Nach dem Schließen oder Sperren brauchst du das Passwort zum Öffnen. Die erste Verschlüsselung kann Zeit und freien Speicher benötigen.',
