@@ -21,9 +21,10 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
   try {
     const page = await context.newPage(); await page.goto(url);
     await page.evaluate(() => { document.getElementById('tour').hidden = true; document.getElementById('install').hidden = true; });
+    assert.equal(await page.locator('a[href*="buymeacoffee.com"], .donation-card').count(), 0, 'No donation link in Today');
+    await page.locator('[data-act=settings]').click();
     assert.equal(await page.locator('.donation-card').count(), 1);
-    const card = await page.locator('.donation-card').boundingBox();
-    assert.ok(card.y + card.height < 650, 'Donation should be visible on the first phone screen');
+    assert.equal(await page.locator('.donation-card').evaluate(el => el.nextElementSibling === null), true, 'Donation belongs at the end of Settings');
     assert.ok((await page.locator('.donation-button').boundingBox()).height >= 44);
     assert.ok((await page.locator('.donation-card').textContent()).includes('Donazione facoltativa'));
     const snapshot = await page.evaluate(() => JSON.stringify(db));
@@ -39,12 +40,15 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
         await page.evaluate(({lang, theme}) => { db.settings = {...db.settings, lang, theme}; setLang(); applyTheme(); }, {lang, theme});
         for (const name of ['home', 'settings']) {
           await page.evaluate(name => { view = {name, tab: 'today'}; render(); }, name);
-          assert.equal((await page.locator('.donation-button').innerText()).replace(/\s+/g, ' ').trim(), `☕ ${coffeeLabels[lang]}`);
-          assert.equal(await page.locator('.donation-copy p').innerText(), await page.evaluate(() => t('donateText')));
+          if (name === 'settings') {
+            assert.equal((await page.locator('.donation-button').innerText()).replace(/\s+/g, ' ').trim(), `☕ ${coffeeLabels[lang]}`);
+            assert.equal(await page.locator('.donation-copy p').innerText(), await page.evaluate(() => t('donateText')));
+          }
           for (const width of [320, 390, 768]) {
             await page.setViewportSize({width, height: 844});
             assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang}/${theme}/${width}/${name}`);
-            assert.ok(!(await page.locator('.donation-card').textContent()).includes('undefined'));
+            if (name === 'home') assert.equal(await page.locator('a[href*="buymeacoffee.com"], .donation-card').count(), 0, `${lang}/${theme}/${width}: no donation in Today`);
+            else assert.ok(!(await page.locator('.donation-card').textContent()).includes('undefined'));
           }
         }
       }
@@ -53,8 +57,9 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
     await page.evaluate(() => { db.settings.lang = 'it'; db.settings.theme = 'dark'; setLang(); applyTheme(); view = {name: 'home', tab: 'today'}; render(); });
     await page.screenshot({path: 'artifacts/donation/home-mobile.png'});
     await page.locator('[data-act=settings]').click();
-    const placement = await page.locator('.donation-card').evaluate(el => ({previous: el.previousElementSibling.tagName, y: el.getBoundingClientRect().top}));
-    assert.equal(placement.previous, 'HEADER'); assert.ok(placement.y < 200);
+    const placement = await page.locator('.donation-card').evaluate(el => ({last: el.nextElementSibling === null, afterUpdate: !!el.previousElementSibling.querySelector('[data-act=appupdate]')}));
+    assert.deepEqual(placement, {last: true, afterUpdate: true});
+    await page.locator('.donation-card').scrollIntoViewIfNeeded();
     await page.screenshot({path: 'artifacts/donation/settings-mobile.png'});
     await page.evaluate(() => sheetLibBase('fullbody.deadlift'));
     await page.waitForSelector('.gf-3d');
@@ -151,7 +156,7 @@ const coffeeLabels = {it: 'Offrimi un caffè', en: 'Buy me a coffee', es: 'Inví
     assert.equal(await page.evaluate(() => clean(JSON.parse(JSON.stringify(db))).donationNudgeSeen), true, 'Backup import preserves seen state');
     assert.equal(requests.filter(x => /supporter|\/access\/|resend|webhooks/.test(x)).length, 0);
     assert.deepEqual(errors, []); assert.deepEqual(failed, []); assert.deepEqual(http, []);
-    const result = {pass: true, errors, failed, http, checks: ['visible optional support', 'correct safe outbound link', 'five languages, light/dark, 320/390/768px', 'third recorded workout only, once across reopening/restart/backup', 'empty sessions excluded, earlier/later summaries unaffected', 'full playback for all 131 tutorials', 'native share and copy fallback', 'recipient link and invalid equipment fallback']};
+    const result = {pass: true, errors, failed, http, checks: ['no donation link in Today; optional support at the bottom of Settings', 'correct safe outbound link', 'five languages, light/dark, 320/390/768px', 'third recorded workout only, once across reopening/restart/backup', 'empty sessions excluded, earlier/later summaries unaffected', 'full playback for all 131 tutorials', 'native share and copy fallback', 'recipient link and invalid equipment fallback']};
     fs.writeFileSync('artifacts/donation/browser.json', JSON.stringify(result, null, 2)); console.log(result);
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

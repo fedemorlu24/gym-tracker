@@ -490,8 +490,6 @@ function todayView() {
       <div class="dstrip-days">${strip}</div>
       <button class="ib" data-act="day" data-d="${addDays(mon, 7)}" aria-label="${t('nextWeekA')}" ${addDays(mon, 7) > today() ? 'disabled' : ''}>${icon('fwd')}</button></div>`;
 
-  if (isToday) html += donationCard();
-
   // allenamento del giorno
   if (isToday) html += backupNudge();
   html += `<p class="glabel">${t('workoutCard')}</p>`;
@@ -937,7 +935,6 @@ function settingsView() {
   const p = profile(), ok = profileOk();
   return `<header><button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${t('settings')}</h1></div></header>
-    ${donationCard()}
     <p class="glabel">${t('profile')}</p>
     <div class="group"><button class="row" data-act="profile"><div class="grow"><h3>${t('profile')}</h3>
       <div class="sub">${ok ? t('profileSummary', t(p.sex === 'm' ? 'male' : 'female'), p.age, fmtKg(bodyWeight())) : t('profileMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
@@ -963,7 +960,8 @@ function settingsView() {
     <div class="gap"></div>
     <div class="group"><button class="row" data-act="tour"><div class="grow"><h3>${t('howItWorks')}</h3></div><span class="chev">${icon('chev')}</span></button>
     <button class="row" data-act="appupdate"><div class="grow"><h3>${t('appUpdate')}</h3><div class="sub">Gym-Tracker · v${APP_VERSION} · ${t('appUpdateHint')}</div></div><span class="chev">${icon('chev')}</span></button>
-    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>`;
+    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>
+    ${donationCard()}`;
 }
 function profileFields(p) {
   const w = bodyWeight();

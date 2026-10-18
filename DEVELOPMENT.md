@@ -43,7 +43,7 @@ Open it on your phone and use *Add to Home Screen*. There is no account, no serv
 - The same library exercise stays the same across languages, so history is never split.
 - Animated tutorials and their sharing are free for everyone. The share button opens the phone's share sheet or copies a public `#tutorial=<base-id>&eq=<equipment>` link. It contains no workout data.
 - Tutorials are selected by movement and equipment (131 movements, 327 combinations). Named variants with the same equipment share the movement guide; the library's variant-specific notes still apply. The SVG fallback is a simplified schematic, not the same visual model as WebGL.
-- Optional support: the prominent “☕ Buy me a coffee” link in Today and at the top of Settings opens the existing Buy Me a Coffee page. A quieter “Buy me a coffee” card appears once in the third recorded workout’s summary (empty sessions do not count). Its seen flag is saved with the data/backup. No payment verification, account, entitlement or tutorial time limit.
+- Optional support: the “☕ Buy me a coffee” link at the bottom of Settings opens the existing Buy Me a Coffee page. A quieter “Buy me a coffee” card appears once in the third recorded workout’s summary (empty sessions do not count). Its seen flag is saved with the data/backup. No payment verification, account, entitlement or tutorial time limit.
 
 ### Social, without a server
 - Share image cards (session, progress, comparison), challenge links and a friends board — all through links and images, no backend.
@@ -100,7 +100,7 @@ npm run test:guides
 npm run test:update   # starts its own isolated release fixture
 ```
 
-The update fixture pins the released v63 commit and verifies v63 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data.
+The update fixture pins the released v64 commit and verifies v64 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data.
 
 Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Profile photo is a 112 px JPEG sent to friends.
 
