@@ -395,7 +395,10 @@ function guideStart() {
   const girl = guideGirl(); gf3 = null; el.classList.remove('gf3');
   gfPaused = matchMedia('(prefers-reduced-motion: reduce)').matches; gfMs = 0; gfLast = 0;
   const pb = document.getElementById('gf-play'); if (pb) { pb.innerHTML = icon(gfPaused ? 'play' : 'pause'); pb.setAttribute('aria-label', t(gfPaused ? 'gfPlay' : 'gfPause')); }
-  const draw = ms => { if (gf3) gf3.draw(ms); else st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`; };
+  // con WebGL si aspetta il modello 3D (nessun omino stilizzato nel frattempo); senza, o se il 3D non si carica, resta l'SVG
+  let wait3d = !!(window.G3D && G3D.supported());
+  const draw = ms => { if (gf3) gf3.draw(ms); else if (!wait3d) st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`; };
+  if (wait3d) { st.innerHTML = '<div class="gf-load" aria-hidden="true"><i></i></div>'; el.classList.add('gf3'); }
   const tick = ts => {
     if (!document.getElementById('gf-stage')) return;
     if (!gfPaused) { gfMs += gfLast ? Math.min(60, ts - gfLast) : 0; draw(gfMs); }
@@ -403,11 +406,11 @@ function guideStart() {
   };
   draw(0); gfRaf = requestAnimationFrame(tick);
   // modello anatomico 3D: si carica in un secondo momento e prende il posto dell'omino SVG
-  if (window.G3D && G3D.supported()) G3D.load().then(() => {
+  if (wait3d) G3D.load().then(() => {
     if (document.getElementById('gf-stage') !== st || el.dataset.eq !== eq) return;
     gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); el.classList.add('gf3'); draw(gfMs);
     if (!el.querySelector('.gf-cred')) el.insertAdjacentHTML('beforeend', '<a class="gf-cred" href="3d/LICENSE.md" target="_blank" rel="noopener">3D: Z-Anatomy · CC BY-SA 4.0</a>');
-  }).catch(() => {});
+  }).catch(() => { if (document.getElementById('gf-stage') !== st) return; wait3d = false; el.classList.remove('gf3'); draw(gfMs); });
 }
 // la prima volta che si aggiunge un movimento dalla libreria
 function guideFirst(varId) {
