@@ -1800,8 +1800,8 @@ let afterContact = null;  // cosa riaprire dopo aver aggiunto o modificato un am
 // elenco degli amici con un pulsante WhatsApp ciascuno; «altra persona» lascia scegliere la chat a WhatsApp
 function friendsToSend(msg, reopen) {
   afterContact = reopen;
-  const list = contacts();
-  return `<p class="glabel">${t('sendToFriend')}</p>` +
+  const list = contacts(), inChat = typeof chatLinkTargets === 'function' ? chatLinkTargets(msg) : '';
+  return inChat + `<p class="glabel">${inChat ? t('waOthers') : t('sendToFriend')}</p>` +
     (list.length ? `<div class="list">${list.map(c => `<div class="row friendrow"><a class="grow" href="${waLink(c, msg)}" target="_blank" rel="noopener"><h3>${esc(c.n)}</h3>
       <div class="sub">${c.tel ? '+' + c.tel : t('noNumber')}</div></a><button class="ib" data-act="editcontact" data-id="${c.id}" aria-label="${esc(t('edit'))}">${icon('more')}</button></div>`).join('')}</div>`
       : `<p class="sub" style="margin-bottom:8px">${t('noFriendsYet')}</p>`) +
