@@ -293,3 +293,22 @@ border-top:1px solid var(--line);padding:6px 8px calc(env(safe-area-inset-bottom
 @media(max-width:360px){.ex-body .step button,.mock .step button{width:48px}}
 
 .mock .step input{flex-basis:4ch;width:4ch}
+
+/* timer di recupero */
+.rest{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 82px);z-index:8;background:var(--text);color:var(--bg);
+border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+body.tabs .rest{bottom:calc(env(safe-area-inset-bottom) + 144px)}
+body.resting{padding-bottom:calc(env(safe-area-inset-bottom) + 230px)}
+body.tabs.resting{padding-bottom:calc(env(safe-area-inset-bottom) + 290px)}
+.rest[hidden]{display:none}
+.rest-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.rest-top span{font-size:14px;opacity:.75;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rest-top b{font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.rest .meter{background:rgba(127,127,127,.35);margin:8px 0 10px}
+.rest-btns{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
+.rest-btns button{min-height:44px;border-radius:12px;background:rgba(127,127,127,.25);font-weight:700}
+.rest-btns button:last-child{background:var(--acc);color:var(--acc-t)}
+.rest.done{background:var(--acc);color:var(--acc-t);padding:0;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+.rest-main{display:block;width:100%;text-align:left;padding:16px}
+.rest-main b{display:block;font-size:22px;font-weight:800}
+.rest-main span{font-size:15px}

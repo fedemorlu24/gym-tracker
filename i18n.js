@@ -98,6 +98,7 @@ window.I18N = {
     inSession: 'già nella seduta', addedX: n => `${n} aggiunto`, customEx: 'Esercizio personalizzato', allVariants: 'Altre varianti',
     theme: 'Aspetto', themeAuto: 'Automatico', themeLight: 'Chiaro', themeDark: 'Scuro',
     progList: 'Elenco', progWeeks: 'Settimane', weeksSub: 'Serie di ogni esercizio, settimana per settimana', kgReps: 'kg × rip', allSessions: 'Tutte', weekFrom: 'sett. dal', thisWeek: 'questa sett.', weeksLegend: 'Verde: settimana migliore della precedente · rosso: peggiore · in grassetto la serie migliore. Tocca una cella per aprire la seduta.', weeksEmpty: 'Registra qualche seduta: qui vedrai settimana per settimana peso × ripetizioni di ogni esercizio.',
+    rest: 'Recupero', restSetting: 'Recupero tra le serie', restOff: 'Spento', restText: 'Dopo ogni serie parte un timer. Se lo regoli con −15 / +15, l\'app ricorda il tempo per quell\'esercizio.', restDone: 'Recupero finito', restNext: i => `Vai con la serie ${i}`, restSkip: 'Salta', restScreen: 'Durante il recupero lo schermo resta acceso: con lo schermo spento iOS non permette al suono di partire.', restLess: 'Meno 15 secondi', restMore: 'Più 15 secondi',
     shareTitle: 'Gym Tracker',
   },
   en: {
@@ -198,6 +199,7 @@ window.I18N = {
     inSession: 'already in this workout', addedX: n => `${n} added`, customEx: 'Custom exercise', allVariants: 'Other variants',
     theme: 'Appearance', themeAuto: 'Automatic', themeLight: 'Light', themeDark: 'Dark',
     progList: 'List', progWeeks: 'Weeks', weeksSub: 'Sets of each exercise, week by week', kgReps: 'kg × reps', allSessions: 'All', weekFrom: 'week of', thisWeek: 'this week', weeksLegend: 'Green: better week than the previous one · red: worse · best set in bold. Tap a cell to open the workout.', weeksEmpty: 'Log a few workouts: here you will see weight × reps for each exercise, week by week.',
+    rest: 'Rest', restSetting: 'Rest between sets', restOff: 'Off', restText: 'A timer starts after each set. If you adjust it with −15 / +15, the app remembers the time for that exercise.', restDone: 'Rest over', restNext: i => `Go for set ${i}`, restSkip: 'Skip', restScreen: 'The screen stays on during rest: with the screen off, iOS does not let the sound play.', restLess: '15 seconds less', restMore: '15 seconds more',
     shareTitle: 'Gym Tracker',
   },
   es: {
@@ -298,6 +300,7 @@ window.I18N = {
     inSession: 'ya está en el entreno', addedX: n => `${n} añadido`, customEx: 'Ejercicio personalizado', allVariants: 'Otras variantes',
     theme: 'Apariencia', themeAuto: 'Automático', themeLight: 'Claro', themeDark: 'Oscuro',
     progList: 'Lista', progWeeks: 'Semanas', weeksSub: 'Series de cada ejercicio, semana a semana', kgReps: 'kg × rep', allSessions: 'Todos', weekFrom: 'sem. del', thisWeek: 'esta sem.', weeksLegend: 'Verde: semana mejor que la anterior · rojo: peor · en negrita la mejor serie. Toca una celda para abrir el entreno.', weeksEmpty: 'Registra algunos entrenos: aquí verás peso × repeticiones de cada ejercicio, semana a semana.',
+    rest: 'Descanso', restSetting: 'Descanso entre series', restOff: 'Apagado', restText: 'Tras cada serie empieza un temporizador. Si lo ajustas con −15 / +15, la app recuerda el tiempo para ese ejercicio.', restDone: 'Descanso terminado', restNext: i => `Ve a por la serie ${i}`, restSkip: 'Saltar', restScreen: 'Durante el descanso la pantalla sigue encendida: con la pantalla apagada iOS no deja sonar el aviso.', restLess: '15 segundos menos', restMore: '15 segundos más',
     shareTitle: 'Gym Tracker',
   },
   fr: {
@@ -398,6 +401,7 @@ window.I18N = {
     inSession: 'déjà dans la séance', addedX: n => `${n} ajouté`, customEx: 'Exercice personnalisé', allVariants: 'Autres variantes',
     theme: 'Apparence', themeAuto: 'Automatique', themeLight: 'Clair', themeDark: 'Sombre',
     progList: 'Liste', progWeeks: 'Semaines', weeksSub: 'Séries de chaque exercice, semaine après semaine', kgReps: 'kg × rép', allSessions: 'Toutes', weekFrom: 'sem. du', thisWeek: 'cette sem.', weeksLegend: 'Vert : semaine meilleure que la précédente · rouge : moins bonne · en gras la meilleure série. Touchez une case pour ouvrir la séance.', weeksEmpty: 'Enregistrez quelques séances : ici vous verrez charge × répétitions de chaque exercice, semaine après semaine.',
+    rest: 'Récupération', restSetting: 'Récupération entre les séries', restOff: 'Désactivée', restText: 'Un minuteur démarre après chaque série. Si vous l’ajustez avec −15 / +15, l’app retient le temps pour cet exercice.', restDone: 'Récupération terminée', restNext: i => `À vous la série ${i}`, restSkip: 'Passer', restScreen: 'Pendant la récupération l’écran reste allumé : écran éteint, iOS ne laisse pas le son se déclencher.', restLess: '15 secondes de moins', restMore: '15 secondes de plus',
     shareTitle: 'Gym Tracker',
   },
   de: {
@@ -498,6 +502,7 @@ window.I18N = {
     inSession: 'schon im Training', addedX: n => `${n} hinzugefügt`, customEx: 'Eigene Übung', allVariants: 'Weitere Varianten',
     theme: 'Darstellung', themeAuto: 'Automatisch', themeLight: 'Hell', themeDark: 'Dunkel',
     progList: 'Liste', progWeeks: 'Wochen', weeksSub: 'Sätze jeder Übung, Woche für Woche', kgReps: 'kg × Wdh', allSessions: 'Alle', weekFrom: 'Woche ab', thisWeek: 'diese Woche', weeksLegend: 'Grün: bessere Woche als die vorige · rot: schlechter · fett der beste Satz. Tippe auf eine Zelle, um das Training zu öffnen.', weeksEmpty: 'Speichere ein paar Trainings: Hier siehst du Woche für Woche Gewicht × Wiederholungen jeder Übung.',
+    rest: 'Pause', restSetting: 'Pause zwischen den Sätzen', restOff: 'Aus', restText: 'Nach jedem Satz startet ein Timer. Passt du ihn mit −15 / +15 an, merkt sich die App die Zeit für diese Übung.', restDone: 'Pause vorbei', restNext: i => `Auf zu Satz ${i}`, restSkip: 'Überspringen', restScreen: 'Während der Pause bleibt der Bildschirm an: Bei ausgeschaltetem Bildschirm lässt iOS keinen Ton zu.', restLess: '15 Sekunden weniger', restMore: '15 Sekunden mehr',
     shareTitle: 'Gym Tracker',
   },
 };

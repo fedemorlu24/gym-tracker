@@ -771,6 +771,9 @@ function settingsView() {
     <button class="row" data-act="weekly"><div class="grow"><h3>${t('perWeek')}</h3><div class="sub">${weeklyTarget()}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('language')}</p>
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
+    <p class="glabel">${t('restSetting')}</p>
+    <div class="opts three">${[0, 60, 90, 120, 180, 240].map(v => `<button class="chip" data-act="restset" data-v="${v}" aria-pressed="${restDefault() === v}">${v ? mmss(v) : t('restOff')}</button>`).join('')}</div>
+    <p class="note" style="padding:8px 4px 0">${t('restText')} ${t('restScreen')}</p>
     <p class="glabel">${t('theme')}</p>
     <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'auto') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
     <p class="glabel">${t('backup')}</p>
@@ -1152,6 +1155,79 @@ function closeInstall() {
   if (!db.tourSeen) openTour();
 }
 
+
+// ---------- timer di recupero ----------
+const restDefault = () => { const v = db.settings && db.settings.rest; return v === undefined ? 90 : v; };
+let rest = null, restTick = null, wake = null, actx = null;
+try { rest = JSON.parse(localStorage.getItem('gym-rest')); } catch (e) {}
+const keepRest = () => { try { rest ? localStorage.setItem('gym-rest', JSON.stringify(rest)) : localStorage.removeItem('gym-rest'); } catch (e) {} };
+const mmss = s => `${Math.floor(s / 60)}:${pad2(s % 60)}`;
+// l'audio va sbloccato durante un tocco: lo prepariamo quando parte il timer
+function unlockAudio() {
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {}
+}
+function beep() {
+  if (!actx) return;
+  [0, .28, .56].forEach((t0, i) => {
+    const o = actx.createOscillator(), g = actx.createGain(), t1 = actx.currentTime + t0;
+    o.frequency.value = i === 2 ? 1320 : 880; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(.0001, t1); g.gain.exponentialRampToValueAtTime(.35, t1 + .02); g.gain.exponentialRampToValueAtTime(.0001, t1 + .22);
+    o.start(t1); o.stop(t1 + .24);
+  });
+}
+async function keepAwake(on) {
+  try {
+    if (on && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); }
+    if (!on && wake) { await wake.release(); wake = null; }
+  } catch (e) { wake = null; }
+}
+function startRest(name, next) {
+  if (!restDefault()) return;   // spento dalle impostazioni: vale per tutti gli esercizi
+  const sec = (db.rest && db.rest[key(name)]) || restDefault();
+  unlockAudio();
+  rest = {name, next, total: sec, end: Date.now() + sec * 1000};
+  keepRest(); keepAwake(true); drawRest();
+}
+function adjustRest(d) {
+  if (!rest || rest.done) return;
+  const left = Math.max(5, Math.round((rest.end - Date.now()) / 1000) + d);
+  rest.end = Date.now() + left * 1000;
+  rest.total = Math.max(15, rest.total + d);
+  // il tempo corretto diventa quello di questo esercizio
+  db.rest = {...(db.rest || {}), [key(rest.name)]: rest.total}; save();
+  keepRest(); drawRest();
+}
+function stopRest() { rest = null; keepRest(); keepAwake(false); drawRest(); }
+function drawRest() {
+  const el = document.getElementById('rest');
+  clearInterval(restTick); restTick = null;
+  if (!rest) { el.hidden = true; document.body.classList.remove('resting'); return; }
+  el.hidden = false; document.body.classList.add('resting');
+  const tick = () => {
+    const left = Math.ceil((rest.end - Date.now()) / 1000);
+    if (left <= 0 && !rest.done) {
+      rest.done = Date.now(); keepRest(); beep();
+      try { navigator.vibrate && navigator.vibrate([250, 120, 250]); } catch (e) {}
+      keepAwake(false);
+    }
+    if (rest.done) {
+      el.className = 'rest done';
+      el.innerHTML = `<button class="rest-main" data-act="restskip"><b>${t('restDone')}</b><span>${esc(rest.name)} · ${t('restNext', rest.next)}</span></button>`;
+      clearInterval(restTick); restTick = null;
+      setTimeout(() => { if (rest && rest.done && Date.now() - rest.done > 7000) stopRest(); }, 8000);
+      return;
+    }
+    el.className = 'rest';
+    el.innerHTML = `<div class="rest-top"><span>${t('rest')} · ${esc(rest.name)}</span><b>${mmss(left)}</b></div>
+      <div class="meter"><i style="width:${Math.min(100, (1 - left / rest.total) * 100)}%"></i></div>
+      <div class="rest-btns"><button data-act="restless" aria-label="${t('restLess')}">−15</button><button data-act="restmore" aria-label="${t('restMore')}">+15</button>
+      <button data-act="restskip">${t('restSkip')}</button></div>`;
+  };
+  tick();
+  if (!rest.done) restTick = setInterval(tick, 250);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && rest) { if (!rest.done) keepAwake(true); drawRest(); } });
+
 // ---------- azioni ----------
 function readEntry(eid) {
   return {reps: parseInt(document.getElementById('reps-' + eid).value, 10), kg: num(document.getElementById('kg-' + eid).value)};
@@ -1170,6 +1246,7 @@ function addSet(eid) {
   const set = {reps, kg}, v = e1rm(set), ref = prev && prev.sets[i];
   e.sets.push(set); delete drafts[eid]; save();
   const y = window.scrollY; render(); window.scrollTo(0, y);
+  startRest(e.name, e.sets.length + 1);
   if (celebrate()) return;
   if (best > 0 && v > best + 1e-9) toast(t('toastRecord', esc(e.name), fmtKg(r05(v))));
   else if (ref && v > e1rm(ref) + 1e-9) toast(t('toastBetter', setTxt(ref) + ' kg'));
@@ -1275,6 +1352,10 @@ const acts = {
   install: openInstall,
   installclose: closeInstall,
   installnow: () => { if (installEvt) installEvt.prompt(); },
+  restless: () => adjustRest(-15),
+  restmore: () => adjustRest(15),
+  restskip: stopRest,
+  restset: b => { db.settings = {...(db.settings || {}), rest: +b.dataset.v}; save(); render(); },
   nativeshare: () => navigator.share({title: t('shareTitle'), url: location.href}).catch(() => {}),
 };
 const forms = {
@@ -1331,6 +1412,7 @@ document.addEventListener('input', ev => {
 setLang();
 applyTheme();
 render();
+if (rest) drawRest();
 restore();
 loadPhotos();
 let skipInstall = false;
