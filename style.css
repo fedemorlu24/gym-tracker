@@ -347,3 +347,27 @@ body.tabs.resting{padding-bottom:calc(env(safe-area-inset-bottom) + 290px)}
 a.btn{text-decoration:none}
 .field textarea{font:inherit;font-size:16px;color:var(--text);background:var(--card);border:0;border-radius:12px;padding:12px 14px;width:100%;resize:vertical}
 .seg button{font-size:14px}
+
+/* mappa dei muscoli */
+.mm-wrap{display:flex;justify-content:center;margin:6px 0 2px}
+.mm{width:100%;max-width:300px;height:auto}
+.mm .mm-body{fill:var(--fill)}
+.mm .m{fill:color-mix(in srgb,var(--sub) 26%,var(--fill));stroke:var(--card);stroke-width:.6}
+.mm .m.sec{fill:color-mix(in srgb,var(--acc) 45%,var(--fill))}
+.mm .m.pri{fill:var(--acc)}
+.mm text{font-size:9px;fill:var(--sub);font-weight:600}
+.pane .mm .m{stroke:var(--bg)}
+
+/* schede e coach */
+.ava{width:30px;height:30px;border-radius:50%;background:var(--acc);color:var(--acc-t);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
+.ava.big{width:40px;height:40px;font-size:17px}
+.bubble{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.bubble > div{background:var(--card);border-radius:4px 18px 18px 18px;padding:10px 14px;flex:1;min-width:0}
+.panel-c .bubble > div,.dcard .bubble > div{background:var(--fill)}
+.bubble b{display:block;font-size:13px;color:var(--acc);margin-bottom:2px}
+.bubble p{font-size:15px;line-height:1.45}
+.ptarget{font-size:14px;background:var(--acc-soft);border-radius:12px;padding:8px 12px;margin:0 0 10px;line-height:1.4}
+.pane-like{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.pane-like .field input,.pane-like .field textarea,.dcard .field input{background:var(--card)}
+.dcard .field input{background:var(--fill)}
+.opts .field{min-width:0}

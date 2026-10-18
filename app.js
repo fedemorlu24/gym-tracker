@@ -193,6 +193,7 @@ function draftFor(s, e) {
   if (prev && i < prev.sets.length) d = {...suggest(prev.sets[i])[0]};
   else if (i) d = {reps: e.sets[i - 1].reps, kg: e.sets[i - 1].kg};
   else if (prev) d = {...suggest(prev.sets[prev.sets.length - 1])[0]};
+  else if (e.target) d = {reps: repsLow(e.target.reps), kg: ''};
   return drafts[e.id] = d;
 }
 
@@ -401,6 +402,8 @@ function render() {
   if (view.name === 'session' && sess(view.id)) app.innerHTML = sessionView();
   else if (view.name === 'ex' && exHistory(view.ex).length) app.innerHTML = exView();
   else if (view.name === 'settings') app.innerHTML = settingsView();
+  else if (view.name === 'plan' && plans()[view.id]) app.innerHTML = planView();
+  else if (view.name === 'planedit' && plans()[view.id]) app.innerHTML = planEditView();
   else { if (view.name !== 'home') view = {name: 'home', tab: 'today'}; app.innerHTML = home(); tabs = true; }
   document.body.classList.toggle('tabs', tabs);
   document.getElementById('tabbar').innerHTML = tabs ? tabbar() : '';
@@ -453,9 +456,11 @@ function todayView() {
   else if (isToday) {
     const last = [...db.sessions].filter(s => s.exercises.length).sort((a, b) => b.date.localeCompare(a.date) || order(b) - order(a));
     // proposta: la seduta fatta l'ultima volta nello stesso giorno della settimana, altrimenti la più recente
-    const wd = dt(day).getDay(), sug = last.find(s => dt(s.date).getDay() === wd) || last[0];
+    const wd = dt(day).getDay(), sug = last.find(s => dt(s.date).getDay() === wd) || last[0], np = nextPlanDay();
     html += `<div class="dcard"><p class="sub">${t('restDayTxt')}</p>
-      ${sug ? `<button class="btn p wide" data-act="repeat" data-sid="${sug.id}" style="margin-top:12px">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
+      ${np ? `<button class="btn p wide" data-act="startday" data-id="${np.p.id}" data-i="${np.i}" style="margin-top:12px">${icon('plus')} ${esc(t('startDay', dayTitle(np.p, np.i)))}</button>
+        <p class="sub" style="margin-top:6px">${esc(np.p.name)}${np.p.author ? ' · ' + esc(t('planBy', np.p.author, np.p.role)) : ''}</p>` : ''}
+      ${sug ? `<button class="btn ${np ? 's' : 'p'} wide" data-act="repeat" data-sid="${sug.id}" style="margin-top:12px${np ? ';background:var(--fill)' : ''}">${icon('plus')} ${esc(t('repeatX', sug.name))}</button>` : ''}
       <button class="btn s wide" data-act="newsession" style="margin-top:8px;background:var(--fill)">${t('startWorkout')}</button></div>`;
   } else html += `<div class="dcard"><p class="sub">${t('restDayTxt')}</p></div>`;
 
@@ -490,7 +495,7 @@ function home() {
   if (tab === 'sessions') {
     const td = [...db.sessions].reverse().find(s => s.date === today());
     html += (td ? `<button class="today" data-act="open" data-sid="${td.id}"><div class="grow"><div class="sub">${t('continueToday')}</div><h3>${esc(td.name)}</h3></div><span class="chev">${icon('chev')}</span></button>` : '') +
-      (doneSessions().length ? streakCard() : '') + sessionsList() +
+      (doneSessions().length ? streakCard() : '') + plansSection() + sessionsList() +
       `<div class="bar"><button class="btn p wide" data-act="newsession">${icon('plus')} ${t('newSession')}</button></div>`;
   } else if (tab === 'progress') html += progressList();
   else html += bodyView() + `<div class="bar"><button class="btn p wide" data-act="bodylog">${icon('plus')} ${t('logBody')}</button></div>`;
@@ -609,6 +614,8 @@ function bodyView() {
       ${kc.length > 1 ? barChart(kc.map(x => ({d: x.date, v: x.kcal, dir: 'n'})), 'kcal') : ''}</div>`;
   }
   if (!b.length && !photos.length) html = `<div class="empty">${t('bodyEmpty')}</div>`;
+  const tips = planList().filter(p => p.food);
+  if (tips.length) html += tips.map(p => `<div class="panel-c"><h2>${esc(t('coachTips', p.author || p.name))}</h2><p class="sub">${esc(p.name)}</p><div class="gap"></div>${bubble(p.author || p.name, p.food)}</div>`).join('');
   return html + photoPanel();
 }
 function photoPanel() {
@@ -695,7 +702,8 @@ function exOpen(s, e) {
       <button class="ib" data-act="ex" data-name="${esc(e.name)}" aria-label="${esc(t('progressX', e.name))}">${icon('chart')}</button>
       <button class="ib" data-act="exmenu" data-eid="${e.id}" aria-label="${esc(t('optionsX', e.name))}">${icon('more')}</button></div>
     <div class="ex-body">
-      <p class="last">${prev ? t('lastTime', fmtShort(prev.date), prev.sets.map(setTxt).join(' · ')) : t('firstTime')}</p>
+      ${e.target ? `<p class="ptarget"><b>${t('planTarget')}:</b> ${exLine(e.target)}${e.target.note ? `<br>${e.target.by ? esc(e.target.by) + ': ' : ''}${esc(e.target.note)}` : ''}</p>` : ''}
+      <p class="last">${prev ? t('lastTime', fmtShort(prev.date), prev.sets.map(setTxt).join(' · ')) : e.target ? '' : t('firstTime')}</p>
       ${rows ? `<ol class="sets">${rows}</ol>` : ''}
       ${goal}${stepper(e.id)}
       <div class="err" id="err-${e.id}" aria-live="polite"></div>
@@ -733,6 +741,8 @@ function exView() {
       barChart(st.map((x, i) => ({d: x.date, v: x.reps, dir: i ? dir(x.reps, st[i - 1].reps) : 'eq', live: isLive(x)})), rs))}
     ${forecastPanel(name, st)}
     ${levelPanel(name)}
+    ${(() => { const L = libFor({name}); return L ? `<div class="panel-c"><h2>${t('primaryM')}</h2><p class="sub">${esc(muscleTxt(L.b.pri))}${L.b.sec.length ? ' · ' + esc(muscleTxt(L.b.sec)) : ''}</p><div class="mm-wrap">${muscleMap(L.b.pri, L.b.sec)}</div>
+      <button class="btn s wide" data-act="libguide" data-id="${L.b.id}" data-v="${L.v ? L.v.id : '-'}" style="background:var(--fill)">${t('guide')}</button><div class="gap"></div></div>` : ''; })()}
     <div class="hero">
       <div class="sub">${t('bestSet')}</div>
       <div class="big">${setTxt(rec.b)} <small>kg · ${fmtShort(rec.date)}</small></div>
@@ -913,7 +923,10 @@ function sheetNewSession() {
   const seen = new Set(), past = [...db.sessions].sort((a, b) => b.date.localeCompare(a.date))
     .filter(s => s.exercises.length && !seen.has(key(s.name)) && seen.add(key(s.name))).slice(0, 6);
   // se c'è uno storico, ripetere è l'azione principale: niente tastiera aperta
+  const pdays = planList().flatMap(p => p.days.map((d, i) => d.ex.length ? `<button class="row" data-act="startday" data-id="${p.id}" data-i="${i}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
+    <div class="grow"><h3>${esc(dayTitle(p, i))}</h3><div class="sub">${esc(p.name)}${p.author ? ' · ' + esc(t('planBy', p.author, '')) : ''}</div></div></button>` : '')).filter(Boolean);
   sheet(`<h2>${t('newSession')}</h2>
+    ${pdays.length ? `<p class="sub h" style="margin-top:0">${t('fromPlan')}</p><div class="list">${pdays.join('')}</div><p class="sub h">${t('orRepeat')}</p>` : ''}
     ${past.length ? `<div class="list">${past.map(s => `
       <button class="row" data-act="repeat" data-sid="${s.id}"><div class="grow"><h3>${esc(s.name)}</h3>
       <div class="sub">${s.exercises.map(e => esc(e.name)).join(', ')}</div></div><span class="sub">${fmtShort(s.date)}</span></button>`).join('')}</div>
@@ -958,8 +971,10 @@ function libList(s) {
   return LIB.filter(b => b.g === libState.g).map(b => `<button class="row" data-act="libbase" data-id="${b.id}"><div class="grow"><h3>${esc(tx(b.name))}</h3>
     <div class="sub">${muscleTxt(b.pri)} · ${t('variantsN', b.variants.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('');
 }
+// esercizi già presenti dove si sta aggiungendo: seduta o giorno della scheda
+const libCtx = () => { const tg = libState.target; return tg ? {exercises: plans()[tg.plan].days[tg.day].ex.map(x => ({name: nameFor(x)}))} : sess(view.id); };
 function sheetAddExercise() {
-  const s = sess(view.id), have = new Set(s.exercises.map(e => key(e.name)));
+  const s = libCtx(), have = new Set(s.exercises.map(e => key(e.name)));
   const known = exerciseNames().filter(x => !have.has(key(x.name)));
   sheet(`<h2>${t('addExercise')}</h2>
     <label class="field"><input id="lib-q" type="search" placeholder="${esc(t('searchEx'))}" value="${esc(libState.q)}" autocomplete="off" enterkeyhint="search"></label>
@@ -975,6 +990,56 @@ function sheetAddExercise() {
     document.querySelector('.hscroll').hidden = !!q.value.trim(); };
   document.querySelector('.hscroll') && (document.querySelector('.hscroll').hidden = !!libState.q.trim());
 }
+
+// ---------- mappa dei muscoli (fronte e retro) ----------
+// metà sinistra di ogni figura, specchiata per la destra; chiavi = muscoli della libreria
+const MM_BODY = `<circle cx="50" cy="16" r="10"/><path d="M45 25h10v7h-10z"/>
+  <path d="M50 31c-9 0-17 2-21 6-3 3-4 8-4 13l-3 22-3 22c-1 4 0 7 2 7s3-2 4-6l4-20 2-14 2 18c-2 8-3 16-3 24l1 18-1 26c0 10 1 22 3 31 1 3 6 3 6 0l2-30 2-24 2-20h4z"/>`;
+const MM_FRONT = {
+  traps: '<path d="M44 31l-9 6 9 2z"/>',
+  sideDelt: '<ellipse cx="27.5" cy="43" rx="5" ry="7"/>',
+  frontDelt: '<ellipse cx="32.5" cy="42" rx="5" ry="6.5"/>',
+  chest: '<path d="M37 41c4-2 9-2 12-1v16c-4 2-9 2-12 0-2-3-2-11 0-15z"/>',
+  upperChest: '<path d="M37 41c4-2 9-2 12-1v6c-4-1-8-1-12 1z"/>',
+  biceps: '<ellipse cx="27" cy="61" rx="4.2" ry="9"/>',
+  brachialis: '<ellipse cx="23.6" cy="66" rx="1.8" ry="4.5"/>',
+  forearms: '<path d="M21 73c3-1 6 0 6 3l-2 18c-1 3-4 3-5 0l-1-14c0-3 0-6 2-7z"/>',
+  abs: '<path d="M43 59h6.5v33h-5c-2-4-2-10-2-16z"/>',
+  obliques: '<path d="M37 60l5 1v15c0 5 1 11 3 15l-4 2c-3-5-4-11-4-17z"/>',
+  hipFlexors: '<path d="M42 93l6 2v9z"/>',
+  abductors: '<ellipse cx="35" cy="102" rx="3" ry="6"/>',
+  quads: '<path d="M38 104c4-3 8-2 10 1l-1 30c-1 6-6 8-9 4-2-6-3-20 0-35z"/>',
+  adductors: '<path d="M47 104l2.5 2-1 22c-1-6-2-16-1.5-24z"/>',
+  tibialis: '<path d="M39 152c2-1 4 0 4 2l-1 26c-1 2-2 2-3 0z"/>',
+  calves: '<path d="M37 152l2 0-1 22c-2-4-2-15-1-22z"/>',
+};
+const MM_BACK = {
+  traps: '<path d="M50 30l-14 8 10 4 4 18z"/>',
+  sideDelt: '<ellipse cx="27.5" cy="43" rx="5" ry="7"/>',
+  rearDelt: '<ellipse cx="32.5" cy="43" rx="5" ry="6.5"/>',
+  upperBack: '<path d="M40 44l6 0 3 16-7-2z"/>',
+  lats: '<path d="M37 49l5 9 7 4v14l-6 6c-4-6-6-16-6-33z"/>',
+  lowerBack: '<path d="M44 80l5.5-3v17h-6z"/>',
+  triceps: '<ellipse cx="26.5" cy="60" rx="4.6" ry="10"/>',
+  forearms: '<path d="M21 73c3-1 6 0 6 3l-2 18c-1 3-4 3-5 0l-1-14c0-3 0-6 2-7z"/>',
+  obliques: '<path d="M37 64l3 2c0 8 1 16 3 22l-4 2c-2-6-3-17-2-26z"/>',
+  abductors: '<ellipse cx="37" cy="97" rx="3.5" ry="5"/>',
+  glutes: '<path d="M38 99c4-4 9-4 11.5-2v15c-4 2-9 1-11-2-2-3-2-8-.5-11z"/>',
+  hams: '<path d="M38 114c4-1 8-1 10 1l-1 24c-1 5-6 6-8 2-2-8-2-18-1-27z"/>',
+  adductors: '<path d="M47.5 113l2 1-1 16c-1-5-1.5-11-1-17z"/>',
+  calves: '<path d="M37 150c3-2 7-1 7 3l-1 16c-1 4-5 4-6 0-1-6-1-13 0-19z"/>',
+};
+function muscleMap(pri, sec) {
+  const cls = k => pri.includes(k) ? 'm pri' : sec.includes(k) ? 'm sec' : 'm';
+  const fig = (parts, x, label) => {
+    const half = Object.entries(parts).map(([k, d]) => `<g class="${cls(k)}">${d}</g>`).join('');
+    return `<g transform="translate(${x} 0)"><g class="mm-body">${MM_BODY}<g transform="translate(100 0) scale(-1 1)">${MM_BODY}</g></g>
+      ${half}<g transform="translate(100 0) scale(-1 1)">${half}</g>
+      <text x="50" y="216" text-anchor="middle">${label}</text></g>`;
+  };
+  return `<svg class="mm" viewBox="0 0 210 222" role="img" aria-label="${esc(muscleTxt(pri))}">${fig(MM_FRONT, 0, t('front'))}${fig(MM_BACK, 110, t('backPose'))}</svg>`;
+}
+
 // scheda di un movimento: a cosa serve, muscoli, esecuzione e varianti
 function sheetLibBase(id, current) {
   const b = BASE[id], s = view.name === 'session' ? sess(view.id) : null, have = new Set(s ? s.exercises.map(e => key(e.name)) : []);
@@ -982,6 +1047,7 @@ function sheetLibBase(id, current) {
   sheet(`<div class="item" style="justify-content:flex-start;gap:4px;margin:-6px 0 6px -10px">
       ${current ? '' : `<button class="ib" data-act="addex" data-keep="1" aria-label="${t('back')}">${icon('back')}</button>`}<h2 style="margin:0">${esc(tx(b.name))}</h2></div>
     <div class="chips"><span class="tag pr" style="animation:none">${LBL().lvl[b.lvl]}</span><span class="tag eq">${t('repsSuggested', b.reps)}</span></div>
+    <div class="mm-wrap">${muscleMap(b.pri, b.sec)}</div>
     <p class="sub h">${t('whatFor')}</p><p>${esc(tx(b.why))}</p>
     <p class="sub h">${t('primaryM')}</p><div class="chips">${chips(b.pri, 'on')}</div>
     ${b.sec.length ? `<p class="sub h">${t('secondaryM')}</p><div class="chips">${chips(b.sec, '')}</div>` : ''}
@@ -1259,9 +1325,9 @@ async function keepAwake(on) {
     if (!on && wake) { await wake.release(); wake = null; }
   } catch (e) { wake = null; }
 }
-function startRest(name, next) {
+function startRest(name, next, planRest) {
   if (!restDefault()) return;   // spento dalle impostazioni: vale per tutti gli esercizi
-  const sec = (db.rest && db.rest[key(name)]) || restDefault();
+  const sec = (db.rest && db.rest[key(name)]) || planRest || restDefault();
   unlockAudio();
   rest = {name, next, total: sec, end: Date.now() + sec * 1000};
   keepRest(); keepAwake(true); drawRest();
@@ -1405,6 +1471,16 @@ function sheetFriend(id) {
 }
 // sfida aperta da un link: nell'app si aggiunge, in Safari si spiega come portarla nell'app
 function handleChallengeHash() {
+  const pl = parsePlan(location.hash);
+  if (pl) {
+    const raw = location.hash.split('scheda=')[1];
+    window.history.replaceState(null, '', location.pathname + location.search);
+    if (standalone() || !isIOS) { addPlan(pl); return true; }
+    shareText = APP_URL + '#scheda=' + raw;
+    sheet(`<h2>${esc(t('planFrom', pl.name))}</h2><p class="sub" style="margin-bottom:6px">${pl.author ? esc(t('planBy', pl.author, pl.role)) : ''}</p>
+      <p class="sub" style="margin-bottom:14px">${t('inBrowserPlan')}</p><button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`);
+    return true;
+  }
   const c = parseChallenge(location.hash);
   if (!c) return false;
   window.history.replaceState(null, '', location.pathname + location.search);
@@ -1528,6 +1604,139 @@ function sheetSocialSettings() {
     <button class="btn p wide">${t('save')}</button></form>`);
 }
 
+
+// ---------- schede (create da sé o ricevute da un coach) ----------
+const plans = () => db.plans || (db.plans = {});
+const planList = () => Object.values(plans()).sort((a, b) => (b.got || '').localeCompare(a.got || '') || a.name.localeCompare(b.name));
+const dayLetter = i => String.fromCharCode(65 + i);
+const dayTitle = (p, i) => p.days[i].name || `${p.name} ${dayLetter(i)}`;
+const repsLow = r => { const m = String(r || '').match(/\d+/); return m ? +m[0] : ''; };
+// recupero suggerito dalle ripetizioni: carichi pesanti, pause lunghe
+const restFor = reps => { const lo = repsLow(reps) || 10; return lo <= 6 ? 180 : lo <= 10 ? 120 : 90; };
+const exLine = x => `${x.sets} × ${x.reps}${x.rest ? ' · ' + t('restS', mmss(x.rest)) : ''}`;
+const nameFor = x => { if (x.lib && VAR[x.lib]) { const used = db.sessions.flatMap(s => s.exercises).find(e => e.lib === x.lib); return used ? used.name : tx(VAR[x.lib].v.name); } return x.n; };
+// fumetto del coach: nota con l'iniziale di chi l'ha scritta
+const bubble = (who, text) => text ? `<div class="bubble"><span class="ava">${esc((who || '?').trim().charAt(0).toUpperCase())}</span><div><b>${esc(who || '')}</b><p>${esc(text).replace(/\n/g, '<br>')}</p></div></div>` : '';
+
+function plansSection() {
+  const ps = planList();
+  return `<div class="sec"><h2>${t('plans')}</h2></div>
+    ${ps.length ? `<div class="list">${ps.map(p => `<button class="row" data-act="plan" data-id="${p.id}"><span class="ava big">${esc((p.author || p.name).trim().charAt(0).toUpperCase())}</span>
+      <div class="grow"><h3>${esc(p.name)}</h3><div class="sub">${p.author ? esc(t('planBy', p.author, p.role)) + ' · ' : ''}${t('daysN', p.days.length)}</div></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div>`
+      : `<p class="sub" style="margin:0 2px 8px">${t('plansEmpty')}</p>`}
+    <div class="opts" style="margin:10px 0 18px"><button class="btn s" data-act="newplan">${icon('plus')} ${t('newPlan')}</button><button class="btn s" data-act="pasteplan">${t('pastePlan')}</button></div>
+    <p class="glabel">${t('tabWorkouts')}</p>`;
+}
+function planView() {
+  const p = plans()[view.id];
+  return `<header><button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
+      <div class="t small"><h1>${esc(p.name)}</h1><p>${p.author ? esc(t('planBy', p.author, p.role)) : t('daysN', p.days.length)}</p></div>
+      ${p.own ? `<button class="ib txt" data-act="editplan" data-id="${p.id}">${t('edit')}</button>` : ''}</header>
+    ${bubble(p.author, p.note)}
+    ${p.days.map((d, i) => `<div class="dcard"><div class="item"><h3>${esc(dayTitle(p, i))}</h3><span class="sub">${t('exN', d.ex.length)}</span></div>
+      ${d.ex.map(x => `<div class="dex"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div></div>`).join('') || `<p class="sub">${t('planEmptyDay')}</p>`}
+      ${d.ex.length ? `<button class="btn p wide" data-act="startday" data-id="${p.id}" data-i="${i}" style="margin-top:10px">${esc(t('startDay', dayTitle(p, i)))}</button>` : ''}</div>`).join('')}
+    ${p.food ? `<p class="glabel">${t('foodTips')}</p>${bubble(p.author || t('you'), p.food)}` : ''}
+    <div class="gap"></div>
+    <button class="btn s wide" data-act="sendplan" data-id="${p.id}" style="background:var(--card)">${icon('share')} ${t('sendPlan')}</button><div class="gap"></div>
+    <button class="btn d wide" data-act="delplan" data-id="${p.id}">${t('delPlan')}</button>`;
+}
+// editor: ogni campo si salva mentre scrivi
+function planEditView() {
+  const p = plans()[view.id], inp = (f, v, ph, tag = 'input') => tag === 'input'
+    ? `<input data-pf="${f}" value="${esc(v || '')}" placeholder="${esc(ph || '')}" autocomplete="off">`
+    : `<textarea data-pf="${f}" rows="3" placeholder="${esc(ph || '')}">${esc(v || '')}</textarea>`;
+  return `<header><button class="ib" data-act="plan" data-id="${p.id}" aria-label="${t('back')}">${icon('back')}</button>
+      <div class="t small"><h1>${esc(p.name) || t('newPlan')}</h1></div><button class="ib txt" data-act="plan" data-id="${p.id}">${t('save')}</button></header>
+    <div class="pane-like">
+      <label class="field">${t('planName')}${inp('name', p.name, t('planNamePh'))}</label>
+      <div class="opts"><label class="field">${t('author')}${inp('author', p.author, t('nicknamePh'))}</label><label class="field">${t('role')}${inp('role', p.role)}</label></div>
+      <label class="field">${t('planNote')}${inp('note', p.note, '', 'textarea')}</label>
+    </div>
+    ${p.days.map((d, i) => `<div class="dcard"><label class="field">${t('dayName')} ${dayLetter(i)}<input data-pd="${i}" value="${esc(d.name || '')}" placeholder="${esc(t('dayNamePh'))}" autocomplete="off"></label>
+      ${d.ex.map((x, j) => `<button class="dex" data-act="planex" data-i="${i}" data-j="${j}" style="width:100%;text-align:left"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div><span class="chev">${icon('chev')}</span></button>`).join('')}
+      <div class="opts" style="margin-top:10px"><button class="btn s" data-act="planaddex" data-i="${i}" style="background:var(--fill)">${icon('plus')} ${t('exerciseBtn')}</button>
+      <button class="btn d" data-act="plandelday" data-i="${i}" style="background:var(--fill)">${t('delDay')}</button></div></div>`).join('')}
+    <button class="btn s wide" data-act="planaddday" style="background:var(--card)">${icon('plus')} ${t('addDay')}</button>
+    <p class="glabel">${t('foodTips')}</p>
+    <div class="pane-like"><label class="field">${inp('food', p.food, t('foodPh'), 'textarea')}</label></div>`;
+}
+function newPlan() {
+  const p = {id: uid() + uid(), own: true, name: '', author: nick(), role: t('roleDefault'), note: '', food: '', days: [{name: '', ex: []}], got: today()};
+  plans()[p.id] = p; save(); go({name: 'planedit', id: p.id});
+}
+function addToPlan(name, lib) {
+  const tg = libState.target, p = plans()[tg.plan], b = lib && VAR[lib] ? VAR[lib].b : null, reps = b ? b.reps.replace(/\s*s$/, '') : '8–12';
+  p.days[tg.day].ex.push({lib: lib || '', n: lib ? tx(VAR[lib].v.name) : name, sets: 3, reps, rest: restFor(reps), note: ''});
+  save(); closeSheet(); libState.target = null; render();
+}
+function sheetPlanEx(i, j) {
+  const x = plans()[view.id].days[i].ex[j];
+  sheet(`<h2>${esc(nameFor(x))}</h2><form data-form="planex" data-i="${i}" data-j="${j}">
+    <div class="opts"><label class="field">${t('setsL')}<input name="s" inputmode="numeric" value="${x.sets}"></label>
+    <label class="field">${t('repsRange')}<input name="r" value="${esc(x.reps)}" autocomplete="off"></label></div>
+    <label class="field">${t('restL')}<input name="t" inputmode="numeric" value="${x.rest || ''}"></label>
+    <label class="field">${t('noteL')}<input name="n" value="${esc(x.note || '')}" maxlength="120" autocomplete="off"></label>
+    <button class="btn p wide">${t('save')}</button></form><div class="gap"></div>
+    <button class="btn d wide" data-act="planexdel" data-i="${i}" data-j="${j}">${t('delPlanEx')}</button>`);
+}
+// avvia un giorno della scheda: seduta con gli esercizi e gli obiettivi del coach
+function startPlanDay(id, i) {
+  const p = plans()[id], d = p.days[i];
+  const s = {id: uid(), name: dayTitle(p, i), date: today(), plan: {id, day: i}, exercises: d.ex.map(x => ({id: uid(), name: nameFor(x), ...(x.lib ? {lib: x.lib} : {}), sets: [],
+    target: {sets: x.sets, reps: x.reps, rest: x.rest, note: x.note, by: p.author || ''}}))};
+  db.sessions.push(s); save(); closeSheet();
+  go({name: 'session', id: s.id, open: s.exercises[0] && s.exercises[0].id, from: 'today'});
+}
+// prossimo giorno da fare: quello dopo l'ultimo eseguito della scheda usata più di recente
+function nextPlanDay() {
+  const last = [...db.sessions].filter(s => s.plan && plans()[s.plan.id]).sort((a, b) => b.date.localeCompare(a.date) || order(b) - order(a))[0];
+  if (last) { const p = plans()[last.plan.id]; return {p, i: (last.plan.day + 1) % p.days.length}; }
+  const p = planList().find(x => x.days.some(d => d.ex.length));
+  return p ? {p, i: p.days.findIndex(d => d.ex.length)} : null;
+}
+// condivisione: dati compatti nel link
+function planPayload(p) {
+  return {v: 1, t: 'p', id: p.id, n: p.name.slice(0, 50), a: (p.author || '').slice(0, 30), r: (p.role || '').slice(0, 30), no: (p.note || '').slice(0, 600), f: (p.food || '').slice(0, 1200),
+    d: p.days.slice(0, 7).map(d => ({n: (d.name || '').slice(0, 40), e: d.ex.slice(0, 15).map(x => [x.lib || '', nameFor(x).slice(0, 50), x.sets, String(x.reps).slice(0, 12), x.rest || 0, (x.note || '').slice(0, 120)])}))};
+}
+function parsePlan(text) {
+  const m = String(text || '').match(/scheda=([A-Za-z0-9_-]{10,20000})/);
+  if (!m) return null;
+  try {
+    const o = b64d(m[1]), str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '', nr = v => isFinite(v) ? +v : 0;
+    if (o.v !== 1 || o.t !== 'p' || !Array.isArray(o.d)) return null;
+    return {id: str(o.id, 40), name: str(o.n, 50) || '?', author: str(o.a, 30), role: str(o.r, 30), note: str(o.no, 600), food: str(o.f, 1200),
+      days: o.d.slice(0, 7).map(d => ({name: str(d.n, 40), ex: (Array.isArray(d.e) ? d.e : []).slice(0, 15).map(x => ({lib: VAR[str(x[0], 80)] ? str(x[0], 80) : '', n: str(x[1], 50),
+        sets: Math.min(20, Math.max(1, nr(x[2]) || 3)), reps: str(x[3], 12) || '8–12', rest: Math.min(900, nr(x[4])), note: str(x[5], 120)}))}))};
+  } catch (e) { return null; }
+}
+function addPlan(p) {
+  if (!p) { alert(t('pasteFailAny')); return; }
+  const had = plans()[p.id];
+  if (had && had.own) { toast(t('ownChallenge')); return; }
+  plans()[p.id] = {...p, own: false, got: today()}; save();
+  closeSheet(); go({name: 'plan', id: p.id});
+  toast(had ? t('planUpdated', esc(p.name)) : t('planAdded', esc(p.name)));
+}
+function sheetSendPlan(id) {
+  const p = plans()[id];
+  if (!p.days.some(d => d.ex.length)) { alert(t('planNeedsDay')); return; }
+  shareText = t('planMsg', p.author || nick() || '🙂', p.name) + '\n' + APP_URL + '#scheda=' + b64e(planPayload(p));
+  sheet(`<h2>${t('sendPlan')}</h2><p class="sub" style="margin-bottom:12px">${esc(t('planMsg', p.author || nick() || '🙂', p.name))}</p>
+    <button class="btn p wide" data-act="sharetext">${icon('share')} ${t('shareImage').split(' ')[0]}</button><div class="gap"></div>
+    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a><div class="gap"></div>
+    <button class="btn s wide" data-act="copytext">${t('copyLink')}</button>`);
+}
+// incolla: riconosce sia le schede sia le sfide
+function pasteAny(x) { const pl = parsePlan(x); if (pl) return addPlan(pl); const c = parseChallenge(x); if (c) return addFriend(c); alert(t('pasteFailAny')); }
+function sheetPasteAny(title) {
+  const ask = () => sheet(`<h2>${title}</h2><form data-form="paste"><label class="field">${t('pastePrompt')}<textarea name="x" rows="4" data-focus></textarea></label>
+    <button class="btn p wide">${t('pasteBtn')}</button></form>`);
+  if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(x => { (parsePlan(x) || parseChallenge(x)) ? pasteAny(x) : ask(); }, ask);
+  else ask();
+}
+
 // ---------- azioni ----------
 function readEntry(eid) {
   return {reps: parseInt(document.getElementById('reps-' + eid).value, 10), kg: num(document.getElementById('kg-' + eid).value)};
@@ -1546,7 +1755,7 @@ function addSet(eid) {
   const set = {reps, kg}, v = e1rm(set), ref = prev && prev.sets[i];
   e.sets.push(set); delete drafts[eid]; save();
   const y = window.scrollY; render(); window.scrollTo(0, y);
-  startRest(e.name, e.sets.length + 1);
+  startRest(e.name, e.sets.length + 1, e.target && e.target.rest);
   if (celebrate()) return;
   if (best > 0 && v > best + 1e-9) toast(t('toastRecord', esc(e.name), fmtKg(r05(v))));
   else if (ref && v > e1rm(ref) + 1e-9) toast(t('toastBetter', setTxt(ref) + ' kg'));
@@ -1572,6 +1781,7 @@ function createSession(name, from) {
   go({name: 'session', id: s.id, open: s.exercises[0] && s.exercises[0].id});
 }
 function addExercise(name, lib) {
+  if (libState.target) return addToPlan(name, lib);
   if (lib) {
     const used = db.sessions.flatMap(x => x.exercises).find(x => x.lib === lib);
     name = used ? used.name : tx(VAR[lib].v.name);
@@ -1597,13 +1807,14 @@ const acts = {
   import: () => document.getElementById('imp').click(),
   newsession: sheetNewSession,
   repeat: b => { const f = sess(b.dataset.sid); createSession(f.name, f); },
-  addex: b => { if (!b.dataset.keep) libState.q = ''; sheetAddExercise(); },
+  addex: b => { if (!b.dataset.keep) { libState.q = ''; libState.target = null; } sheetAddExercise(); },
   pickex: b => addExercise(b.dataset.name),
-  libgroup: b => { libState.g = b.dataset.g; const s = sess(view.id);
+  libgroup: b => { libState.g = b.dataset.g; const s = libCtx();
     document.querySelectorAll('[data-act=libgroup]').forEach(x => x.setAttribute('aria-pressed', x === b));
     document.getElementById('lib-list').innerHTML = libList(s); },
   libbase: b => sheetLibBase(b.dataset.id),
-  libadd: b => { addExercise(null, b.dataset.id); toast(t('addedX', esc(tx(VAR[b.dataset.id].v.name)))); },
+  libadd: b => { const inPlan = !!libState.target; addExercise(null, b.dataset.id); if (!inPlan) toast(t('addedX', esc(tx(VAR[b.dataset.id].v.name)))); },
+  libguide: b => sheetLibBase(b.dataset.id, b.dataset.v),
   libinfo: b => { const e = sess(view.id).exercises.find(x => x.id === b.dataset.eid), L = libFor(e); sheetLibBase(L.b.id, L.v ? L.v.id : '-'); },
   editsession: sheetEditSession,
   delsession: () => { const id = view.id, n = sess(id).name; closeSheet(); go({name: 'home', tab: 'sessions'});
@@ -1658,7 +1869,19 @@ const acts = {
   sharetext: () => { if (navigator.share) navigator.share({text: shareText}).catch(() => {}); else acts.copytext(); },
   copytext: () => { (navigator.clipboard ? navigator.clipboard.writeText(shareText) : Promise.reject()).then(() => toast(t('copied')), () => prompt('', shareText)); },
   sendchallenge: () => needNick(sheetSendChallenge),
-  pastechallenge: sheetPasteChallenge,
+  pastechallenge: () => sheetPasteAny(t('challengePaste')),
+  pasteplan: () => sheetPasteAny(t('pastePlan')),
+  plan: b => go({name: 'plan', id: b.dataset.id, from: view.name === 'home' ? view.tab : 'sessions'}),
+  newplan: newPlan,
+  editplan: b => go({name: 'planedit', id: b.dataset.id}),
+  startday: b => startPlanDay(b.dataset.id, +b.dataset.i),
+  sendplan: b => needNick(() => sheetSendPlan(b.dataset.id)),
+  delplan: b => { const id = b.dataset.id, n = plans()[id].name; go({name: 'home', tab: 'sessions'}); undoable(t('planDeleted', esc(n)), () => { delete db.plans[id]; }); },
+  planaddex: b => { libState.target = {plan: view.id, day: +b.dataset.i}; libState.q = ''; sheetAddExercise(); },
+  planaddday: () => { plans()[view.id].days.push({name: '', ex: []}); save(); render(); },
+  plandelday: b => { const p = plans()[view.id]; if (p.days.length > 1) { p.days.splice(+b.dataset.i, 1); save(); render(); } },
+  planex: b => sheetPlanEx(+b.dataset.i, +b.dataset.j),
+  planexdel: b => { plans()[view.id].days[+b.dataset.i].ex.splice(+b.dataset.j, 1); save(); closeSheet(); render(); },
   friend: b => sheetFriend(b.dataset.id),
   delfriend: b => { const id = b.dataset.id, n = db.friends[id].n; closeSheet(); undoable(t('friendRemoved', esc(n)), () => { delete db.friends[id]; }); },
   opengroup: () => { if (db.social && db.social.group) window.open(db.social.group, '_blank'); },
@@ -1672,7 +1895,10 @@ const acts = {
 const forms = {
   nick: f => { const n = f.n.value.trim(); if (!n) return f.n.focus(); social().name = n.slice(0, 30); save(); closeSheet();
     const then = pendingNick; pendingNick = null; if (then) setTimeout(then, 280); },
-  paste: f => addFriend(parseChallenge(f.x.value)),
+  paste: f => pasteAny(f.x.value),
+  planex: f => { const x = plans()[view.id].days[+f.dataset.i].ex[+f.dataset.j];
+    x.sets = Math.min(20, Math.max(1, parseInt(f.s.value, 10) || 3)); x.reps = f.r.value.trim().slice(0, 12) || x.reps;
+    x.rest = Math.min(900, Math.max(0, parseInt(f.t.value, 10) || 0)); x.note = f.n.value.trim().slice(0, 120); save(); closeSheet(); render(); },
   social: f => {
     const n = f.n.value.trim(), g = f.g.value.trim();
     if (g && !/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+/.test(g)) return alert(t('groupInvalid'));
@@ -1723,8 +1949,15 @@ document.addEventListener('submit', ev => {
   ev.preventDefault();
   const f = ev.target; if (forms[f.dataset.form]) forms[f.dataset.form](f);
 });
+let planSaveT;
 document.addEventListener('input', ev => {
   const el = ev.target;
+  if ((el.dataset.pf || el.dataset.pd) && view.name === 'planedit') {
+    const p = plans()[view.id];
+    if (el.dataset.pf) p[el.dataset.pf] = el.value.slice(0, el.dataset.pf === 'food' ? 1200 : el.dataset.pf === 'note' ? 600 : 50);
+    else p.days[+el.dataset.pd].name = el.value.slice(0, 40);
+    clearTimeout(planSaveT); planSaveT = setTimeout(save, 400); return;
+  }
   if (el.dataset.f && drafts[el.dataset.eid]) { drafts[el.dataset.eid][el.dataset.f] = el.value; syncChips(el.dataset.eid); }
 });
 
