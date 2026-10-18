@@ -1,6 +1,6 @@
 {
   "name": "Gym Tracker",
-  "short_name": "Gym",
+  "short_name": "Gym-tracker",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
