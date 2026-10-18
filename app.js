@@ -1566,31 +1566,36 @@ function openInstall() {
   const el = document.getElementById('install'), safari = isIOS && !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua);
   el.innerHTML = `<img class="logo-big" src="icons/icon-512.png" alt="">
     <h1>${t('installH')}</h1><p>${t('installP')}</p>
-    ${isIOS ? (safari ? `<ol class="steps">${iosSteps(true)}</ol>`
-      : `<p class="warn" style="margin-top:20px">${t('notSafari')}</p>`)
+    ${isIOS ? `<p class="warn" style="margin-top:16px">${t('alreadyBrowser')}</p><ol class="steps hl2">${iosSteps(true, safari)}</ol>`
     : installEvt ? `<div class="gap"></div><button class="btn p wide" data-act="installnow">${t('installNow')}</button><div class="gap"></div>`
       : `<p class="warn" style="margin-top:20px">${t('androidSteps')}</p>`}
     <p class="warn">${t('browserWarn')}</p>
-    <button class="btn ${isIOS && safari ? 'p' : 's'} wide" data-act="installclose">${t('useInBrowser')}</button>`;
+    <button class="btn ${isIOS ? 'p hlbtn' : 's'} wide" data-act="installclose">${t('useInBrowser')}</button>
+    ${isIOS && !safari ? sharePointer() : ''}`;
+  el.className = isIOS ? 'ios' : '';
   el.hidden = false;
 }
-// passi per iPhone: prima si chiude questa guida, poi si usa il menu di Safari (⋯ in basso a destra)
-function iosSteps(withFirst) {
+// freccia verso l'icona Condividi nella barra in alto dei browser che non sono Safari (Chrome, Firefox, Edge...)
+const sharePointer = () => `<div class="shareptr" aria-hidden="true"><span>${icon('share')} ${t('ptrShare')}</span></div>`;
+// passi per iPhone: prima si chiude questa guida, poi si usa Condividi (Safari: dal menu ⋯ in basso; gli altri browser: dalla barra in alto)
+function iosSteps(withFirst, safari) {
   const li = (k, ic) => `<li><span>${t(k)}</span>${ic ? icon(ic) : ''}</li>`;
-  return (withFirst ? li('iosA') : '') + li('iosB', 'more') + li('iosC', 'share') + li('iosD', 'down') + li('iosE', 'addsq');
+  return (withFirst ? li('iosA') : '') + (safari ? li('iosB', 'more') + li('iosC', 'share') + li('iosD', 'down') + li('iosE', 'addsq')
+    : li('iosShareTop', 'share') + li('iosE', 'addsq'));
 }
-// promemoria che resta sopra Safari dopo "Continua nel browser", finché non lo chiudi
+// promemoria che resta sopra il browser dopo "Continua nel browser", finché non lo chiudi
 function showInstallTip() {
   if (document.getElementById('install-tip') || !isIOS || standalone()) return;
+  const safari = !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua);
   const el = document.createElement('div');
   el.id = 'install-tip'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', t('tipTitle'));
-  el.innerHTML = `<b>${t('tipTitle')}</b><ol class="steps">${iosSteps(false)}</ol>
-    <button class="btn s wide" data-act="tipclose">${t('tipDone')}</button>`;
+  el.innerHTML = `<b>${t('tipTitle')}</b><ol class="steps">${iosSteps(false, safari)}</ol>
+    <button class="btn s wide" data-act="tipclose">${t('tipDone')}</button>${safari ? '' : sharePointer()}`;
   document.body.appendChild(el);
 }
 function closeInstall() {
   document.getElementById('install').hidden = true;
-  if (isIOS && !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua)) showInstallTip();
+  if (isIOS) showInstallTip();
   try { sessionStorage.setItem('install-skip', '1'); } catch (e) {}
   if (!db.tourSeen) openTour();
 }

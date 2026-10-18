@@ -427,6 +427,23 @@ a.btn{text-decoration:none}
 #install-tip .steps li{background:var(--fill);padding:10px 12px;font-size:15px}
 #install-tip .steps li svg.i{width:22px;height:22px}
 #install .steps li:first-child{box-shadow:inset 0 0 0 2px var(--acc)}
+#install .steps.hl2 li:nth-child(2){box-shadow:inset 0 0 0 2px #0a84ff}
+@keyframes hlpulse{0%{outline:0 solid rgba(255,90,20,.55)}100%{outline:12px solid rgba(255,90,20,0)}}
+.btn.hlbtn{animation:hlpulse 1.6s ease-out infinite}
+#install.ios{padding-top:calc(env(safe-area-inset-top) + 12px)}
+#install.ios .logo-big{width:60px;height:60px;border-radius:14px;margin:4px 0 10px}
+#install.ios h1{font-size:23px;margin-bottom:4px}
+#install.ios > p{font-size:15px;line-height:1.35}
+#install.ios .warn{padding:10px 12px;margin:10px 0 0;font-size:14px;line-height:1.35}
+#install.ios .steps{margin:12px 0;gap:8px}
+#install.ios .steps li{padding:10px 12px;font-size:15px}
+#install.ios .steps li::before{width:28px;height:28px}
+#install.ios .btn{margin-top:4px}
+@keyframes ptrbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.shareptr{position:fixed;right:10px;top:calc(env(safe-area-inset-top) + 12px);z-index:60;pointer-events:none;animation:ptrbob 1.3s ease-in-out infinite}
+.shareptr span{position:relative;display:flex;align-items:center;gap:6px;background:#0a84ff;color:#fff;font-weight:700;font-size:15px;padding:9px 14px;border-radius:14px;box-shadow:0 6px 20px rgba(10,132,255,.45)}
+.shareptr span::before{content:"";position:absolute;top:-8px;right:18px;border:8px solid transparent;border-top:0;border-bottom-color:#0a84ff}
+.shareptr svg.i{width:20px;height:20px}
 .friendrow{padding-right:6px}
 .friendrow a.grow{display:block;min-width:0;color:inherit;text-decoration:none}
 .friendrow .ib{flex:none}
