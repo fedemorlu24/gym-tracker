@@ -1390,6 +1390,7 @@ function sheetPhoto(id) {
     <img class="big-img" src="${p.url}" alt="">
     <p class="sub" style="margin:10px 0 6px">${fmtDate(p.date)}${w ? ` · ${t('weightOn', fmtKg(w))}` : ''}</p>
     <label class="field">${t('date')}<input id="ph-date" type="date" value="${p.date}" max="${today()}"></label><div class="gap"></div>
+    ${typeof sheetChatPickImg === 'function' ? `<button class="btn s wide" data-act="photochat" data-id="${id}" style="background:var(--fill)">${t('chatShareHere')}</button><div class="gap"></div>` : ''}
     <button class="btn d wide" data-act="delphoto" data-id="${id}">${t('delPhoto')}</button>`);
   document.getElementById('ph-date').onchange = ev => {
     const d = ev.target.value; if (!d || d > today()) return;
@@ -1978,8 +1979,8 @@ async function openShare(kind, arg) {
   const url = URL.createObjectURL(blob);
   sheet(`<h2>${t('sharePreview')}</h2>${kind === 'compare' ? `<p class="warn">${t('photoShareWarn')}</p>` : ''}
     <img class="big-img" src="${url}" alt="" style="aspect-ratio:4/5;object-fit:cover">
-    <div class="gap"></div><button class="btn p wide" data-act="sharefile">${t('shareImage')}</button><div class="gap"></div>
-    <a class="btn s wide" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">${t('sendWhatsApp')}</a>
+    <div class="gap"></div>${typeof sheetChatPickImg === 'function' ? `<button class="btn p wide" data-act="sharechat" data-w="${kind === 'compare' ? 1 : ''}">${t('chatShareHere')}</button><div class="gap"></div>` : ''}
+    <button class="btn s wide" data-act="sharefile" style="background:var(--fill)">${t('shareImage')}</button>
 `);
 }
 function shareNow() {
@@ -2287,6 +2288,8 @@ const acts = {
   tipclose: () => { const e = document.getElementById('install-tip'); if (e) e.remove(); },
   installnow: () => { if (installEvt) installEvt.prompt(); },
   share: b => openShare(b.dataset.k, b.dataset.a),
+  sharechat: b => { if (shareFile) sheetChatPickImg(shareFile, !!b.dataset.w); },
+  photochat: b => { const p = photos.find(x => x.id === b.dataset.id); if (p && p.blob) sheetChatPickImg(p.blob, true); },
   sharefile: shareNow,
   sharetext: () => { if (navigator.share) navigator.share({text: shareText}).catch(() => {}); else acts.copytext(); },
   copytext: () => { (navigator.clipboard ? navigator.clipboard.writeText(shareText) : Promise.reject()).then(() => toast(t('copied')), () => prompt('', shareText)); },

@@ -371,6 +371,16 @@ function sheetChatSettings() {
     <button class="btn s wide" data-act="chatreset" style="background:var(--fill)">${t('chatRelayReset')}</button><div class="gap"></div>
     <button class="btn s wide" data-act="chatrotate" style="background:var(--fill)">${t('chatRotate')}</button>`);
 }
+// invia un'immagine (card dell'allenamento o dei progressi, foto del fisico) a un amico della chat
+let chatOutImg = null;
+function sheetChatPickImg(blob, warn) {
+  const fr = chatFriends();
+  if (!fr.length) { sheetChatInvite(); return; }
+  chatOutImg = blob;
+  sheet(`<h2>${t('chatShareHere')}</h2>${warn ? `<p class="warn">${t('photoShareWarn')}</p>` : ''}
+    <img class="big-img" src="${URL.createObjectURL(blob)}" alt="" style="max-height:36vh;object-fit:contain"><div class="gap"></div>
+    <div class="list">${fr.map(f => `<button class="row chatrow" data-act="chatimgto" data-pk="${f.pk}">${ava(f.n, 40, f.av)}<div class="grow"><h3>${esc(f.n)}</h3></div><span class="chev">${icon('chev')}</span></button>`).join('')}</div>`);
+}
 // invia un record o un esercizio a un amico della chat
 function sheetChatPick(card) {
   const fr = chatFriends();
@@ -384,6 +394,12 @@ Object.assign(acts, {
   chatavatar: () => { const i = document.getElementById('avfile'); i.onchange = async () => { const x = i.files[0]; if (!x) return; try { await chatSetAvatar(x); sheetChatSettings(); toast(t('chatAvatarDone')); } catch (e) { alert(t('chatPhotoFail')); } }; i.click(); },
   chatavatardel: async () => { await chatSetAvatar(null); sheetChatSettings(); },
   chatcardpick: b => sheetChatPick({ex: b.dataset.ex, kg: +b.dataset.kg, rp: +b.dataset.rp}),
+  chatimgto: async b => {
+    const pk = b.dataset.pk, x = chatOutImg; if (!x) return;
+    closeSheet();
+    try { const r = await chatShrink(x); await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); chatOutImg = null; go({name: 'chat', id: pk, from: 'chat'}); }
+    catch (e) { alert(t('chatPhotoFail')); }
+  },
   chatopen: b => { go({name: 'chat', id: b.dataset.pk, from: 'chat'}); },
   chatmenu: b => sheetChatMenu(b.dataset.pk),
   chatsettings: sheetChatSettings,
