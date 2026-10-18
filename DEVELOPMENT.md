@@ -83,6 +83,12 @@ python3 lib/build.py             # validate lib/*.json and regenerate lib/data.j
 
 Release rule: bump `VERSION` in `sw.js` and every `?v=` in `index.html` to the same number, otherwise phones keep the old cached files. Service workers cache by version, so clear caches when testing locally after editing.
 
+Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Profile photo is a 112 px JPEG sent to friends.
+
+Exercise animations (`guide.js`): `A.<scheme>` functions give keyframes + scenery/props; `GMAP` maps every library base id to a scheme; the variant's equipment (`eq`) changes the prop. Shown the first time a library exercise is added (`db.guide`), always in the exercise guide.
+
+Backup: `gym-tracker-backup.json`, optional AES-GCM/PBKDF2 password (`encryptBackup`), reminder after 7 days (`backupNudge`). `DONATE_URL` in `app.js` enables the donation button in Settings (empty = hidden).
+
 Deploy: push to the `main` branch; GitHub Pages serves the repository root.
 
 ## Limitations

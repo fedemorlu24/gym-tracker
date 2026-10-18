@@ -65,7 +65,7 @@ function photoTx(mode, fn) {
 function loadPhotos() {
   return photoTx('readonly', st => st.getAll()).then(list => {
     photos.forEach(p => URL.revokeObjectURL(p.url));
-    photos = (list || []).map(p => ({...p, url: URL.createObjectURL(p.blob)})).sort((a, b) => a.date.localeCompare(b.date));
+    photos = (list || []).filter(p => p.pose !== 'chat').map(p => ({...p, url: URL.createObjectURL(p.blob)})).sort((a, b) => a.date.localeCompare(b.date));
     if (!db.badges) { checkBadges(); save(); }
     render();
   }).catch(() => {});
@@ -155,6 +155,9 @@ const I = {
   arrow: '<path d="M12 4v15M6 13l6 6 6-6"/>',
   cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   fwd: '<path d="M9 5l7 7-7 7"/>',
+  play: '<path d="M7 5l12 7-12 7z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  chat: '<path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2h-7l-5 4v-4H5a2 2 0 01-2-2V7a2 2 0 012-2z"/>',
 };
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
 
@@ -436,6 +439,7 @@ function render() {
   let tabs = false;
   if (view.name === 'session' && sess(view.id)) app.innerHTML = sessionView();
   else if (view.name === 'ex' && exHistory(view.ex).length) app.innerHTML = exView();
+  else if (view.name === 'chat' && typeof chatView === 'function' && chat().friends[view.id]) app.innerHTML = chatView();
   else if (view.name === 'settings') app.innerHTML = settingsView();
   else if (view.name === 'plan' && plans()[view.id]) app.innerHTML = planView();
   else if (view.name === 'planedit' && plans()[view.id]) app.innerHTML = planEditView();
@@ -445,11 +449,13 @@ function render() {
   document.getElementById('tabbar').hidden = !tabs;
   document.title = t('shareTitle');
   const wk = document.getElementById('wk-wrap'); if (wk) wk.scrollLeft = wk.scrollWidth;
+  if (view.name === 'chat' && typeof chatEnter === 'function' && chat().friends[view.id]) chatEnter(view.id);
 }
+const chatBadge = () => typeof chatUnreadTotal === 'function' ? chatUnreadTotal() : 0;
 function tabbar() {
   const tab = view.tab || 'today';
   const b = (k, ic, l) => `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-tab="${k}">${icon(ic)}${l}</button>`;
-  return b('today', 'cal', t('tabToday')) + b('sessions', 'lift', t('tabWorkouts')) + b('progress', 'chart', t('tabProgress')) + b('body', 'body', t('tabBody'));
+  return b('today', 'cal', t('tabToday')) + b('sessions', 'lift', t('tabWorkouts')) + b('progress', 'chart', t('tabProgress')) + b('body', 'body', t('tabBody')) + b('chat', 'chat', t('tabChat')).replace('</button>', `<i class="tbdot"${chatBadge() ? '' : ' hidden'}>${chatBadge() > 9 ? '9+' : chatBadge()}</i></button>`);
 }
 
 
@@ -475,6 +481,7 @@ function todayView() {
       <button class="ib" data-act="day" data-d="${addDays(mon, 7)}" aria-label="${t('nextWeekA')}" ${addDays(mon, 7) > today() ? 'disabled' : ''}>${icon('fwd')}</button></div>`;
 
   // allenamento del giorno
+  if (isToday) html += backupNudge();
   html += `<p class="glabel">${t('workoutCard')}</p>`;
   if (ss.length) html += ss.map(s => {
     const sets = s.exercises.reduce((a, e) => a + e.sets.length, 0), v = s.exercises.reduce((a, e) => a + vol(e.sets), 0);
@@ -575,15 +582,16 @@ function miniProgress(name) {
 function home() {
   const tab = view.tab || 'today';
   if (tab === 'today') return todayView();
-  const title = {sessions: t('tabWorkouts'), progress: t('tabProgress'), body: t('tabBody')}[tab];
+  const title = {sessions: t('tabWorkouts'), progress: t('tabProgress'), body: t('tabBody'), chat: t('tabChat')}[tab];
   let html = `<header><div class="t"><h1>${title}</h1></div>
-      <button class="ib" data-act="settings" aria-label="${t('settings')}">${icon('gear')}</button></header>`;
+      ${tab === 'chat' ? `<button class="ib" data-act="chatsettings" aria-label="${t('chatSettings')}">${icon('more')}</button>` : ''}<button class="ib" data-act="settings" aria-label="${t('settings')}">${icon('gear')}</button></header>`;
   if (tab === 'sessions') {
     const td = [...db.sessions].reverse().find(s => s.date === today());
     html += (td ? `<button class="today" data-act="open" data-sid="${td.id}"><div class="grow"><div class="sub">${t('continueToday')}</div><h3>${esc(td.name)}</h3></div><span class="chev">${icon('chev')}</span></button>` : '') +
       (doneSessions().length ? streakCard() : '') + plansSection() + sessionsList() +
       `<div class="bar"><button class="btn p wide" data-act="newsession">${icon('plus')} ${t('newSession')}</button></div>`;
-  } else if (tab === 'progress') html += progressList();
+  } else if (tab === 'chat') html += chatInbox();
+  else if (tab === 'progress') html += progressList();
   else html += bodyView() + `<div class="bar"><button class="btn p wide" data-act="bodylog">${icon('plus')} ${t('logBody')}</button></div>`;
   return html;
 }
@@ -822,6 +830,7 @@ function exView() {
   return `<header>
       <button class="ib" data-act="back" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${esc(name)}</h1><p>${t('sinceN', st.length, fmtShort(f.date))}</p></div>
+      <button class="ib" data-act="chatcardpick" data-ex="${esc(name)}" data-kg="${rec.kg}" data-rp="${rec.rt}" aria-label="${t('tabChat')}">${icon('chat')}</button>
       <button class="ib" data-act="share" data-k="progress" data-a="${esc(name)}" aria-label="${t('shareProgress')}">${icon('share')}</button></header>
     ${panel(t('e1rmTitle'), t('e1rmSub'), 'e', 'kg',
       lineChart(st.map(x => ({d: x.date, v: x.e, dir: x.pr ? 'up' : 'eq', live: isLive(x)})), 'kg'))}
@@ -946,19 +955,24 @@ function settingsView() {
     <div class="opts">${LANGS.map(l => `<button class="chip" data-act="lang" data-l="${l}" aria-pressed="${l === lang}">${I18N[l]._name}</button>`).join('')}</div>
     <p class="glabel">${t('socialSettings')}</p>
     <div class="group"><button class="row" data-act="socialset"><div class="grow"><h3>${t('nickname')}</h3><div class="sub">${esc(nick()) || t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
+    <button class="row" data-act="chatsettings"><div class="grow"><h3>${t('chatSettings')}</h3><div class="sub">${t('chatRelays')}</div></div><span class="chev">${icon('chev')}</span></button>
     <button class="row" data-act="invite"><div class="grow"><h3>${t('inviteBtn')}</h3><div class="sub">${t('inviteSub')}</div></div><span class="chev">${icon('chev')}</span></button>
     <button class="row" data-act="contacts"><div class="grow"><h3>${t('friendsWa')}</h3><div class="sub">${contacts().length ? t('friendsCount', contacts().length) : t('groupMissing')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <p class="glabel">${t('restSetting')}</p>
     <div class="opts"><button class="chip" data-act="restpower" data-on="1" aria-pressed="${!!restDefault()}">${t('restOn')}</button><button class="chip" data-act="restpower" data-on="0" aria-pressed="${!restDefault()}">${t('restOff')}</button></div>
     ${restDefault() ? `<div class="opts three" style="margin-top:8px">${[60, 90, 120, 180, 240].map(v => `<button class="chip" data-act="restset" data-v="${v}" aria-pressed="${restDefault() === v}">${mmss(v)}</button>`).join('')}</div>` : ''}
     <p class="note" style="padding:8px 4px 0">${t('restText')} ${t('restScreen')}</p>
+    <p class="glabel">${t('guideAnim')}</p>
+    <div class="opts"><button class="chip" data-act="guideset" data-on="1" aria-pressed="${!(db.guide && db.guide.off)}">${t('restOn')}</button><button class="chip" data-act="guideset" data-on="0" aria-pressed="${!!(db.guide && db.guide.off)}">${t('restOff')}</button></div>
+    <p class="note" style="padding:8px 4px 0">${t('guideAnimText')}</p>
     <p class="glabel">${t('theme')}</p>
     <div class="opts three">${['auto', 'light', 'dark'].map(k => `<button class="chip" data-act="theme" data-v="${k}" aria-pressed="${((db.settings && db.settings.theme) || 'auto') === k}">${t('theme' + k[0].toUpperCase() + k.slice(1))}</button>`).join('')}</div>
     <p class="glabel">${t('backup')}</p>
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
     <div class="group"><button class="row" data-act="tour"><div class="grow"><h3>${t('howItWorks')}</h3></div><span class="chev">${icon('chev')}</span></button>
-    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>`;
+    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>
+    ${DONATE_URL ? `<p class="note" style="padding:16px 4px 8px">${t('donateText')}</p><a class="btn s wide" href="${DONATE_URL}" target="_blank" rel="noopener">☕ ${t('donateBtn')}</a>` : ''}`;
 }
 function profileFields(p) {
   const w = bodyWeight();
@@ -1231,12 +1245,13 @@ function muscleMap(pri, sec) {
 }
 
 // scheda di un movimento: a cosa serve, muscoli, esecuzione e varianti
-function sheetLibBase(id, current) {
+function sheetLibBase(id, current, first) {
   const b = BASE[id], s = view.name === 'session' ? sess(view.id) : null, have = new Set(s ? s.exercises.map(e => key(e.name)) : []);
   const chips = (ks, cls) => ks.map(m => `<span class="mchip ${cls}">${LBL().muscles[m] || m}</span>`).join('');
   sheet(`<div class="item" style="justify-content:flex-start;gap:4px;margin:-6px 0 6px -10px">
       ${current ? '' : `<button class="ib" data-act="addex" data-keep="1" aria-label="${t('back')}">${icon('back')}</button>`}<h2 style="margin:0">${esc(tx(b.name))}</h2></div>
     <div class="chips"><span class="tag pr" style="animation:none">${LBL().lvl[b.lvl]}</span><span class="tag eq">${t('repsSuggested', b.reps)}</span></div>
+    ${typeof guidePanel === 'function' ? guidePanel(id, current && VAR[current] ? VAR[current].v.eq : b.variants[0].eq) : ''}
     <div class="mm-wrap">${muscleMap(b.pri, b.sec)}</div>
     <p class="sub h">${t('whatFor')}</p><p>${esc(tx(b.why))}</p>
     <p class="sub h">${t('primaryM')}</p><div class="chips">${chips(b.pri, 'on')}</div>
@@ -1247,7 +1262,9 @@ function sheetLibBase(id, current) {
       const inS = have.has(key(tx(v.name))), cur = current === v.id;
       return `<button class="row${cur ? ' cur' : ''}" data-act="libadd" data-id="${v.id}" ${inS || current ? 'disabled' : ''}><div class="grow"><h3>${esc(tx(v.name))}</h3>
         <div class="sub">${LBL().eq[v.eq] || v.eq}${v.note ? ' · ' + esc(tx(v.note)) : ''}${inS ? ' · ' + t('inSession') : ''}</div></div>${current ? '' : `<span class="addic">${icon('plus')}</span>`}</button>`;
-    }).join('')}</div>`);
+    }).join('')}</div>
+    ${first ? `<div class="gap"></div><div class="opts"><button class="chip" data-act="gfskip">${t('guideSkip')}</button><button class="chip" data-act="gfnever">${t('guideNever')}</button></div>` : ''}`);
+  if (typeof guideStart === 'function') guideStart();
 }
 function sheetEditSession() {
   const s = sess(view.id);
@@ -1277,34 +1294,87 @@ function sheetEditSet(eid, i) {
 }
 const toDataURL = blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
 // il file è preparato in anticipo: iOS apre il foglio Condividi solo subito dopo il tocco
+// cifratura facoltativa: password → chiave (PBKDF2) → AES-GCM; senza password il file resta in chiaro
+const b64of = async buf => (await toDataURL(new Blob([buf]))).split(',')[1];
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const BK_IT = 250000;
+const bkKey = (pwd, salt, it, use) => crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveKey'])
+  .then(km => crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256'}, km, {name: 'AES-GCM', length: 256}, false, [use]));
+async function encryptBackup(text, pwd) {
+  if (!(window.crypto && crypto.subtle)) throw new Error('nocrypto');
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await bkKey(pwd, salt, BK_IT, 'encrypt'), new TextEncoder().encode(text));
+  return JSON.stringify({gym: 1, enc: 'AES-GCM', kdf: 'PBKDF2-SHA256', it: BK_IT, salt: await b64of(salt), iv: await b64of(iv), data: await b64of(ct)});
+}
+async function decryptBackup(o, pwd) {
+  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(o.iv)}, await bkKey(pwd, unb64(o.salt), +o.it || BK_IT, 'decrypt'), unb64(o.data));
+  return new TextDecoder().decode(pt);
+}
+let bkPwd = '';
 function prepareBackup() {
-  const name = `gym-backup-${today()}.json`;
-  return Promise.all(photos.map(p => toDataURL(p.blob).then(data => ({id: p.id, date: p.date, pose: p.pose, data}))))
-    .then(ph => backupFile = new File([JSON.stringify({...db, photos: ph})], name, {type: 'application/json'}));
+  const name = 'gym-tracker-backup.json', pwd = bkPwd;
+  return Promise.all(photos.filter(p => p.pose !== 'chat').map(p => toDataURL(p.blob).then(data => ({id: p.id, date: p.date, pose: p.pose, data}))))
+    .then(ph => JSON.stringify({...db, photos: ph})).then(txt => pwd ? encryptBackup(txt, pwd) : txt)
+    .then(txt => backupFile = new File([txt], name, {type: 'application/json'}));
+}
+// promemoria: i dati vivono solo sul telefono, quindi si invita a salvarne una copia
+const BK_DAYS = 7;
+const backupDays = () => db.backup && db.backup.last ? Math.floor((Date.now() - db.backup.last) / 864e5) : null;
+function backupDue() {
+  const b = db.backup || {};
+  if (!db.sessions.some(s => s.exercises.some(e => e.sets.length))) return false;
+  if (b.snooze && Date.now() < b.snooze) return false;
+  const d = backupDays();
+  return d == null || d >= BK_DAYS;
+}
+function backupNudge() {
+  if (!backupDue()) return '';
+  const d = backupDays();
+  return `<div class="nudge"><h3>${t('bkTitle')}</h3><p>${mobile() && !standalone() ? t('bkSafari') : t('bkHome')}</p>
+    <p class="sub">${d == null ? t('bkNever') : d === 0 ? t('bkToday') : t('bkLast', d)}</p>
+    <div class="opts"><button class="chip" data-act="backup">${t('bkNow')}</button><button class="chip" data-act="bklater">${t('bkLater')}</button></div></div>`;
 }
 function sheetBackup() {
   sheet(`<h2>${t('backup')}</h2>
-    <p class="sub" style="margin-bottom:14px">${t('backupText')}</p>
-    <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button><div class="gap"></div>
+    <p class="sub" style="margin-bottom:6px">${t('backupText')}</p>
+    <p class="note" style="padding:0 0 10px">${backupDays() == null ? t('bkNever') : backupDays() === 0 ? t('bkToday') : t('bkLast', backupDays())}</p>
+    <label class="field">${t('bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" maxlength="100"></label>
+    <p class="note" style="padding:0 0 12px">${t('bkPwdHint')}</p>
+    <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button>
+    <p class="note" style="padding:8px 2px 12px">${t('bkHow')}</p>
     <button class="btn s wide" data-act="import">${t('importData')}</button><div class="gap"></div>
     <button class="btn s wide" data-act="impcsv">${t('impCsvBtn')}</button>
     <input type="file" id="imp" accept=".json,application/json" hidden>`);
   document.getElementById('imp').onchange = e => importData(e.target);
-  prepareBackup().then(f => { const b = document.getElementById('exp-btn');
-    if (b) { b.disabled = false; b.textContent = t('exportSize', fmt1(Math.max(.1, f.size / 1e6))); } });
+  bkPwd = ''; let tm;
+  const run = () => {
+    const b = document.getElementById('exp-btn'); if (!b) return;
+    b.disabled = true; b.textContent = bkPwd ? t('bkPrep') : t('preparing');
+    const mine = bkPwd;
+    prepareBackup().then(f => { const x = document.getElementById('exp-btn');
+      if (x && mine === bkPwd) { x.disabled = false; x.textContent = t('exportSize', fmt1(Math.max(.1, f.size / 1e6))); } })
+      .catch(() => { alert(t('bkNoCrypto')); });
+  };
+  document.getElementById('bk-pwd').oninput = e => { bkPwd = e.target.value; backupFile = null; clearTimeout(tm); const b = document.getElementById('exp-btn'); b.disabled = true; b.textContent = bkPwd ? t('bkPrep') : t('preparing'); tm = setTimeout(run, 600); };
+  run();
 }
 function exportData() {
   const file = backupFile;
   if (!file) return;
-  if (navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: file.name}).catch(() => {});
-  else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click(); }
+  const done = () => { db.backup = {last: Date.now(), enc: !!bkPwd}; save(); bkPwd = ''; closeSheet(); render(); toast(t('bkSaved')); };
+  if (navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: file.name}).then(done, () => {});
+  else { const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click(); done(); }
 }
 function importData(inp) {
   const f = inp.files[0]; inp.value = '';
   if (!f) return;
-  f.text().then(txt => {
+  f.text().then(async txt => {
     let o;
     try { o = JSON.parse(txt); } catch (e) { throw t('importBadJson'); }
+    if (o && o.enc && o.data) {
+      const pw = prompt(t('bkAsk')); if (pw == null) return;
+      try { o = JSON.parse(await decryptBackup(o, pw)); } catch (e) { throw t('bkBad'); }
+    }
     if (!o || !Array.isArray(o.sessions)) throw t('importNoSessions');
     const had = o.sessions.length; o = clean(o);
     if (had && !o.sessions.length) throw t('importNoSessions');
@@ -1699,6 +1769,8 @@ function sheetSendChallenge() {
 }
 let shareText = '';
 // invito: il link mostra su WhatsApp l'anteprima con logo e titolo (tag og: in index.html)
+// pagina Buy Me a Coffee (donazione volontaria): vuoto = il pulsante non compare
+const DONATE_URL = '';
 const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
 function sheetInvite() {
   const msg = t('inviteMsg', nick() || '🙂') + '\n' + INVITE_URL;
@@ -1783,6 +1855,12 @@ function sheetFriend(id) {
 }
 // sfida aperta da un link: nell'app si aggiunge, in Safari si spiega come portarla nell'app
 function handleChallengeHash() {
+  const ch = typeof parseChatLink === 'function' && parseChatLink(location.hash);
+  if (ch) {
+    const raw = location.hash.split('chat=')[1];
+    window.history.replaceState(null, '', location.pathname + location.search);
+    return chatLinkSheet(ch, raw);
+  }
   const pl = parsePlan(location.hash);
   if (pl) {
     const raw = location.hash.split('scheda=')[1];
@@ -2058,11 +2136,11 @@ async function sharePlanPdf(id) {
   if (b) { b.disabled = false; b.innerHTML = `${icon('share')} ${t('pdfBtn')}`; }
 }
 // incolla: riconosce sia le schede sia le sfide
-function pasteAny(x) { const pl = parsePlan(x); if (pl) return addPlan(pl); const c = parseChallenge(x); if (c) return addFriend(c); alert(t('pasteFailAny')); }
+function pasteAny(x) { const cl = typeof parseChatLink === 'function' && parseChatLink(x); if (cl) return chatLinkSheet(cl, String(x).match(/chat=([A-Za-z0-9_-]+)/)[1]); const pl = parsePlan(x); if (pl) return addPlan(pl); const c = parseChallenge(x); if (c) return addFriend(c); alert(t('pasteFailAny')); }
 function sheetPasteAny(title) {
   const ask = () => sheet(`<h2>${title}</h2><form data-form="paste"><label class="field">${t('pastePrompt')}<textarea name="x" rows="4" data-focus></textarea></label>
     <button class="btn p wide">${t('pasteBtn')}</button></form>`);
-  if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(x => { (parsePlan(x) || parseChallenge(x)) ? pasteAny(x) : ask(); }, ask);
+  if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(x => { (parsePlan(x) || parseChallenge(x) || (typeof parseChatLink === 'function' && parseChatLink(x))) ? pasteAny(x) : ask(); }, ask);
   else ask();
 }
 
@@ -2121,6 +2199,7 @@ function addExercise(name, lib) {
   const s = sess(view.id), e = {id: uid(), name, sets: []};
   if (lib) e.lib = lib;
   s.exercises.push(e); save(); closeSheet(); view.open = e.id; render();
+  if (lib && typeof guideFirst === 'function') setTimeout(() => guideFirst(lib), 380);
   const p = s.plan && plans()[s.plan.id], day = p && p.own && p.days[s.plan.day];
   if (day && !day.ex.some(x => (lib && x.lib === lib) || key(nameFor(x)) === key(name)))
     setTimeout(() => toast(t('addToPlanQ', esc(name)), t('addToPlanBtn'), () => {
@@ -2132,6 +2211,7 @@ function addExercise(name, lib) {
 
 const acts = {
   tab: b => go({name: 'home', tab: b.dataset.tab, ptab: view.ptab, wf: view.wf}),
+  bklater: () => { db.backup = {...(db.backup || {}), snooze: Date.now() + 3 * 864e5}; save(); render(); },
   ptab: b => go({name: 'home', tab: 'progress', ptab: b.dataset.v, wf: view.wf}),
   wfilter: b => go({name: 'home', tab: 'progress', ptab: 'weeks', wf: b.dataset.k}),
   home: () => go({name: 'home', tab: view.from || 'today', day: view.fromDay}),
@@ -2337,9 +2417,12 @@ restore();
 loadPhotos();
 let skipInstall = false;
 try { skipInstall = sessionStorage.getItem('install-skip') === '1'; } catch (e) {}
-if (handleChallengeHash()) {}
-else if (mobile() && !standalone() && !skipInstall) openInstall();
-else if (!db.tourSeen) openTour();
+// parte dopo che tutti gli script (anche chat.js) sono caricati
+addEventListener('DOMContentLoaded', () => {
+  if (handleChallengeHash()) {}
+  else if (mobile() && !standalone() && !skipInstall) openInstall();
+  else if (!db.tourSeen) openTour();
+});
 window.addEventListener('hashchange', handleChallengeHash);
 // copia offline dell'app (sw.js)
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
