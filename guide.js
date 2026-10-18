@@ -64,15 +64,15 @@ function gpose(def, ms) {
 // ---------- scenario e attrezzi ----------
 const GF = 149;   // linea del pavimento
 const n1 = v => (+v).toFixed(1);
-const gln = (a, b, cls = 'gf-prop', w = 2.4) => `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" class="${cls}" stroke-width="${w}"/>`;
-const gbench = (x1, y, x2) => `<g class="gf-prop"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="gf-pad" stroke-width="8"/><line x1="${x1 + 6}" y1="${y + 4}" x2="${x1 + 6}" y2="${GF}" stroke-width="3"/><line x1="${x2 - 6}" y1="${y + 4}" x2="${x2 - 6}" y2="${GF}" stroke-width="3"/></g>`;
-const gpad = (x1, y1, x2, y2, w = 8) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="gf-prop gf-pad" stroke-width="${w}"/>`;
-const gseat = (x, y) => `<g class="gf-prop"><line x1="${x - 12}" y1="${y}" x2="${x + 8}" y2="${y}" class="gf-pad" stroke-width="8"/><line x1="${x - 2}" y1="${y + 4}" x2="${x - 2}" y2="${GF}" stroke-width="3"/></g>`;
-const gbox = (x, y, w) => `<rect x="${x}" y="${y}" width="${w}" height="${GF - y}" rx="3" class="gf-prop gf-box" stroke-width="2.4"/>`;
-const gwall = x => `<line x1="${x}" y1="-10" x2="${x}" y2="${GF}" class="gf-prop" stroke-width="3"/>`;
-const gbars = (x, y, w = 36) => `<g class="gf-prop"><line x1="${x - w / 2}" y1="${y}" x2="${x + w / 2}" y2="${y}" stroke-width="4"/><line x1="${x - w / 2 + 4}" y1="${y}" x2="${x - w / 2 + 4}" y2="${GF}" stroke-width="3"/></g>`;
-const gstack = (x, y) => `<g class="gf-prop gf-box" stroke-width="2"><rect x="${x}" y="${y}" width="14" height="40" rx="2"/><line x1="${x}" y1="${y + 10}" x2="${x + 14}" y2="${y + 10}"/><line x1="${x}" y1="${y + 20}" x2="${x + 14}" y2="${y + 20}"/><line x1="${x}" y1="${y + 30}" x2="${x + 14}" y2="${y + 30}"/></g>`;
-const gbar = (x, y1, y2) => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="gf-prop" stroke-width="2.4" stroke-dasharray="1 0"/>`;
+let gln = (a, b, cls = 'gf-prop', w = 2.4) => `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" class="${cls}" stroke-width="${w}"/>`;
+let gbench = (x1, y, x2) => `<g class="gf-prop"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="gf-pad" stroke-width="8"/><line x1="${x1 + 6}" y1="${y + 4}" x2="${x1 + 6}" y2="${GF}" stroke-width="3"/><line x1="${x2 - 6}" y1="${y + 4}" x2="${x2 - 6}" y2="${GF}" stroke-width="3"/></g>`;
+let gpad = (x1, y1, x2, y2, w = 8) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="gf-prop gf-pad" stroke-width="${w}"/>`;
+let gseat = (x, y) => `<g class="gf-prop"><line x1="${x - 12}" y1="${y}" x2="${x + 8}" y2="${y}" class="gf-pad" stroke-width="8"/><line x1="${x - 2}" y1="${y + 4}" x2="${x - 2}" y2="${GF}" stroke-width="3"/></g>`;
+let gbox = (x, y, w) => `<rect x="${x}" y="${y}" width="${w}" height="${GF - y}" rx="3" class="gf-prop gf-box" stroke-width="2.4"/>`;
+let gwall = x => `<line x1="${x}" y1="-10" x2="${x}" y2="${GF}" class="gf-prop" stroke-width="3"/>`;
+let gbars = (x, y, w = 36) => `<g class="gf-prop"><line x1="${x - w / 2}" y1="${y}" x2="${x + w / 2}" y2="${y}" stroke-width="4"/><line x1="${x - w / 2 + 4}" y1="${y}" x2="${x - w / 2 + 4}" y2="${GF}" stroke-width="3"/></g>`;
+let gstack = (x, y) => `<g class="gf-prop gf-box" stroke-width="2"><rect x="${x}" y="${y}" width="14" height="40" rx="2"/><line x1="${x}" y1="${y + 10}" x2="${x + 14}" y2="${y + 10}"/><line x1="${x}" y1="${y + 20}" x2="${x + 14}" y2="${y + 20}"/><line x1="${x}" y1="${y + 30}" x2="${x + 14}" y2="${y + 30}"/></g>`;
+let gbar = (x, y1, y2) => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="gf-prop" stroke-width="2.4" stroke-dasharray="1 0"/>`;
 // attrezzo in mano: dipende dalla variante (eq). o.anchor = dove si aggancia cavo/elastico/macchina
 function gtool(pt, eq, o = {}) {
   const [x, y] = [n1(pt[0]), n1(pt[1])], r = o.r || 10, an = o.anchor || [215, 10];
@@ -88,7 +88,15 @@ function gtool(pt, eq, o = {}) {
   return '';
 }
 // il peso a carico del corpo (cintura, caviglie, zaino): un dischetto sull'anca
-const gbelt = (pt, eq) => eq === 'plate' || eq === 'dumbbell' ? `<circle cx="${n1(pt[0])}" cy="${n1(pt[1])}" r="6" class="gf-prop gf-fill" stroke-width="2"/>` : '';
+let gbelt = (pt, eq) => eq === 'plate' || eq === 'dumbbell' ? `<circle cx="${n1(pt[0])}" cy="${n1(pt[1])}" r="6" class="gf-prop gf-fill" stroke-width="2"/>` : '';
+// vista 3D (guide3d.js): con G3C attivo gli attrezzi non producono SVG ma vengono raccolti come {t, a: argomenti}
+let G3C = null;
+{
+  const o = {gln, gbench, gpad, gseat, gbox, gwall, gbars, gstack, gbar, gbelt, gtool};
+  const w = (n, f) => (...a) => G3C ? (G3C.push({t: n, a}), '') : f(...a);
+  gln = w('ln', o.gln); gbench = w('bench', o.gbench); gpad = w('pad', o.gpad); gseat = w('seat', o.gseat); gbox = w('box', o.gbox);
+  gwall = w('wall', o.gwall); gbars = w('bars', o.gbars); gstack = w('stack', o.gstack); gbar = w('bar', o.gbar); gbelt = w('belt', o.gbelt); gtool = w('tool', o.gtool);
+}
 
 // ---------- disegno ----------
 const gpt = p => n1(p[0]) + ' ' + n1(p[1]);
@@ -370,7 +378,7 @@ function gstill(baseId, eq, end, girl) {
 // ---------- finestra animata ----------
 const guideGirl = () => db.settings && db.settings.guideGirl != null ? !!db.settings.guideGirl : (db.profile && db.profile.sex === 'f');
 const guideOff = () => !!(db.guide && db.guide.off);
-let gfRaf = 0, gfPaused = false, gfMs = 0, gfLast = 0;
+let gfRaf = 0, gfPaused = false, gfMs = 0, gfLast = 0, gf3 = null;
 function guidePanel(baseId, eq) {
   if (!GMAP[baseId] || !BASE[baseId]) return '';
   const eqs = [...new Set(BASE[baseId].variants.map(v => v.eq))].filter(e => gdef(baseId, e));
@@ -384,16 +392,21 @@ function guideStart() {
   cancelAnimationFrame(gfRaf);
   const el = document.getElementById('gf'); if (!el) return;
   const eq = el.dataset.eq, def = gdef(el.dataset.b, eq), st = document.getElementById('gf-stage'); if (!def || !st) return;
-  const girl = guideGirl();
+  const girl = guideGirl(); gf3 = null; el.classList.remove('gf3');
   gfPaused = matchMedia('(prefers-reduced-motion: reduce)').matches; gfMs = 0; gfLast = 0;
   const pb = document.getElementById('gf-play'); if (pb) { pb.innerHTML = icon(gfPaused ? 'play' : 'pause'); pb.setAttribute('aria-label', t(gfPaused ? 'gfPlay' : 'gfPause')); }
-  const draw = ms => { st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`; };
+  const draw = ms => { if (gf3) gf3.draw(ms); else st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`; };
   const tick = ts => {
     if (!document.getElementById('gf-stage')) return;
     if (!gfPaused) { gfMs += gfLast ? Math.min(60, ts - gfLast) : 0; draw(gfMs); }
     gfLast = ts; gfRaf = requestAnimationFrame(tick);
   };
   draw(0); gfRaf = requestAnimationFrame(tick);
+  // modello anatomico 3D: si carica in un secondo momento e prende il posto dell'omino SVG
+  if (typeof G3D !== 'undefined' && G3D.supported()) G3D.load().then(() => {
+    if (document.getElementById('gf-stage') !== st || el.dataset.eq !== eq) return;
+    gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); el.classList.add('gf3'); draw(gfMs);
+  }).catch(() => {});
 }
 // la prima volta che si aggiunge un movimento dalla libreria
 function guideFirst(varId) {

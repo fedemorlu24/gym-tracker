@@ -115,12 +115,6 @@ async function planPdf(p) {
     });
     pg.y += 44;
   });
-  if (p.food) {
-    g.font = `500 27px ${FONT}`; const ls = pdWrap(g, p.food, inner - 60);
-    room(70 + Math.min(ls.length, 12) * 40); g.fillStyle = PD.ink; g.font = `800 40px ${FONT}`; g.fillText(t('foodTips'), PD.M, pg.y + 40); pg.y += 70;
-    g.font = `500 27px ${FONT}`;
-    ls.forEach((l, i) => { if (ls.length - i === 2 && pg.y + 80 > maxY()) room(1e6); else room(40); g.fillStyle = PD.ink; g.font = `500 27px ${FONT}`; g.fillText(l, PD.M, pg.y + 28); pg.y += 40; });
-  }
   const n = pages.length;
   pages.forEach((q, i) => { q.g.fillStyle = PD.acc; q.g.font = `800 26px ${FONT}`; q.g.textAlign = 'right'; q.g.fillText(`${i + 1} / ${n}`, PD.W - PD.M, PD.H - 26); q.g.textAlign = 'left'; });
   const jpgs = await Promise.all(pages.map(q => new Promise(res => q.c.toBlob(b => b.arrayBuffer().then(res), 'image/jpeg', .88))));

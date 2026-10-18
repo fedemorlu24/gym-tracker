@@ -539,3 +539,6 @@ body:has(.clist){padding-bottom:0;overflow:hidden}
 .nudge h3{font-size:16px;font-weight:700;margin-bottom:4px}
 .nudge p{font-size:14px;line-height:1.4}
 .nudge .sub{margin:6px 0 10px}
+
+.gf3 #gf-girl{display:none}
+.gf-3d{display:block;width:100%;touch-action:pan-y;cursor:grab;border-radius:14px}

@@ -513,13 +513,10 @@ function todayView() {
   if (isToday) html += `<p class="glabel">${t('recTitle')}</p>` + recoveryPanel(Date.now(), {short: true});
 
   // corpo del giorno
-  const bd = bodyOf(day), bw = bodyWeight(), ph = photos.filter(p => p.date === day);
+  const bd = bodyOf(day), ph = photos.filter(p => p.date === day);
   html += `<p class="glabel">${t('bodyCard')}</p><div class="dcard">`;
-  if (bd && (bd.weight || bd.kcal || bd.protein)) {
-    const lo = Math.round(bw * 1.6), hi = Math.round(bw * 2.2), pp = bd.protein && bw ? Math.min(1, bd.protein / lo) : 0;
-    html += `<div class="dbody">${bd.weight ? `<div><b>${fmtKg(bd.weight)}</b><span>kg</span></div>` : ''}${bd.kcal ? `<div><b>${fmtInt(bd.kcal)}</b><span>kcal</span></div>` : ''}${bd.protein ? `<div><b>${fmtInt(bd.protein)}</b><span>${t('protein', '').trim()}</span></div>` : ''}</div>
-      ${bd.protein && bw ? `<div class="meter"><i style="width:${pp * 100}%;${bd.protein >= lo ? 'background:var(--up)' : ''}"></i></div><p class="sub">${t('proteinGoal', lo, hi)}</p>` : ''}`;
-  } else html += `<p class="sub">${t('noBodyDay')}</p>`;
+  if (bd && bd.weight) html += `<div class="dbody"><div><b>${fmtKg(bd.weight)}</b><span>kg</span></div></div>`;
+  else html += `<p class="sub">${t('noBodyDay')}</p>`;
   if (ph.length) html += `<div class="grid" style="padding:10px 0 0">${ph.map(p => `<button data-act="photo" data-id="${p.id}" aria-label="${esc(t('photoAria', poseName(p.pose), fmtShort(p.date)))}"><img src="${p.url}" alt=""><span>${poseName(p.pose)}</span></button>`).join('')}</div>`;
   html += `<button class="btn s wide" data-act="bodylog" data-d="${day}" style="margin-top:12px;background:var(--fill)">${icon('plus')} ${t('logBody')}</button></div>`;
 
@@ -660,7 +657,7 @@ function progressListBody() {
   return html + `<div class="gap"></div>` + badgeGrid();
 }
 
-// ---------- corpo: peso, alimentazione, foto ----------
+// ---------- corpo: peso e foto ----------
 const POSES = ['front', 'side', 'back'];
 const poseName = k => t(k === 'back' ? 'backPose' : k);
 function weightAt(date) {
@@ -669,7 +666,7 @@ function weightAt(date) {
   return best && Math.abs(daysBetween(best.date, date)) <= 7 ? best.weight : null;
 }
 function bodyView() {
-  const b = body(), w = b.filter(x => x.weight > 0), food = b.filter(x => x.kcal > 0 || x.protein > 0);
+  const b = body(), w = b.filter(x => x.weight > 0);
   let html = '';
   if (w.length) {
     const l = w[w.length - 1], f = w[0];
@@ -684,20 +681,7 @@ function bodyView() {
       <p class="note">${fb.why ? fb.why : t('trendBody', sign(Math.round(fb.b * 7 * 10) / 10), fmt1(fb.at(daysBetween(fb.d0, fb.last) + 42)))}
       ${bg ? `<br><b>${t('goalWLabel', fmtKg(bg.weight))}</b> ${goalState(bg).eta}` : ''}</p></div>`;
   }
-  if (food.length) {
-    const last7 = food.filter(x => daysBetween(x.date, today()) < 7);
-    const avg = f => { const v = last7.filter(x => x[f] > 0); return v.length ? v.reduce((a, x) => a + x[f], 0) / v.length : 0; };
-    const kcal = avg('kcal'), prot = avg('protein'), lw = bodyWeight(), gkg = lw && prot ? prot / lw : 0;
-    const advice = !gkg ? (prot ? t('protNeedW') : '') : gkg < 1.6 ? t('protLow', Math.round(lw * 1.6), Math.round(lw * 2.2)) : gkg <= 2.2 ? t('protOk') : t('protHigh');
-    const kc = food.filter(x => x.kcal > 0).slice(-14);
-    html += `<div class="panel-c"><h2>${t('nutrition')}</h2><p class="sub">${t('avg7')}</p>
-      <div class="deltas" style="padding:10px 4px 4px">${kcal ? `<span>${fmtInt(kcal)} kcal</span>` : ''}${prot ? `<span>${t('protein', Math.round(prot))}${gkg ? ` · ${fmt1(gkg)} g/kg` : ''}</span>` : ''}${!last7.length ? `<span>${t('noDataWeek')}</span>` : ''}</div>
-      ${advice ? `<p class="note" style="padding-top:6px">${advice}</p>` : ''}
-      ${kc.length > 1 ? barChart(kc.map(x => ({d: x.date, v: x.kcal, dir: 'n'})), 'kcal') : ''}</div>`;
-  }
-  if (!b.length && !photos.length) html = `<div class="empty">${t('bodyEmpty')}</div>`;
-  const tips = planList().filter(p => p.food);
-  if (tips.length) html += tips.map(p => `<div class="panel-c"><h2>${esc(t('coachTips', p.author || p.name))}</h2><p class="sub">${esc(p.name)}</p><div class="gap"></div>${bubble(p.author || p.name, p.food)}</div>`).join('');
+  if (!w.length && !photos.length) html = `<div class="empty">${t('bodyEmpty')}</div>`;
   return html + photoPanel();
 }
 function photoPanel() {
@@ -979,7 +963,7 @@ function saveProfile(f) {
   if (w && w !== lastWeight()) {
     const d = today(), cur = (db.body || []).find(x => x.date === d) || {};
     db.body = (db.body || []).filter(x => x.date !== d);
-    db.body.push({kcal: 0, protein: 0, ...cur, date: d, weight: w});
+    db.body.push({...cur, date: d, weight: w});
   }
   save(); return true;
 }
@@ -1425,9 +1409,6 @@ function sheetBodyLog(day) {
     <form data-form="bodylog">
       <label class="field">${t('date')}<input name="d" type="date" value="${d}"></label>
       <label class="field">${t('bodyW')}<input name="w" inputmode="decimal" value="${v(cur.weight)}" placeholder="78${DEC}4" autocomplete="off" data-focus></label>
-      <label class="field">${t('bodyK')}<input name="k" inputmode="numeric" value="${v(cur.kcal)}" placeholder="${t('optional')}" autocomplete="off"></label>
-      <label class="field">${t('bodyP')}<input name="p" inputmode="numeric" value="${v(cur.protein)}" placeholder="${t('optional')}" autocomplete="off"></label>
-      <p class="sub">${t('bodyHint')}</p>
       <button class="btn p wide">${t('save')}</button></form>`);
 }
 function sheetWeekly() {
@@ -2037,7 +2018,6 @@ function planView() {
     ${p.days.map((d, i) => `<div class="dcard"><div class="item"><h3>${esc(dayTitle(p, i))}</h3><span class="sub">${t('exN', d.ex.length)}</span></div>
       ${d.ex.map(x => `<div class="dex"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div></div>`).join('') || `<p class="sub">${t('planEmptyDay')}</p>`}
       ${d.ex.length ? `<button class="btn p wide" data-act="startday" data-id="${p.id}" data-i="${i}" style="margin-top:10px">${esc(t('startDay', dayTitle(p, i)))}</button>` : ''}</div>`).join('')}
-    ${p.food ? `<p class="glabel">${t('foodTips')}</p>${bubble(p.author || t('you'), p.food)}` : ''}
     <div class="gap"></div>
     <button class="btn s wide" data-act="sendplan" data-id="${p.id}" style="background:var(--card)">${icon('share')} ${t('sendPlan')}</button><div class="gap"></div>
     <button class="btn d wide" data-act="delplan" data-id="${p.id}">${t('delPlan')}</button>`;
@@ -2060,9 +2040,7 @@ function planEditView() {
       ${d.ex.map((x, j) => `<button class="dex" data-act="planex" data-i="${i}" data-j="${j}" style="width:100%;text-align:left"><div class="grow"><b>${esc(nameFor(x))}</b><span>${exLine(x)}${x.note ? ' · ' + esc(x.note) : ''}</span></div><span class="chev">${icon('chev')}</span></button>`).join('')}
       <div class="opts" style="margin-top:10px"><button class="btn s" data-act="planaddex" data-i="${i}" style="background:var(--fill)">${icon('plus')} ${t('exerciseBtn')}</button>
       <button class="btn d" data-act="plandelday" data-i="${i}" style="background:var(--fill)">${t('delDay')}</button></div></div>`).join('')}
-    <button class="btn s wide" data-act="planaddday" style="background:var(--card)">${icon('plus')} ${t('addDay')}</button>
-    <p class="glabel">${t('foodTips')}</p>
-    <div class="pane-like"><label class="field">${inp('food', p.food, t('foodPh'), 'textarea')}</label></div>`;
+    <button class="btn s wide" data-act="planaddday" style="background:var(--card)">${icon('plus')} ${t('addDay')}</button>`;
 }
 function newPlan() {
   const p = {id: uid() + uid(), own: true, name: '', author: nick(), role: t('roleDefault'), note: '', food: '', days: [{name: '', ex: []}], got: today()};
@@ -2103,7 +2081,7 @@ function nextPlanDay() {
 }
 // condivisione: dati compatti nel link
 function planPayload(p) {
-  return {v: 1, t: 'p', id: p.id, n: p.name.slice(0, 50), a: (p.author || '').slice(0, 30), r: (p.role || '').slice(0, 30), no: (p.note || '').slice(0, 600), f: (p.food || '').slice(0, 1200),
+  return {v: 1, t: 'p', id: p.id, n: p.name.slice(0, 50), a: (p.author || '').slice(0, 30), r: (p.role || '').slice(0, 30), no: (p.note || '').slice(0, 600), f: '',
     d: p.days.slice(0, 7).map(d => ({n: (d.name || '').slice(0, 40), e: d.ex.slice(0, 15).map(x => [x.lib || '', nameFor(x).slice(0, 50), x.sets, String(x.reps).slice(0, 12), x.rest || 0, (x.note || '').slice(0, 120), String(x.rir || '').slice(0, 6), String(x.tempo || '').slice(0, 8), (x.alt || '').slice(0, 40)]), m: d.min || 0, w: (d.warm || '').slice(0, 240)}))};
 }
 function parsePlan(text) {
@@ -2365,13 +2343,10 @@ const forms = {
     { const z = sess(view.id).exercises.find(e => e.id === f.dataset.eid).sets; z[+f.dataset.i] = {...z[+f.dataset.i], reps: r, kg: k}; }
     save(); closeSheet(); const y = window.scrollY; render(); window.scrollTo(0, y); },
   bodylog: f => {
-    const w = num(f.w.value), k = num(f.k.value), pr = num(f.p.value), d = f.d.value || today();
-    if (!(w > 0) && !(k > 0) && !(pr > 0)) return alert(t('needOne'));
-    // un valore scritto ma non valido non deve cancellare quello già salvato
-    if (f.w.value.trim() && !(w >= 25 && w <= 300)) return alert(t('weightOut'));
-    if ((f.k.value.trim() && !(k > 0 && k < 20000)) || (f.p.value.trim() && !(pr > 0 && pr < 1000))) return alert(t('invalidNum'));
+    const w = num(f.w.value), d = f.d.value || today();
+    if (!(w >= 25 && w <= 300)) return alert(t('weightOut'));
     db.body = (db.body || []).filter(x => x.date !== d);
-    db.body.push({date: d, weight: w > 0 ? w : 0, kcal: k > 0 ? k : 0, protein: pr > 0 ? pr : 0});
+    db.body.push({date: d, weight: w});
     save(); closeSheet(); render(); if (!celebrate()) toast(t('saved'));
   },
   goal: f => {
