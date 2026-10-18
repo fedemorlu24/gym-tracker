@@ -12,11 +12,18 @@ function clean(o) { return window.GymData.clean(o); }
 const IDB = 'gym-tracker', STORE = 'kv', PHOTOS = 'photos';
 const STORAGE_META = 'restore-generation', STORAGE_ROLLBACK = 'restore-rollback';
 let storageGeneration = null, storageBusy = true;
+let vaultCachePending = false;
 window.gymStorageBusy = () => storageBusy;
 // Capture before per-element handlers, including forms inside open sheets.
 for (const type of ['click', 'input', 'change', 'submit', 'keydown']) {
   document.addEventListener(type, e => {
-    if (storageBusy) { e.preventDefault(); e.stopImmediatePropagation(); }
+    if (storageBusy) {
+      // Only the active password dialog's cancellation controls may interrupt
+      // a pending KDF; edits and submissions remain blocked while storage moves.
+      const cancel = typeof window.gymChatVaultCancelTarget === 'function' && window.gymChatVaultCancelTarget(e.target);
+      if (cancel && (type === 'click' || type === 'keydown' && (e.key === 'Enter' || e.key === ' ') && e.target.closest('button'))) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+    }
   }, true);
 }
 const pendingWrites = new Set();
@@ -38,11 +45,11 @@ function idb() {
     r.onblocked = () => rej(new Error('storage blocked'));
   });
 }
-function storageSnapshot() {
+function storageSnapshot(includeRollback = false) {
   return idb().then(d => new Promise((res, rej) => {
     const tx = d.transaction([STORE, PHOTOS]), kv = tx.objectStore(STORE);
-    const data = kv.get(KEY), meta = kv.get(STORAGE_META), ph = tx.objectStore(PHOTOS).getAll();
-    tx.oncomplete = () => { d.close(); res({json: data.result, generation: meta.result || null, photos: ph.result || []}); };
+    const data = kv.get(KEY), meta = kv.get(STORAGE_META), rollback = includeRollback ? kv.get(STORAGE_ROLLBACK) : null, ph = tx.objectStore(PHOTOS).getAll();
+    tx.oncomplete = () => { d.close(); res({json: data.result, generation: meta.result || null, rollback: rollback && rollback.result, photos: ph.result || []}); };
     tx.onabort = tx.onerror = () => { d.close(); rej(tx.error || new Error('storage read')); };
   }));
 }
@@ -64,17 +71,110 @@ function storageWrite(stores, fn, expected = storageGeneration) {
   })));
 }
 function idbPut(v) { return storageWrite([STORE], tx => tx.objectStore(STORE).put(v, KEY)); }
+function cacheArchive(json) {
+  const archive = JSON.parse(json), protectedKey = archive.chat && archive.chat.vault && !archive.chat.sk;
+  try {
+    localStorage.setItem(KEY, json);
+    if (localStorage.getItem(KEY) !== json) throw new Error('cache verification');
+    vaultCachePending = false; return true;
+  } catch (_) {
+    if (!protectedKey) return false;
+    // IDB is authoritative after protection. An absent cache is safe; retaining
+    // a previous plaintext private key is not a completed migration.
+    try {
+      localStorage.removeItem(KEY);
+      if (localStorage.getItem(KEY) !== null) throw new Error('cache cleanup');
+      vaultCachePending = false; return true;
+    } catch (_) { vaultCachePending = true; return false; }
+  }
+}
+function vaultFailure(code) { const e = new Error(code); e.code = code; return e; }
+async function protectArchiveIdentity(source, password, allowCreate = false, preserveInvalid = false) {
+  const out = JSON.parse(JSON.stringify(source)), c = out.chat;
+  if (!c) {
+    if (!allowCreate) return out;
+    out.chat = clean({sessions: [], chat: {}}).chat;
+  }
+  const chat = out.chat;
+  if (chat.keyInvalid || chat.vaultInvalid) {
+    // A recovery import may retain a damaged previous archive for diagnosis.
+    // Never generate a replacement key, or silently preserve an ambiguous raw key.
+    if (preserveInvalid && !Object.hasOwn(chat, 'sk')) return out;
+    throw vaultFailure('VAULT_INVALID');
+  }
+  if (Object.hasOwn(chat, 'vault')) {
+    ChatVault.validate(chat.vault, chat.pk);
+    if (chat.sk) throw vaultFailure('VAULT_INVALID');
+  } else if (chat.sk) chat.vault = await ChatVault.sealLegacy(chat.sk, password, chat.pk);
+  else if (allowCreate && !chat.pk && !Object.keys(chat.friends || {}).length && !Object.keys(chat.msgs || {}).length) chat.vault = await ChatVault.create(password);
+  else if (chat.pk || Object.keys(chat.friends || {}).length || Object.keys(chat.msgs || {}).length) throw vaultFailure('VAULT_INVALID');
+  if (chat.vault) {
+    chat.pk = chat.vault.pk; delete chat.sk;
+    if (typeof chat.tok !== 'string' || !/^[0-9a-f]{24}$/.test(chat.tok))
+      chat.tok = Array.from(crypto.getRandomValues(new Uint8Array(12)), n => n.toString(16).padStart(2, '0')).join('');
+  }
+  return out;
+}
+async function protectChatIdentity(password, isCurrent = () => true) {
+  if (storageBusy) throw vaultFailure('VAULT_STALE');
+  storageBusy = true; invalidateBackupData(); clearTimeout(planSaveT);
+  let committed = false;
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all([...pendingWrites]);
+    const before = await storageSnapshot(true);
+    if (before.generation !== storageGeneration) throw vaultFailure('VAULT_STALE');
+    const prior = before.json && JSON.parse(before.json);
+    if (prior && ((prior.ts || 0) > (db.ts || 0) || prior.chat && db.chat && prior.chat.pk && db.chat.pk && prior.chat.pk !== db.chat.pk)) throw vaultFailure('VAULT_STALE');
+    if (prior && prior.chat && (prior.chat.sk || prior.chat.pk || Object.hasOwn(prior.chat, 'vault'))) {
+      if (!db.chat || !db.chat.sk && !db.chat.pk && !Object.hasOwn(db.chat, 'vault') ||
+          prior.chat.sk && db.chat.sk && prior.chat.sk !== db.chat.sk) throw vaultFailure('VAULT_STALE');
+    }
+    const candidate = await protectArchiveIdentity(db, password, true);
+    await ChatVault.verify(candidate.chat.vault, password, candidate.chat.pk);
+    let rollback = before.rollback;
+    if (rollback) {
+      if (typeof rollback.json !== 'string') throw vaultFailure('VAULT_INVALID');
+      const protectedRollback = await protectArchiveIdentity(JSON.parse(rollback.json), password, false, true);
+      rollback = {...rollback, json: JSON.stringify(protectedRollback)};
+    }
+    candidate.ts = Date.now();
+    const json = JSON.stringify(candidate), generation = crypto.randomUUID();
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    await storageWrite([STORE], tx => {
+      const kv = tx.objectStore(STORE), previous = kv.get(KEY), oldRollback = kv.get(STORAGE_ROLLBACK);
+      oldRollback.onsuccess = () => {
+        try {
+          // Encryption is staged outside the transaction. Compare every source
+          // before committing so another tab's newer key/data cannot be erased.
+          if (!isCurrent() || previous.result !== before.json || JSON.stringify(oldRollback.result) !== JSON.stringify(before.rollback)) { tx.abort(); return; }
+          kv.put(json, KEY); kv.put(generation, STORAGE_META);
+          if (rollback) kv.put(rollback, STORAGE_ROLLBACK);
+        } catch (_) { tx.abort(); }
+      };
+    });
+    committed = true; storageGeneration = generation; db = candidate;
+    if (!cacheArchive(json)) throw vaultFailure('VAULT_CLEANUP');
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    await ChatVault.unlock(password);
+    return db.chat;
+  } finally {
+    password = ''; storageBusy = false;
+    if (window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+    resumeBackupExport(committed);
+  }
+}
 let backupFile = null;
 let backupRevision = 0, backupDialog = null;
 function save() {
   if (storageBusy) return;
   db.ts = Date.now(); invalidateBackupData(); libByName = null;
   const json = JSON.stringify(db);
-  // Legacy users retain the existing mirrored format until their first restore.
-  let ok = false;
-  if (!storageGeneration) try { localStorage.setItem(KEY, json); ok = true; } catch (e) {}
-  idbPut(json).then(() => { try { localStorage.setItem(KEY, json); } catch (e) {} }, () => {
-    if (!ok) alert(t('saveFail'));
+  // Cache only AFTER the generation-checked commit: a stale tab must not put
+  // a pre-migration private key back into localStorage before IDB rejects it.
+  idbPut(json).then(() => { cacheArchive(json); }, () => {
+    alert(t('saveFail'));
     restore().catch(() => {});
   });
 }
@@ -122,9 +222,10 @@ async function restore(initial = false) {
     if (switched && window.gymChatPause) { paused = true; await window.gymChatPause(); }
     if (o && (snap.generation || (o.ts || 0) > (db.ts || 0))) {
       db = o;
-      try { localStorage.setItem(KEY, snap.json); } catch (e) {}
+      cacheArchive(snap.json);
     }
     storageGeneration = snap.generation;
+    ChatVault.sync();
     replacePhotos(photoViews(snap.photos));
     if (!snap.generation && (!o || (db.ts || 0) > (o.ts || 0)) && db.sessions.length)
       await idbPut(JSON.stringify(db));
@@ -1394,6 +1495,7 @@ async function prepareBackup(pwd = bkPwd) {
   await Promise.all([...pendingWrites]);
   if (storageBusy || generation !== storageGeneration || revision !== backupRevision) throw new Error('archive changed');
   const snapshot = JSON.parse(JSON.stringify(db));
+  if (snapshot.chat && snapshot.chat.sk && !pwd) throw vaultFailure('VAULT_BACKUP_PASSWORD');
   const rows = await photoTx('readonly', st => st.getAll()), ids = chatPhotoIds(snapshot);
   const ph = [], chatPhotos = [];
   for (const p of rows) {
@@ -1461,8 +1563,11 @@ function queueBackup(ctx, delay = 600) {
       ctx.ready = {file, request, pwd, revision, generation}; backupFile = file;
       ctx.button.disabled = ctx.sharing;
       ctx.button.textContent = t('exportSize', fmt1(Math.max(.1, file.size / 1e6)));
-    }).catch(() => {
-      if (currentBackupRequest(ctx, request, pwd, revision, generation)) alert(t('bkNoCrypto'));
+    }).catch(e => {
+      if (currentBackupRequest(ctx, request, pwd, revision, generation)) {
+        if (e && e.code === 'VAULT_BACKUP_PASSWORD') ctx.button.textContent = t('vaultBackupPassword');
+        else alert(t('bkNoCrypto'));
+      }
     });
   };
   if (delay) ctx.timer = setTimeout(run, delay); else run();
@@ -1553,7 +1658,17 @@ async function stageBackup(f) {
     bytes += media.bytes; if (bytes > BACKUP_BYTES) throw new Error('photo bytes');
     records.push({id: p.id, date: p.date, pose: p.pose, blob: media.blob, ...(isChat ? {data: media.data} : {})});
   }
-  return {candidate, records, hasChatPhotos};
+  const chat = candidate.chat;
+  if (chat && (chat.keyInvalid || chat.vaultInvalid)) throw vaultFailure('VAULT_INVALID');
+  let vaultPassword = '', protectedCandidate = candidate;
+  if (chat && (chat.sk || Object.hasOwn(chat, 'vault')) || db.chat && db.chat.sk) {
+    if (typeof window.gymRequestVaultPassword !== 'function') throw vaultFailure('VAULT_UNAVAILABLE');
+    vaultPassword = await window.gymRequestVaultPassword(chat && chat.vault ? 'import-unlock' : 'import');
+    if (vaultPassword == null) return null;
+    if (chat && chat.vault) await ChatVault.verify(chat.vault, vaultPassword, chat.pk);
+    protectedCandidate = await protectArchiveIdentity(candidate, vaultPassword);
+  }
+  return {candidate: protectedCandidate, records, hasChatPhotos, vaultPassword};
 }
 async function commitBackup(staged) {
   const {candidate, records, hasChatPhotos} = staged;
@@ -1570,7 +1685,7 @@ async function commitBackup(staged) {
     if (before.generation !== storageGeneration) throw new Error('archive changed');
     // Old backups omitted chat attachments. Keep only referenced attachments of
     // exactly the same identity; never attach another identity's private photos.
-    if (!hasChatPhotos && candidate.chat && db.chat && candidate.chat.sk === db.chat.sk) {
+    if (!hasChatPhotos && candidate.chat && db.chat && candidate.chat.pk && candidate.chat.pk === db.chat.pk) {
       const ids = chatPhotoIds(candidate);
       for (const row of before.photos) if (row.pose === 'chat' && ids.has(row.id)) {
         const media = await GymMedia.decodeInlineImage(row.data, {types: ['image/jpeg'], maxBytes: 49000, maxWidth: 2048, maxHeight: 2048, maxPixels: 4194304});
@@ -1579,6 +1694,9 @@ async function commitBackup(staged) {
     }
     nextViews = photoViews(records);
     const generation = crypto.randomUUID(), oldJson = JSON.stringify(db);
+    const prior = before.json && JSON.parse(before.json);
+    const rollbackSource = prior && (prior.ts || 0) > (db.ts || 0) ? prior : JSON.parse(oldJson);
+    const rollbackJson = JSON.stringify(await protectArchiveIdentity(rollbackSource, staged.vaultPassword, false, true));
     candidate.ts = Date.now(); const json = JSON.stringify(candidate);
     await storageWrite([STORE, PHOTOS], tx => {
       const kv = tx.objectStore(STORE), ps = tx.objectStore(PHOTOS);
@@ -1587,9 +1705,7 @@ async function commitBackup(staged) {
       const previous = kv.get(KEY), oldPhotos = ps.getAll();
       oldPhotos.onsuccess = () => {
         try {
-          const persisted = previous.result;
-          const prior = persisted && JSON.parse(persisted);
-          const rollbackJson = prior && (prior.ts || 0) > (db.ts || 0) ? persisted : oldJson;
+          if (previous.result !== before.json) { tx.abort(); return; }
           kv.put({json: rollbackJson, photos: oldPhotos.result, generation: storageGeneration}, STORAGE_ROLLBACK);
           kv.put(json, KEY); kv.put(generation, STORAGE_META);
           ps.clear(); records.forEach(r => ps.put(r));
@@ -1598,11 +1714,13 @@ async function commitBackup(staged) {
     });
     committed = true;
     storageGeneration = generation; db = candidate; replacePhotos(nextViews); nextViews = null;
+    ChatVault.sync();
     libByName = null;
     // IDB is the commit point. A failed cache write is repaired on next boot;
     // reporting importFail here would falsely claim that the old archive won.
-    try { localStorage.setItem(KEY, json); } catch (e) {}
+    cacheArchive(json);
   } finally {
+    staged.vaultPassword = '';
     if (nextViews) nextViews.forEach(p => URL.revokeObjectURL(p.url));
     storageBusy = false;
     if (window.gymChatResume) window.gymChatResume();
@@ -1616,10 +1734,12 @@ async function importData(inp) {
   if (!f || storageBusy) return;
   try {
     const staged = await trackWrite(stageBackup(f));
-    if (!staged || !confirm(t('importConfirm', staged.candidate.sessions.length))) return;
+    if (!staged) return;
+    if (!confirm(t('importConfirm', staged.candidate.sessions.length))) { staged.vaultPassword = ''; return; }
     await trackWrite(commitBackup(staged));
     setLang(); applyTheme(); closeSheet(); go({name: 'home', tab: 'sessions'});
     toast(t('importDone', db.sessions.length, staged.records.filter(p => p.pose !== 'chat').length));
+    if (vaultCachePending) alert(t('vaultCleanup'));
   } catch (m) { alert(typeof m === 'string' ? m : t('importFail')); }
 }
 function sheetPhoto(id) {
@@ -2679,13 +2799,14 @@ document.addEventListener('input', ev => {
   if (el.dataset.f && drafts[el.dataset.eid]) { drafts[el.dataset.eid][el.dataset.f] = el.value; syncChips(el.dataset.eid); }
 });
 
+ChatVault.configure({record: () => db.chat, setup: protectChatIdentity, cleanupPending: () => vaultCachePending});
 setLang();
 applyTheme();
 window.gymDataReady = restore(true).then(() => { if (rest) drawRest(); });
 let skipInstall = false;
 try { skipInstall = sessionStorage.getItem('install-skip') === '1'; } catch (e) {}
 // parte dopo che tutti gli script (anche chat.js) sono caricati
-addEventListener('DOMContentLoaded', async () => {
+addEventListener('gym:boot', async () => {
   await window.gymDataReady;
   if (handleChallengeHash()) {}
   else if (mobile() && !standalone() && !skipInstall) openInstall();

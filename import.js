@@ -267,7 +267,7 @@ function sheetImportCsv() {
 }
 
 // azioni e moduli si registrano quando app.js (caricato dopo) ha creato acts e forms
-addEventListener('DOMContentLoaded', () => {
+addEventListener('gym:boot', () => {
 Object.assign(acts, {
   impplan: sheetImportPlan,
   impcopy: impCopy,

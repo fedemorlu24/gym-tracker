@@ -38,6 +38,7 @@ async function fresh(initial = seed) {
   return {page,context,diag};
 }
 async function ready(page) {
+  await page.waitForFunction(()=>window.gymBooted === true);
   await page.evaluate(async()=>{await window.gymDataReady; await Promise.all([...pendingWrites]);
     document.getElementById('tour').hidden=true; document.getElementById('install').hidden=true;});
 }
@@ -78,6 +79,7 @@ async function holdFirstRead(page) {
     await page.evaluate(async()=>{
       const nt=await nostrLoad(),sk=new Uint8Array(32).fill(7);
       db.chat={sk:toHex(sk),pk:nt.getPublicKey(sk),tok:'ab'.repeat(12),friends:{},msgs:{},relays:[],seen:[],blocked:[]};save();
+      await ChatVault.setup('synthetic-vault-password');
       await Promise.all([...pendingWrites]);
     });
     await holdFirstRead(page);
@@ -89,7 +91,7 @@ async function holdFirstRead(page) {
     const envelope=await downloadBackup(page);assert.equal(envelope.enc,'AES-GCM');
     assert.equal(await page.evaluate(async envelope=>{
       const restored=JSON.parse(await decryptBackup(envelope,'synthetic-race-password'));
-      return restored.chat.sk===db.chat.sk && !document.getElementById('bk-pwd')?.value;
+      return !restored.chat.sk && restored.chat.vault.data===db.chat.vault.data && !document.getElementById('bk-pwd')?.value;
     },envelope),true);
   });
   await test('password A to B to A discards an older result even when passwords match again',async page=>{
@@ -226,24 +228,24 @@ async function holdFirstRead(page) {
     assert.deepEqual(result,{algorithm:{name:'AES-GCM',length:256},extractable:false,usages:['encrypt'],
       exportRejected:true,saltBytes:16,ivBytes:12,iterations:250000,unique:true,roundtrip:true,wrongPassword:true,tamper:true});
   });
-  await test('chat key generation uses browser randomness; invite rotation preserves identity; storage exposure is explicit',async page=>{
+  await test('chat key generation uses browser randomness; invite rotation preserves identity; protected storage preserves identity',async page=>{
     const r=await page.evaluate(async()=>{
       const nt=await nostrLoad(),random=crypto.getRandomValues.bind(crypto),weak=Math.random;let calls=0,keys;
       crypto.getRandomValues=b=>{calls++;return random(b);};Math.random=()=>{throw new Error('weak randomness');};
       try{keys=Array.from({length:4},()=>nt.generateSecretKey());}finally{crypto.getRandomValues=random;Math.random=weak;}
-      db.chat={friends:{},msgs:{},relays:[],seen:[],blocked:[]};await chatInit();
-      window.__identity=chat().sk;const beforeToken=chat().tok;
+      db.chat={friends:{},msgs:{},relays:[],seen:[],blocked:[]};await ChatVault.setup('synthetic-vault-password');await chatInit();
+      window.__identity=chat().pk;const beforeToken=chat().tok;
       const invite=JSON.parse(atob(chatLink().split('#chat=')[1].replace(/-/g,'+').replace(/_/g,'/')));
-      acts.chatrotate();await Promise.all([...pendingWrites]);
+      acts.chatrotate();await new Promise(resolve=>setTimeout(resolve,0));await Promise.all([...pendingWrites]);
       return {random: calls>=4,unique:new Set(keys.map(toHex)).size===4,
         valid:keys.every(k=>k.length===32&&nt.getPublicKey(k).length===64),
-        inviteFields:Object.keys(invite).sort(),noSecret:!JSON.stringify(invite).includes(chat().sk),
-        rotated:beforeToken!==chat().tok,identitySame:__identity===chat().sk,
-        plaintextLocal:JSON.parse(localStorage.getItem(KEY)).chat.sk===chat().sk,
-        plaintextIDB:JSON.parse(await idbGet()).chat.sk===chat().sk};
+        inviteFields:Object.keys(invite).sort(),noSecret:!('sk' in invite)&&!('vault' in invite),
+        rotated:beforeToken!==chat().tok,identitySame:__identity===chat().pk,
+        plaintextLocal:!!JSON.parse(localStorage.getItem(KEY)).chat.sk,
+        plaintextIDB:!!JSON.parse(await idbGet()).chat.sk};
     });
     assert.deepEqual(r,{random:true,unique:true,valid:true,inviteFields:['k','n','t','v'],noSecret:true,
-      rotated:true,identitySame:true,plaintextLocal:true,plaintextIDB:true});
+      rotated:true,identitySame:true,plaintextLocal:false,plaintextIDB:false});
     const identity=await page.evaluate(()=>chat().pk);await page.reload();await ready(page);
     assert.equal(await page.evaluate(()=>chat().pk),identity);
   });
@@ -251,11 +253,12 @@ async function holdFirstRead(page) {
     const r=await page.evaluate(async()=>{
       const nt=await nostrLoad(),mine=new Uint8Array(32).fill(9),friend=new Uint8Array(32).fill(10),pk=nt.getPublicKey(mine),other=nt.getPublicKey(friend);
       db.chat={sk:toHex(mine),pk,tok:'ab'.repeat(12),friends:{[other]:{pk:other,n:'Synthetic friend',added:1}},msgs:{},relays:[],seen:[],blocked:[]};
+      await ChatVault.setup('synthetic-vault-password');
       const sent=[];relaySend=ev=>sent.push(ev);await chatInit();await chatSend(other,{k:'t',x:'private-key-test-marker'});
       const wrap=sent.find(w=>w.tags.some(t=>t[0]==='p'&&t[1]===other));
       const seal=JSON.parse(nt.nip44.decrypt(wrap.content,nt.nip44.getConversationKey(friend,wrap.pubkey)));
       const rumor=JSON.parse(nt.nip44.decrypt(seal.content,nt.nip44.getConversationKey(friend,seal.pubkey)));
-      const wire=JSON.stringify(sent),one=fromHex('0'.repeat(63)+'1'),two=fromHex('0'.repeat(63)+'2');
+      const wire=JSON.stringify(sent),one=new Uint8Array(32),two=new Uint8Array(32);one[31]=1;two[31]=2;
       const key=nt.nip44.getConversationKey(one,nt.getPublicKey(two));
       // Reference vector: https://github.com/nostr-protocol/nips/blob/master/44.md#tests-and-code
       const vector='AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABee0G5VSK0/9YypIObAtDKfYEAjD35uVkHyB0F4DwrcNaCXlCWZKaArsGrY6M9wnuTMxWfp1RTN9Xga8no+kF5Vsb';

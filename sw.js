@@ -1,9 +1,10 @@
 // Service worker: tiene sul telefono una copia dell'app per usarla senza rete.
 // VERSION deve coincidere con il ?v= dei file in index.html: aggiornali insieme a ogni rilascio.
-const VERSION = '68';
+const VERSION = '69';
 const CACHE = 'gym-' + VERSION;
 const FILES = [
   './',
+  `bootstrap.js?v=${VERSION}`, `chat-vault.js?v=${VERSION}`,
   `security-data.js?v=${VERSION}`, `secure-media.js?v=${VERSION}`,
   `style.css?v=${VERSION}`, `i18n.js?v=${VERSION}`, `exlib.js?v=${VERSION}`, `lib/data.js?v=${VERSION}`, `app.js?v=${VERSION}`, `import.js?v=${VERSION}`, `plandoc.js?v=${VERSION}`, `guide.js?v=${VERSION}`, `guide3d.js?v=${VERSION}`, `chat.js?v=${VERSION}`, `nostr-tools.js?v=${VERSION}`,
   `update.js?v=${VERSION}`, 'manifest.json', 'icons/icon-32.png', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
@@ -46,10 +47,19 @@ function asset(req) {
     return r;
   }));
 }
+// These response headers protect navigations controlled by this worker. The
+// bootstrap gate also protects first visits where the hosting response lacks them.
+function protectedPage(response) {
+  if (!response) return response;
+  const headers = new Headers(response.headers);
+  headers.append('Content-Security-Policy', "frame-ancestors 'none'");
+  headers.set('X-Frame-Options', 'DENY');
+  return new Response(response.body, {status: response.status, statusText: response.statusText, headers});
+}
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(req.mode === 'navigate' ? page(req) : asset(req));
+  e.respondWith(req.mode === 'navigate' ? page(req).then(protectedPage) : asset(req));
   // durante un aggiornamento il vecchio worker può ricreare la sua copia: si ripulisce a ogni apertura
   if (req.mode === 'navigate') e.waitUntil(new Promise(r => setTimeout(r, 4000)).then(cleanup));
 });

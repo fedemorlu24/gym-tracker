@@ -1,4 +1,130 @@
-# Revisione sicurezza — v68
+# Revisione sicurezza — v69
+
+19 ottobre 2026. Candidato locale richiesto da Luca con «riesci a correggere?»
+dopo la verifica dei rischi residui della v68. **Non ancora pubblicato.**
+Gli esiti sotto riguardano le verifiche locali concluse; ricevute di pubblicazione
+e verifiche live saranno aggiunte separatamente. La sezione v68 seguente
+è storica e descrive il comportamento prima di queste modifiche.
+
+## Protezione locale della stessa identità chat
+
+`chat-vault.js` protegge la chiave privata secp256k1 esistente con Web Crypto:
+AES-GCM 256 bit, PBKDF2-SHA256 con 600.000 iterazioni, salt casuale di 16 byte e
+IV casuale di 12 byte. L'envelope ha schema e lunghezze rigorosi; i dati
+autenticati aggiuntivi legano formato, parametri e chiave pubblica. La chiave
+derivata è non estraibile. Prima di sostituire una copia legacy, il codice
+verifica la decifratura e la corrispondenza della chiave pubblica.
+Per il costo PBKDF2 e il rischio delle password deboli, riferimento:
+[OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+
+La configurazione richiede una password di almeno 12 caratteri, confermata
+dall'utente, che non viene persistita. **È richiesta al primo uso della chat:**
+il solo aggiornamento dell'app non può cifrare una chiave legacy senza una
+password scelta dall'utente. La chat legacy non si collega ai relay prima del
+completamento della configurazione. Dopo lo sblocco, i byte segreti restano
+privati al modulo per la sessione; chiusura/ricaricamento e blocco manuale
+richiedono un nuovo sblocco. Non è attivo un blocco automatico dopo cinque minuti.
+Il modulo offre operazioni di messaggistica, non un getter della chiave privata.
+
+La migrazione mantiene identità, amici, messaggi e foto. Cifra anche una chiave
+legacy diversa presente in `restore-rollback`, usando la password scelta e
+conservando la copia recuperabile. Dati correnti, rollback e nuova generazione
+sono committati insieme in IndexedDB dopo il confronto delle copie di partenza.
+La chat è sospesa e le scritture pendenti vengono attese. Annullamento prima del
+commit e guasti di scrittura mantengono lo stato precedente; un commit già
+avvenuto non viene annullato rimuovendo la chiave protetta.
+
+localStorage è scritto come cache soltanto dopo il commit verificato. La vecchia
+copia viene sostituita e riletta oppure rimossa: se entrambe le operazioni
+falliscono, l'app segnala **protezione incompleta** e permette di riprovare con
+la stessa password. Non presenta quella condizione come protezione completata.
+Le nuove schede controllano la generazione prima delle scritture; una scheda
+v68 già aperta può ancora scrivere la propria cache legacy prima del controllo
+IndexedDB. Prima della migrazione occorre aggiornare o chiudere le vecchie schede.
+
+Un envelope o una chiave malformati conservano archivio e stato d'errore tra
+normalizzazioni e ricaricamenti: non diventano una richiesta di creare una nuova
+identità. Un import valido può sostituire quello stato; il rollback danneggiato
+privo di `sk` viene conservato senza generare chiavi. Una chiave raw ambigua non
+viene ignorata per consentire il ripristino.
+
+## Backup e recupero
+
+Dopo la migrazione, anche un export senza password esterna contiene il vault
+cifrato, mai il campo `chat.sk`. Per un'identità legacy non ancora migrata,
+l'export è consentito soltanto con una password per l'intero backup. La UI
+spiega come proteggere la chat o aggiungere quella password.
+
+La cifratura esterna del backup resta AES-GCM/PBKDF2-SHA256 a 250.000 iterazioni;
+è distinta dal vault a 600.000 iterazioni. Un import legacy chiede una password
+per migrare la stessa identità prima del commit; un vault importato richiede la
+sua password esistente e viene autenticato prima del ripristino. La password
+del vault rimane necessaria anche quando il file JSON esterno non è cifrato.
+Senza password e senza una copia recuperabile, l'accesso a quell'identità non
+può essere ripristinato. I backup storici già salvati fuori dall'app possono
+contenere la chiave in chiaro: l'aggiornamento non può eliminarli o cifrarli.
+
+## Incorporamento in altre pagine
+
+`bootstrap.js` controlla di essere nella finestra principale prima di caricare
+gli script applicativi: dentro un frame mostra solo un messaggio, senza aprire
+lo storage dell'app. Gli script sono caricati in sequenza e l'inizializzazione
+finale usa `gym:boot`. Nelle navigazioni controllate dal service worker, la
+risposta riceve `Content-Security-Policy: frame-ancestors 'none'` e
+`X-Frame-Options: DENY`, anche nel percorso offline.
+
+La prima risposta HTTP di GitHub Pages continua a non avere questi header:
+in quel caso opera il controllo di avvio JavaScript, che non equivale a un
+header imposto dall'hosting. La direttiva `frame-ancestors` non funziona in un
+meta tag. Origine e URL dell'app restano invariati.
+Riferimenti: [OWASP Clickjacking Defense Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html)
+e [MDN frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors).
+
+## Limiti che restano
+
+- Il vault protegge la chiave a riposo, non tutto l'archivio: storico messaggi,
+  allenamenti e foto locali restano in chiaro nello storage del browser.
+- Un XSS attivo durante lo sblocco può intercettare la password, usare le
+  operazioni crittografiche o rubare il segreto durante il suo utilizzo. Una
+  chiave Web Crypto non estraibile non rende sicura una pagina compromessa.
+  Cifrare con una seconda chiave raw salvata accanto al ciphertext non avrebbe
+  risolto il rischio dello storage leggibile.
+- NIP-44/NIP-59 e il bundle Nostr non sono stati sostituiti con un protocollo
+  personalizzato. **La forward secrecy resta assente:** la compromissione della
+  chiave può esporre conversazioni passate se le buste sono disponibili.
+  [Limiti ufficiali NIP-44](https://github.com/nostr-protocol/nips/blob/master/44.md#limitations).
+- Le foto degli amici restano consentite, visibili e condivisibili; i profili
+  mostrano iniziali. La validazione raster non è un filtro pornografia e non è
+  stato aggiunto un classificatore automatico. La chat bloccata richiede lo
+  sblocco per decifrare nuovi messaggi; storico e foto già salvati restano accessibili.
+
+## Verifiche locali prima del rilascio
+
+Esiti locali; suite Playwright con dati sintetici:
+
+| Verifica | Stato |
+| --- | --- |
+| `npm run test:security` | 10 gruppi PASS |
+| `npm run test:backup-keys` | 13 gruppi PASS |
+| `npm run test:framing` | 6 gruppi PASS |
+| `npm run test:update` | 68 → 69 → 70 → 71 PASS |
+| `npm run test:vault` | 12 gruppi PASS |
+| `npm run test:donation` | Donazione/layout in cinque lingue, tutorial/condivisione e regressioni PASS |
+| `npm run check:vendor` | PASS |
+| `npm run check:vendor-inventory` | PASS |
+
+Nelle suite vault, security e backup/key-use: zero console/pageerror, errori
+HTTP, richieste fallite, uscite esterne e WebSocket reali. I probe di framing
+registrano separatamente i rifiuti di policy attesi del browser. Screenshot del
+setup e della chat ispezionati. Il ripristino dello stesso envelope conserva lo
+sblocco già autenticato; un envelope o un'identità diversi lo invalidano.
+Le ricevute sono in `artifacts/security/`, `artifacts/tutorials/verification/` e
+`artifacts/donation/`. Le prove di rilascio hanno ricevute separate in `artifacts/release-v69/`.
+Queste prove
+non attestano una pubblicazione, un audit crittografico completo o una verifica
+su iPhone fisico; nessun traffico a persone o relay reali è richiesto dai test.
+
+# Storico: revisione sicurezza — v68
 
 18 ottobre 2026. Correzione successiva alla v67 pubblicata (`8369f9b`), richiesta
 da Luca con «correggilo» e verifica dell'uso delle chiavi. Prove locali sotto;

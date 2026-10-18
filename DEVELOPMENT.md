@@ -4,6 +4,8 @@ A free, offline-first workout diary for the gym, built as a Progressive Web App.
 
 **Live app:** https://fedemorlu24.github.io/gym-tracker/
 
+For the v69 vault and framing changes, see `SECURITY_REMEDIATION.md`. Local pre-release checks are documented there; publication and live upgrade receipts are kept separately in `artifacts/release-v69/`.
+
 Open it on your phone and use *Add to Home Screen*. There is no account, no server, no subscription and no ads: everything stays on your device.
 
 ## What it does
@@ -65,7 +67,9 @@ Workout data lives in your browser (`localStorage` + `IndexedDB`; photos only in
 | File | Purpose |
 |---|---|
 | `index.html` | Page shell |
+| `bootstrap.js` | Top-level startup gate, sequential script loading and `gym:boot` event |
 | `app.js` | Application logic and views |
+| `chat-vault.js` | Password-protected local chat identity and private in-memory message operations |
 | `security-data.js` | Normalization of shared, imported and stored records before rendering |
 | `secure-media.js` | Offline validation and decoding of inline raster images |
 | `chat.js`, `nostr-tools.js` | Encrypted contact chat and the pinned upstream crypto bundle |
@@ -89,7 +93,9 @@ python3 -m http.server 8765      # then open http://localhost:8765
 python3 lib/build.py             # validate lib/*.json and regenerate lib/data.js
 ```
 
-Release rule: bump `VERSION` in `sw.js` and every `?v=` in `index.html` to the same number, otherwise phones keep the old cached files. Service workers cache by version, so clear caches when testing locally after editing.
+Release rule: bump `VERSION` in `sw.js` and every `?v=` in `index.html`, including the script template and bootstrap, to the same number, otherwise phones keep the old cached files. Service workers cache by version, so clear caches when testing locally after editing.
+
+`bootstrap.js` loads the application scripts in order only when `self === top`, then reveals the page and dispatches `gym:boot`. Application and import startup hooks use that event rather than `DOMContentLoaded`; `gymDataReady` still represents storage restoration. Keep `chat-vault.js` before `security-data.js` and `app.js`. A framed page displays an informational message without loading the application or opening its storage.
 
 `update.js` checks the deployed release on opening, returning to the foreground and reconnecting. The worker precaches the complete matching release before activation. Automatic reload waits for open sheets, editing, rest timers and pending data writes. The Home Screen installation URL, localStorage, IndexedDB and photos stay in place; never ask users to remove/reinstall to update. A manual check remains in Settings.
 
@@ -104,19 +110,29 @@ npm run test:guides
 npm run test:update   # starts its own isolated release fixture
 npm run test:security # isolated origin, synthetic keys, no relay traffic
 npm run test:backup-keys # concurrent exports, native share and crypto/key-use checks
+npm run test:vault       # setup/unlock, identity preservation, migration/import and failures
+npm run test:framing     # fresh/controlled frames, startup and offline navigation headers
 ```
 
-The update fixture pins the released v67 commit and verifies v67 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
+The update fixture pins the released v68 commit and verifies v68 → current candidate → two simulated future releases with synthetic workouts/plans/photos, an open unsaved form, a foreground check and offline reopening. Guide tests sample 131 movements and 327 equipment combinations for finite joints, hand attachment and continuity. These numerical checks supplement visual review; they do not certify every exercise's technique. Tests use fresh browser contexts and do not access users' data. Run the guide suite separately from other CPU-heavy browser tests so animation timing measurements are meaningful.
 
-Chat (`chat.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays, keys generated on the device (inside `db.chat`, included in backups). It connects to relays only after the first invite or opened link. Contacts display initials; profile photos, including legacy avatars, are no longer displayed, sent or accepted. Photos in messages from added contacts remain visible immediately and can be sent, enlarged and backed up. Normal messages from unknown or blocked keys are ignored; possession of your invite link can allow a new contact to join, so share it privately and rotate it if needed. Raster validation prevents malformed attachments; it does not classify sexual content. There is no automatic pornography detector or new photo restriction for known friends.
+v69 pre-release checks: security 10 groups, backup/key use 13 groups, vault 12 groups, framing 6 groups and update 68 → 69 → 70 → 71 PASS. Donation/layout in five languages, tutorial/sharing regressions, `check:vendor` and `check:vendor-inventory` also PASS. Vault/security/backup suites report zero console/pageerror, HTTP failures, failed requests, external traffic and real WebSockets; framing records expected browser policy denials separately. Setup/chat screenshots were inspected. Publication and live verification have separate receipts.
+
+Chat (`chat.js`, `chat-vault.js`, `nostr-tools.js`): no own server; end-to-end encrypted messages (NIP-17/44/59) over public Nostr relays. Chat requires local setup/unlock before connecting. Setup asks the user for a password of at least 12 characters and encrypts the same existing secp256k1 identity; it generates an identity only for a genuinely new chat. Merely installing the update cannot protect an existing legacy key before the user chooses a password. The vault uses AES-GCM-256 and PBKDF2-SHA256 with 600,000 iterations, random 16-byte salt and 12-byte IV, and authenticated data binding its version/parameters to its public key. The derived Web Crypto key is non-extractable. Passwords are never persisted; unlocked secret bytes stay private to the module, whose API exposes message operations. It stays unlocked for the session until close/reload or manual lock; there is no five-minute idle timer.
+
+Setup pauses chat, drains pending writes and stages encryption before an atomic IndexedDB commit of the current archive, rollback and generation. A different legacy identity in the rollback is encrypted with the chosen password too. No contacts or photos are removed. Source comparisons and generation checks reject stale writes. localStorage is a verified cache written after the commit; a failed replacement attempts to remove the old copy. Failure of both operations leaves an explicit incomplete-protection state and retry. Old v68 tabs can still write their legacy cache, so users must update or close them before migration. Invalid identity/vault markers survive normalization and prevent accidental creation of a replacement identity. A valid recovery import can preserve a damaged previous archive without a raw key in its rollback.
+
+Contacts display initials; profile photos, including legacy avatars, are no longer displayed, sent or accepted. Photos in messages from added contacts remain visible immediately and can be sent, enlarged and backed up. Normal messages from unknown or blocked keys are ignored; possession of your invite link can allow a new contact to join, so share it privately and rotate it if needed. Raster validation prevents malformed attachments; it does not classify sexual content. There is no automatic pornography detector or new photo restriction for known friends. Locked chat requires unlock to decrypt new messages; saved history and photos remain accessible.
 
 Exercise animations (`guide.js`): `A.<scheme>` functions give keyframes + scenery/props; `GMAP` maps every library base id to a scheme; the variant's equipment (`eq`) changes the prop. Shown the first time a library exercise is added (`db.guide`), always in the exercise guide.
 
 3D guide (`guide3d.js`, `3d/moves.js`): when WebGL works, the SVG figure is replaced by a 3D body loaded on demand (three.js bundle + `3d/man.glb` ≈ 1.5 MB in all, cached by the service worker at first use). Every library base id has a movement in `MOVES3D.MAP` → `M.<scheme>(options)` with `pose(k, u)` (u = 0 start → 1 end, or a cycle when `cyc`) and optional `build(k, g)` for benches and machines. Poses are written in 3D from gym-manual checkpoints (for example bar over mid-foot, bar to mid-chest, forearms vertical) using the kit: `torso`, `leg`, `arm` (IK + palm direction + closed grip), `armDir`/`legDir`, `onBone` body landmarks. Worked muscles are painted on the skin from vertex colours (R = muscle group, G = proximity, B = shorts). The body model is derived from Z-Anatomy (CC BY-SA 4.0, credit shown under the 3D view, details in `3d/LICENSE.md`); it was built in Blender from the Z-Anatomy atlas (skin regions welded and smoothed, simple rig with finger bones). The bundle `3d/three.min.js` is three@0.160.0 + GLTFLoader + DRACOLoader + RoomEnvironment built with esbuild. Rebuild scripts: `3d/src/` (Blender script for the model, esbuild entry for three.js).
 
-Backup: `gym-tracker-backup.json`, optional AES-GCM/PBKDF2 password (`encryptBackup`), reminder after 7 days (`backupNudge`). The export includes the chat private key, with an explicit warning in all five languages, and referenced chat attachments. The entire import is parsed, normalized and decoded before confirmation/commit; remote image URLs are rejected without a fetch. A single IndexedDB transaction commits JSON and photos and retains the previous snapshot in `restore-rollback`. After the first such restore, IndexedDB is authoritative and localStorage is a recoverable cache. A generation check rejects writes from stale tabs running the new code; an already-open v66 tab does not implement this protocol. See `SECURITY_REMEDIATION.md` for tested failure cases and remaining limits.
+Backup: `gym-tracker-backup.json`, reminder after 7 days (`backupNudge`). After protection, exports contain the encrypted chat vault and referenced chat attachments, never `chat.sk`, even without an outer backup password. Export of an unmigrated legacy identity requires an outer password; the UI explains the setup alternative. Outer backup encryption (`encryptBackup`) remains AES-GCM/PBKDF2-SHA256 with 250,000 iterations, separate from the vault's 600,000. A legacy import requests a password to protect the same identity before committing. An imported vault is authenticated with its existing chat password; losing that password without a recoverable copy means losing access to the identity. Historical files outside the app are not automatically re-encrypted or deleted.
 
-The CSP in `index.html` restricts scripts to this origin, blocks inline handlers, and allows the WebAssembly decoder and configured secure WebSocket relays. Framing protection requires a hosting response header (`Content-Security-Policy: frame-ancestors 'none'`); it cannot be supplied by a meta tag. Do not change the origin to obtain this header without a separate data-migration plan.
+The entire import is parsed, normalized and decoded before confirmation/commit; remote image URLs are rejected without a fetch. A single IndexedDB transaction commits JSON and photos and retains the previous snapshot in `restore-rollback`. Restoring the same vault envelope preserves an already authenticated unlocked session; a different envelope or identity invalidates it. IndexedDB is authoritative after restore/protection; localStorage is a recoverable cache. See `SECURITY_REMEDIATION.md` for tested failure cases and remaining limits.
+
+The CSP in `index.html` restricts scripts to this origin, blocks inline handlers, and allows the WebAssembly decoder and configured secure WebSocket relays. Service-worker-controlled navigation responses add `Content-Security-Policy: frame-ancestors 'none'` and `X-Frame-Options: DENY`, including offline responses. The first GitHub Pages HTTP response still lacks these framing headers; the bootstrap gate is the protection for that first load and does not turn JavaScript into an HTTP hosting policy. `frame-ancestors` cannot be supplied by a meta tag. Do not change the origin without a separate data-migration plan. References: [OWASP clickjacking guidance](https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html), [MDN frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors).
 
 For dependency maintenance run `npm ci --prefix vendor`, `npm run check:vendor`, `npm audit`, and `npm audit --prefix vendor`. The exact inventory and build/update procedure are in `vendor/README.md`; npm audit alone does not certify the browser bundles or WASM.
 
@@ -130,6 +146,8 @@ Deploy: push to the `main` branch; GitHub Pages serves the repository root.
 - Only library exercises count towards recovery and the strength level standards.
 - iOS suspends web apps when the screen is off, so the rest timer cannot ring in the background.
 - No cloud sync: use Export / Import to move data between devices.
+- The vault protects the private chat key at rest, not saved messages, workouts or photos. XSS during unlock can intercept the password, use the crypto operations or steal the secret during use; a non-extractable key is not an XSS defence. A raw wrapping key stored beside the ciphertext would not solve readable-storage exposure. Password cost reference: [OWASP password storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+- NIP-44 has no forward secrecy; the protocol has not changed. A compromised identity key can expose past conversations when their encrypted envelopes are available. See the [official NIP-44 limitations](https://github.com/nostr-protocol/nips/blob/master/44.md#limitations).
 
 ## Author
 

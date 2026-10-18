@@ -85,7 +85,7 @@
   for (const event of ['pointerdown', 'keydown', 'input']) document.addEventListener(event, () => { lastActivity = Date.now(); }, {passive: true});
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', detect);
-    addEventListener('load', () => check());
+    addEventListener('gym:boot', () => check());
     addEventListener('online', () => check());
     addEventListener('pageshow', e => { if (e.persisted) check(); });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { check(); activate(); } });

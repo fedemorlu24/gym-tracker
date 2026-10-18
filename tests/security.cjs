@@ -39,6 +39,7 @@ async function fresh(initial = seed) {
   return {page,context,diag};
 }
 async function ready(page) {
+  await page.waitForFunction(()=>window.gymBooted === true);
   await page.evaluate(async()=>{await window.gymDataReady; await Promise.all([...pendingWrites]);
     document.getElementById('tour').hidden=true; document.getElementById('install').hidden=true;});
 }
@@ -127,6 +128,7 @@ async function test(name,fn,initial) {
       const nt=await nostrLoad(),mine=new Uint8Array(32).fill(1),friend=new Uint8Array(32).fill(2);
       const pk=nt.getPublicKey(mine),other=nt.getPublicKey(friend);
       db.chat={sk:toHex(mine),pk,tok:'fixture',friends:{[other]:{pk:other,n:"O'Brien 日本",av:'data:image/jpeg;base64,AAAA',added:1}},msgs:{},relays:[],seen:[],blocked:[],av:'data:image/jpeg;base64,AAAA'};
+      await ChatVault.setup('synthetic-vault-password');
       const event=(body,mutate)=>{
         const r=nt.nip59.createRumor({kind:14,content:JSON.stringify(body),tags:[['p',pk]],created_at:nowSec()},friend);
         if(mutate)mutate(r);
@@ -159,6 +161,7 @@ async function test(name,fn,initial) {
       const nt=await nostrLoad(),mine=new Uint8Array(32).fill(1),friend=new Uint8Array(32).fill(2),pk=nt.getPublicKey(mine),other=nt.getPublicKey(friend);
       const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);const data=c.toDataURL('image/jpeg');
       db.chat={sk:toHex(mine),pk,tok:'ab'.repeat(12),friends:{[other]:{pk:other,n:'Test friend',added:1,unread:0}},msgs:{},relays:[],sync:0,seen:[],blocked:[]};
+      await ChatVault.setup('synthetic-vault-password');
       const event=sender=>{const r=nt.nip59.createRumor({kind:14,content:JSON.stringify({k:'img',d:data,w:1,h:1}),tags:[['p',pk]],created_at:nowSec()},sender);
         return {r,wrap:nt.nip59.createWrap(nt.nip59.createSeal(r,sender,pk),pk)};};
       const unknown=new Uint8Array(32).fill(3),blocked=new Uint8Array(32).fill(4),blockedPk=nt.getPublicKey(blocked);
@@ -183,8 +186,8 @@ async function test(name,fn,initial) {
     await page.waitForFunction(()=>document.querySelectorAll('.cimg').length===2&&[...document.querySelectorAll('.cimg')].every(i=>i.naturalWidth===4));
     assert.deepEqual(await page.evaluate(()=>__alerts),[]);
     await page.screenshot({path:path.join(root,'artifacts/security/chat-friend-photos.png')});
-    const exported=await page.evaluate(async()=>{closeSheet();const f=await prepareBackup();const o=JSON.parse(await f.text());return {photoCount:o.chatPhotos.length,photoId:o.chatPhotos[0]?.id,hasKey:!!o.chat.sk};});
-    assert.equal(exported.photoCount,2);assert.equal(exported.hasKey,true);assert.match(exported.photoId,/^c:[a-f0-9]{64}$/);
+    const exported=await page.evaluate(async()=>{closeSheet();const f=await prepareBackup();const o=JSON.parse(await f.text());return {photoCount:o.chatPhotos.length,photoId:o.chatPhotos[0]?.id,hasKey:!!o.chat.sk,hasVault:!!o.chat.vault};});
+    assert.equal(exported.photoCount,2);assert.equal(exported.hasKey,false);assert.equal(exported.hasVault,true);assert.match(exported.photoId,/^c:[a-f0-9]{64}$/);
     await page.reload();await ready(page);
     const legacy=await page.evaluate(()=>{const other=Object.keys(chat().friends)[0];go({name:'chat',id:other});return {self:!!chat().av,friend:!!chat().friends[other].av,avatars:document.querySelectorAll('.cava img').length};});
     assert.deepEqual(legacy,{self:false,friend:false,avatars:0});
@@ -200,6 +203,7 @@ async function test(name,fn,initial) {
       db.chat={sk:toHex(sk),pk:nt.getPublicKey(sk),tok:'ab'.repeat(12),friends:{},msgs:{},relays:[],sync:0,seen:[],blocked:[]};
       save();await Promise.all([...pendingWrites]);
       await photoTx('readwrite',s=>s.put({id:'old-photo',date:'2026-10-18',pose:'front',blob:media.blob}));await loadPhotos();
+      window.gymRequestVaultPassword=async()=>'synthetic-vault-password';
       window.__backup={sessions:[{id:'replacement',date:'2026-10-18',name:'Replacement',exercises:[]}],tourSeen:'2026-10-18',badges:{},photos:[{id:'new-photo',date:'2026-10-18',pose:'front',data:__photo}]};
     });
     const before=await snapshot(page);

@@ -621,3 +621,83 @@ window.I18N = {
     shareTitle: 'Gym Tracker',
   },
 };
+
+// Chat password protection: the same identity is kept when upgrading or restoring.
+const CHAT_VAULT_TEXT = {
+  it: {
+    vaultMigrationNote: "Prima di continuare, aggiorna o chiudi le altre schede dell’app. I vecchi backup possono ancora contenere la chat senza protezione: conservali al sicuro.",
+    vaultBackupPassword: "Questa identità chat non è ancora protetta: inserisci una password per il backup oppure proteggi la chat dalle sue impostazioni.", vaultImportPassword: "Scegli una password per proteggere la chat del backup importato e le eventuali copie precedenti.", vaultImportUnlockText: "Inserisci la password della chat salvata in questo backup.",
+    vaultSetupTitle: 'Proteggi la chat', vaultSetupText: 'Scegli una password per usare la chat. I tuoi amici, messaggi e foto restano qui.',
+    vaultLocked: 'Chat bloccata', vaultLockedText: 'Sblocca la chat per inviare e ricevere nuovi messaggi. Lo storico e le foto già salvate restano disponibili.',
+    vaultUnlock: 'Sblocca la chat', vaultLock: 'Blocca la chat', vaultPassword: 'Password della chat', vaultConfirm: 'Conferma la password',
+    vaultPasswordHint: 'Usa almeno 12 caratteri. Puoi scegliere una frase lunga e facile da ricordare.',
+    vaultRecovery: 'Conserva questa password: non possiamo recuperarla. Se la perdi, non potrai usare questa identità per la chat.',
+    vaultSession: 'La chat resta sbloccata fino alla chiusura o al ricaricamento dell’app. Puoi bloccarla quando vuoi.',
+    vaultProtect: 'Proteggi e continua', vaultContinue: 'Continua', vaultMismatch: 'Le password non coincidono.',
+    vaultWrongPassword: 'Password errata. Riprova.', vaultFailed: 'Operazione non completata. Riprova: la tua identità non è stata sostituita.',
+    vaultInvalid: 'Non è possibile aprire la protezione della chat. Ripristina un backup valido per recuperare questa identità.',
+    vaultCleanup: 'La protezione è incompleta: una copia precedente non è stata rimossa. Riprova con la password appena scelta.', vaultRetry: 'Completa la protezione',
+    vaultImportTitle: 'Proteggi la chat del backup', vaultImportText: 'Questo backup contiene una chat senza password. Scegline una per ripristinare la stessa identità e i tuoi amici.'
+  },
+  en: {
+    vaultMigrationNote: "Before continuing, update or close other tabs of this app. Older backups may still contain an unprotected chat identity: keep them safe.",
+    vaultBackupPassword: "This chat identity is not protected yet: enter a backup password or protect chat in its settings.", vaultImportPassword: "Choose a password to protect the chat in the imported backup and any earlier copies.", vaultImportUnlockText: "Enter the chat password saved with this backup.",
+    vaultSetupTitle: 'Protect your chat', vaultSetupText: 'Choose a password to use chat. Your friends, messages and photos stay here.',
+    vaultLocked: 'Chat locked', vaultLockedText: 'Unlock chat to send and receive new messages. Saved messages and photos remain available.',
+    vaultUnlock: 'Unlock chat', vaultLock: 'Lock chat', vaultPassword: 'Chat password', vaultConfirm: 'Confirm password',
+    vaultPasswordHint: 'Use at least 12 characters. A long, memorable phrase works well.',
+    vaultRecovery: 'Keep this password safe: we cannot recover it. If you lose it, you cannot use this identity for chat.',
+    vaultSession: 'Chat stays unlocked until you close or reload the app. You can lock it at any time.',
+    vaultProtect: 'Protect and continue', vaultContinue: 'Continue', vaultMismatch: 'The passwords do not match.',
+    vaultWrongPassword: 'Incorrect password. Try again.', vaultFailed: 'Could not complete this operation. Try again: your identity has not been replaced.',
+    vaultInvalid: 'Chat protection could not be opened. Restore a valid backup to recover this identity.',
+    vaultCleanup: 'Protection is incomplete: an earlier copy could not be removed. Try again with the password you just chose.', vaultRetry: 'Complete protection',
+    vaultImportTitle: 'Protect the chat in your backup', vaultImportText: 'This backup contains a chat without password protection. Choose a password to restore the same identity and your friends.'
+  },
+  es: {
+    vaultMigrationNote: "Antes de continuar, actualiza o cierra las otras pestañas de la app. Las copias antiguas pueden contener la identidad del chat sin protección: guárdalas de forma segura.",
+    vaultBackupPassword: "Esta identidad del chat aún no está protegida: introduce una contraseña para la copia o protege el chat en sus ajustes.", vaultImportPassword: "Elige una contraseña para proteger el chat de la copia importada y las copias anteriores.", vaultImportUnlockText: "Introduce la contraseña del chat guardado en esta copia.",
+    vaultSetupTitle: 'Protege tu chat', vaultSetupText: 'Elige una contraseña para usar el chat. Tus amigos, mensajes y fotos se conservan.',
+    vaultLocked: 'Chat bloqueado', vaultLockedText: 'Desbloquea el chat para enviar y recibir nuevos mensajes. Los mensajes y fotos guardados siguen disponibles.',
+    vaultUnlock: 'Desbloquear el chat', vaultLock: 'Bloquear el chat', vaultPassword: 'Contraseña del chat', vaultConfirm: 'Confirmar contraseña',
+    vaultPasswordHint: 'Usa al menos 12 caracteres. Puedes elegir una frase larga y fácil de recordar.',
+    vaultRecovery: 'Guarda esta contraseña: no podemos recuperarla. Si la pierdes, no podrás usar esta identidad para el chat.',
+    vaultSession: 'El chat permanece desbloqueado hasta que cierres o recargues la app. Puedes bloquearlo cuando quieras.',
+    vaultProtect: 'Proteger y continuar', vaultContinue: 'Continuar', vaultMismatch: 'Las contraseñas no coinciden.',
+    vaultWrongPassword: 'Contraseña incorrecta. Inténtalo de nuevo.', vaultFailed: 'No se pudo completar la operación. Inténtalo de nuevo: tu identidad no se ha sustituido.',
+    vaultInvalid: 'No se puede abrir la protección del chat. Restaura una copia de seguridad válida para recuperar esta identidad.',
+    vaultCleanup: 'La protección está incompleta: no se pudo eliminar una copia anterior. Inténtalo de nuevo con la contraseña que acabas de elegir.', vaultRetry: 'Completar la protección',
+    vaultImportTitle: 'Protege el chat de la copia', vaultImportText: 'Esta copia contiene un chat sin contraseña. Elige una para restaurar la misma identidad y tus amigos.'
+  },
+  fr: {
+    vaultMigrationNote: "Avant de continuer, mettez à jour ou fermez les autres onglets de l’app. Les anciennes sauvegardes peuvent contenir l’identité du chat sans protection : conservez-les en lieu sûr.",
+    vaultBackupPassword: "Cette identité du chat n’est pas encore protégée : saisissez un mot de passe pour la sauvegarde ou protégez le chat dans ses réglages.", vaultImportPassword: "Choisissez un mot de passe pour protéger le chat de la sauvegarde importée et les copies précédentes.", vaultImportUnlockText: "Saisissez le mot de passe du chat enregistré dans cette sauvegarde.",
+    vaultSetupTitle: 'Protéger le chat', vaultSetupText: 'Choisissez un mot de passe pour utiliser le chat. Vos amis, messages et photos sont conservés.',
+    vaultLocked: 'Chat verrouillé', vaultLockedText: 'Déverrouillez le chat pour envoyer et recevoir de nouveaux messages. Les messages et photos enregistrés restent disponibles.',
+    vaultUnlock: 'Déverrouiller le chat', vaultLock: 'Verrouiller le chat', vaultPassword: 'Mot de passe du chat', vaultConfirm: 'Confirmer le mot de passe',
+    vaultPasswordHint: 'Utilisez au moins 12 caractères. Vous pouvez choisir une phrase longue et facile à retenir.',
+    vaultRecovery: 'Conservez ce mot de passe : nous ne pouvons pas le récupérer. Si vous le perdez, vous ne pourrez plus utiliser cette identité pour le chat.',
+    vaultSession: 'Le chat reste déverrouillé jusqu’à la fermeture ou au rechargement de l’app. Vous pouvez le verrouiller à tout moment.',
+    vaultProtect: 'Protéger et continuer', vaultContinue: 'Continuer', vaultMismatch: 'Les mots de passe ne correspondent pas.',
+    vaultWrongPassword: 'Mot de passe incorrect. Réessayez.', vaultFailed: 'L’opération n’a pas abouti. Réessayez : votre identité n’a pas été remplacée.',
+    vaultInvalid: 'Impossible d’ouvrir la protection du chat. Restaurez une sauvegarde valide pour récupérer cette identité.',
+    vaultCleanup: 'La protection est incomplète : une ancienne copie n’a pas pu être supprimée. Réessayez avec le mot de passe que vous venez de choisir.', vaultRetry: 'Terminer la protection',
+    vaultImportTitle: 'Protéger le chat de la sauvegarde', vaultImportText: 'Cette sauvegarde contient un chat sans mot de passe. Choisissez-en un pour restaurer la même identité et vos amis.'
+  },
+  de: {
+    vaultMigrationNote: "Aktualisiere oder schließe vor dem Fortfahren andere Tabs dieser App. Ältere Sicherungen können noch eine ungeschützte Chat-Identität enthalten: Bewahre sie sicher auf.",
+    vaultBackupPassword: "Diese Chat-Identität ist noch nicht geschützt: Gib ein Passwort für die Sicherung ein oder schütze den Chat in seinen Einstellungen.", vaultImportPassword: "Wähle ein Passwort, um den Chat in der importierten Sicherung und frühere Kopien zu schützen.", vaultImportUnlockText: "Gib das Chat-Passwort für diese Sicherung ein.",
+    vaultSetupTitle: 'Chat schützen', vaultSetupText: 'Wähle ein Passwort für den Chat. Deine Freunde, Nachrichten und Fotos bleiben erhalten.',
+    vaultLocked: 'Chat gesperrt', vaultLockedText: 'Entsperre den Chat, um neue Nachrichten zu senden und zu empfangen. Gespeicherte Nachrichten und Fotos bleiben verfügbar.',
+    vaultUnlock: 'Chat entsperren', vaultLock: 'Chat sperren', vaultPassword: 'Chat-Passwort', vaultConfirm: 'Passwort bestätigen',
+    vaultPasswordHint: 'Verwende mindestens 12 Zeichen. Ein langer, einprägsamer Satz eignet sich gut.',
+    vaultRecovery: 'Bewahre dieses Passwort sicher auf: Wir können es nicht wiederherstellen. Wenn du es verlierst, kannst du diese Identität nicht mehr für den Chat nutzen.',
+    vaultSession: 'Der Chat bleibt bis zum Schließen oder Neuladen der App entsperrt. Du kannst ihn jederzeit sperren.',
+    vaultProtect: 'Schützen und fortfahren', vaultContinue: 'Weiter', vaultMismatch: 'Die Passwörter stimmen nicht überein.',
+    vaultWrongPassword: 'Falsches Passwort. Versuche es erneut.', vaultFailed: 'Der Vorgang konnte nicht abgeschlossen werden. Versuche es erneut: Deine Identität wurde nicht ersetzt.',
+    vaultInvalid: 'Der Chat-Schutz konnte nicht geöffnet werden. Stelle eine gültige Sicherung wieder her, um diese Identität zurückzuerhalten.',
+    vaultCleanup: 'Der Schutz ist unvollständig: Eine ältere Kopie konnte nicht entfernt werden. Versuche es mit dem gerade gewählten Passwort erneut.', vaultRetry: 'Schutz abschließen',
+    vaultImportTitle: 'Chat in der Sicherung schützen', vaultImportText: 'Diese Sicherung enthält einen Chat ohne Passwort. Wähle ein Passwort, um dieselbe Identität und deine Freunde wiederherzustellen.'
+  }
+};
+Object.entries(CHAT_VAULT_TEXT).forEach(([language, values]) => Object.assign(I18N[language], values));

@@ -135,6 +135,19 @@
     const order = 'fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141';
     if (sk && sk !== '0'.repeat(64) && sk < order) out.sk = sk; else delete out.sk;
     if (pk) out.pk = pk; else delete out.pk;
+    delete out.vaultInvalid; delete out.keyInvalid;
+    // Keep a damaged identity visible and unusable, never silently turn it into
+    // a new-account request or discard its conversations/workout archive.
+    // These markers survive removal of malformed fields on an earlier pass.
+    // Recovery replaces the archive with a valid import, not a newly made key.
+    if (source.vaultInvalid === true) out.vaultInvalid = true;
+    if (source.keyInvalid === true || own(source, 'sk') && !out.sk || own(source, 'pk') && !pk) out.keyInvalid = true;
+    if (own(source, 'vault')) {
+      try {
+        out.vault = root.ChatVault.validate(source.vault, pk);
+        if (!pk || out.sk) throw new Error('Ambiguous vault identity');
+      } catch (_) { out.vaultInvalid = true; }
+    }
     if (typeof source.tok === 'string' && /^[0-9a-f]{24}$/i.test(source.tok)) out.tok = source.tok.toLowerCase(); else delete out.tok;
     out.friends = dict();
     if (record(source.friends)) Object.entries(source.friends).forEach(([key, friend]) => {

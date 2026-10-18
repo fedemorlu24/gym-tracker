@@ -1,5 +1,5 @@
 // Chat con gli amici, senza un nostro server: messaggi cifrati da un capo all'altro (NIP-17/44/59) su relay pubblici Nostr.
-// La chiave segreta è generata sul telefono e resta nel backup. Si accettano solo messaggi da amici o con il gettone del tuo invito.
+// La chiave segreta è protetta dalla password della chat; solo il vault sbloccato può usarla.
 const CHAT_RELAYS = ['wss://nos.lol', 'wss://relay.damus.io', 'wss://relay.primal.net', 'wss://offchain.pub'];
 const CHAT_EMOJI = ['💪', '🔥', '🏆', '👏', '🏋️', '❤️', '😂', '👍', '🥵', '💯', '🎉', '🙌', '😮', '🤝', '🥇', '⚡'];
 const CHAT_REACT = ['❤️', '💪', '🔥', '🏆', '👏', '😂'];
@@ -13,27 +13,34 @@ const CHAT_KEEP = 400;            // messaggi tenuti per conversazione
 let NT = null, ntLoading = null;
 let chatPaused = false, chatReady = false, chatEpoch = 0;
 const chatOperations = new Set();
-const chatBusy = () => chatPaused || !chatReady || !!(window.gymStorageBusy && window.gymStorageBusy());
+const chatDataBusy = () => chatPaused || !chatReady || !!(window.gymStorageBusy && window.gymStorageBusy());
+const chatVaultStatus = () => window.ChatVault ? ChatVault.status() : 'error';
+const chatBusy = () => chatDataBusy() || chatVaultStatus() !== 'unlocked';
 function chatOperation(fn) {
   if (chatBusy()) return Promise.resolve(null);
-  const task = fn(); chatOperations.add(task);
+  const task = Promise.resolve().then(fn); chatOperations.add(task);
   task.then(() => chatOperations.delete(task), () => chatOperations.delete(task));
   return task;
 }
-async function gymChatPause() {
-  chatPaused = true; chatEpoch++;
+function chatDisconnect() {
+  chatEpoch++;
   Object.values(relays).forEach(r => {
     clearTimeout(r.timer); r.open = false; r.q = [];
     if (r.ws) { r.ws.onopen = r.ws.onmessage = r.ws.onclose = r.ws.onerror = null; try { r.ws.close(); } catch (_) {} }
   });
   Object.keys(relays).forEach(k => delete relays[k]);
+  Object.keys(pending).forEach(k => delete pending[k]);
+}
+async function gymChatPause() {
+  chatPaused = true; chatDisconnect();
   await Promise.allSettled([...chatOperations]);
 }
 function gymChatResume() {
   Object.keys(imgCache).forEach(k => delete imgCache[k]);
   Object.keys(pending).forEach(k => delete pending[k]);
   chatPaused = false;
-  if (db.chat && db.chat.sk) chatInit().then(chatConnect).catch(() => {});
+  chatVaultRefreshUI();
+  if (!chatBusy()) chatInit().then(chatConnect).catch(chatFailure);
 }
 window.gymChatPause = gymChatPause;
 window.gymChatResume = gymChatResume;
@@ -55,43 +62,132 @@ const chatUnreadTotal = () => Object.values(chat().friends).reduce((a, f) => a +
 async function chatInit() {
   const epoch = chatEpoch;
   await (window.gymDataReady || Promise.resolve());
-  const nt = await nostrLoad();
-  if (chatBusy() || epoch !== chatEpoch) throw new Error('Chat paused');
-  const c = chat();
-  if (!c.sk) {
-    const sk = nt.generateSecretKey();
-    c.sk = toHex(sk); c.pk = nt.getPublicKey(sk);
-    c.tok = toHex(nt.generateSecretKey()).slice(0, 24);
-    save();
-  } else {
-    const pk = nt.getPublicKey(fromHex(c.sk));
-    if (c.pk !== pk || !/^[0-9a-f]{24}$/.test(c.tok || '')) {
-      c.pk = pk;
-      if (!/^[0-9a-f]{24}$/.test(c.tok || '')) c.tok = toHex(nt.generateSecretKey()).slice(0, 24);
-      save();
-    }
-  }
-  return c;
+  await nostrLoad();
+  if (chatBusy() || epoch !== chatEpoch) throw new Error('Chat locked or paused');
+  return chat();
 }
 const toHex = b => Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
-const fromHex = h => Uint8Array.from(h.match(/../g), x => parseInt(x, 16));
-const skBytes = () => fromHex(chat().sk);
 const nowSec = () => Math.floor(Date.now() / 1000);
+
+// Passwords live only in the input and the active operation; closing cancels the pending action.
+function chatFailure(error) {
+  if (chatPaused || (window.gymStorageBusy && window.gymStorageBusy())) return;
+  toast(t(error && error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : 'chatSendFail'));
+}
+function chatVaultBanner(settings = false) {
+  const state = chatVaultStatus();
+  if (state === 'unlocked') return settings ? `<p class="sub">${t('vaultSession')}</p><button class="btn s wide" data-act="chatlock" style="margin:8px 0 12px">${t('vaultLock')}</button>` : '';
+  const setup = state === 'setup', problem = state === 'cleanup' || state === 'error';
+  return `<div class="${problem ? 'warn' : 'note'}" style="padding:10px 2px"><p>${t(state === 'cleanup' ? 'vaultCleanup' : state === 'error' ? 'vaultInvalid' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>${state === 'error' ? '' : `<button class="btn s wide" data-act="chatvault" style="margin-top:8px">${t(setup ? 'vaultSetupTitle' : state === 'cleanup' ? 'vaultRetry' : 'vaultUnlock')}</button>`}</div>`;
+}
+let chatVaultPrompt = null;
+window.gymChatVaultCancelTarget = target => {
+  const request = chatVaultPrompt, button = target && target.closest && target.closest('[data-chat-vault-cancel]');
+  return !!(request && !request.settled && request.form && request.form.isConnected && button &&
+    request.cancelTargets && request.cancelTargets.has(button) && request.container.contains(button) && request.container.contains(request.form));
+};
+function chatPasswordSheet(mode) {
+  if (chatVaultPrompt) return chatVaultPrompt.mode === mode ? chatVaultPrompt.promise : Promise.resolve(null);
+  let finish, observer, settled = false;
+  const promise = new Promise(resolve => { finish = resolve; });
+  const request = {promise, mode, settled: false}; chatVaultPrompt = request;
+  const importing = mode === 'import' || mode === 'import-unlock', setup = mode !== 'unlock' && mode !== 'import-unlock';
+  sheet(`<h2>${t(importing ? 'vaultImportTitle' : setup ? 'vaultSetupTitle' : 'vaultUnlock')}</h2>
+    <p class="sub" style="margin-bottom:12px">${t(mode === 'import-unlock' ? 'vaultImportUnlockText' : mode === 'import' ? 'vaultImportText' : mode === 'cleanup' ? 'vaultCleanup' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>
+    <form id="chat-vault-form">
+      <label class="field">${t('vaultPassword')}<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" ${setup ? 'minlength="12"' : ''} maxlength="1024" required data-focus></label>
+      ${setup ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label><p class="note">${t('vaultPasswordHint')}</p><p class="warn" style="margin:12px 0">${t('vaultRecovery')}</p><p class="note" style="margin-bottom:12px">${t('vaultMigrationNote')}</p>` : ''}
+      <p class="sub" id="chat-vault-error" role="alert" hidden></p>
+      <button class="btn p wide" type="submit">${t(importing ? 'vaultContinue' : setup ? 'vaultProtect' : 'vaultUnlock')}</button><div class="gap"></div>
+      <button class="btn s wide" type="button" id="chat-vault-cancel">${t('close')}</button>
+    </form><p class="note" style="padding-top:12px">${t('vaultSession')}</p>`);
+  const form = document.getElementById('chat-vault-form'), container = document.getElementById('sheet');
+  request.form = form; request.container = container;
+  let opened = container.classList.contains('on');
+  const done = value => {
+    if (settled) return;
+    settled = request.settled = true; observer.disconnect(); form.reset();
+    if (value === null && form.dataset.busy && window.ChatVault) ChatVault.lock();
+    if (chatVaultPrompt === request && !form.dataset.busy) chatVaultPrompt = null;
+    finish(value);
+  };
+  observer = new MutationObserver(() => {
+    if (!form.isConnected || container.hidden || opened && !container.classList.contains('on')) done(null);
+    if (container.classList.contains('on')) opened = true;
+  });
+  observer.observe(container, {childList: true, attributes: true, attributeFilter: ['hidden', 'class']});
+  request.cancelTargets = new Set(container.querySelectorAll('#chat-vault-cancel, [data-act=close]'));
+  request.cancelTargets.forEach(button => {
+    button.dataset.chatVaultCancel = '1';
+    button.addEventListener('click', ev => {
+      ev.preventDefault(); ev.stopPropagation(); done(null); closeSheet();
+    });
+  });
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    if (form.dataset.busy || settled) return;
+    const errorEl = form.querySelector('#chat-vault-error');
+    const showError = key => { errorEl.textContent = t(key); errorEl.hidden = false; };
+    let password = form.elements.password.value;
+    if (setup && password.length < 12) { showError('vaultPasswordHint'); return; }
+    if (setup && password !== form.elements.confirm.value) { showError('vaultMismatch'); return; }
+    if (importing) { done(password); password = ''; closeSheet(); return; }
+    form.dataset.busy = '1'; errorEl.hidden = true; form.reset();
+    const submit = form.querySelector('[type=submit]'); submit.disabled = true;
+    try {
+      if (mode === 'unlock') await ChatVault.unlock(password); else await ChatVault.setup(password);
+      password = '';
+      if (!settled) { done(true); closeSheet(); }
+    } catch (error) {
+      password = '';
+      if (!settled) {
+        form.reset();
+        showError(error.code === 'VAULT_PASSWORD' ? 'vaultWrongPassword' : error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : error.code === 'VAULT_INVALID' ? 'vaultInvalid' : 'vaultFailed');
+      }
+    } finally {
+      password = ''; delete form.dataset.busy; submit.disabled = false;
+      if (settled && chatVaultPrompt === request) chatVaultPrompt = null;
+    }
+  });
+  return promise;
+}
+window.gymRequestVaultPassword = reason => chatPasswordSheet(reason === 'import-unlock' ? 'import-unlock' : 'import');
+async function chatEnsureUnlocked() {
+  await (window.gymDataReady || Promise.resolve());
+  if (chatDataBusy()) return false;
+  const state = chatVaultStatus();
+  if (state === 'unlocked') return true;
+  if (state === 'error') { toast(t('vaultInvalid')); return false; }
+  return !!await chatPasswordSheet(state === 'locked' ? 'unlock' : state);
+}
+function chatVaultRefreshUI() {
+  if (chatDataBusy()) return;
+  const input = document.getElementById('cinput'), draft = input && input.value, pk = view.id;
+  if (view.name === 'chat' || (view.name === 'home' && view.tab === 'chat')) {
+    render();
+    const next = document.getElementById('cinput');
+    if (next && view.id === pk && draft != null) next.value = draft;
+  }
+}
+document.addEventListener('gt:chat-vault-state', () => {
+  chatDisconnect(); chatVaultRefreshUI();
+  if (!chatBusy()) chatInit().then(chatConnect).catch(chatFailure);
+});
 
 // ---------- relay ----------
 const relays = {};   // url → {ws, open, tries, timer, q}
 let chatTimer = null;
 function chatOnline() { return Object.values(relays).filter(r => r.open).length; }
 function relayConnect(url) {
-  if (chatBusy() || !chat().sk) return;
+  if (chatBusy()) return;
   const r = relays[url] || (relays[url] = {open: false, tries: 0, q: []});
   if (r.ws && (r.ws.readyState === 0 || r.ws.readyState === 1)) return;
   let ws; try { ws = new WebSocket(url); } catch (e) { return; }
   r.ws = ws;
-  const epoch = chatEpoch;
+  const epoch = chatEpoch; let subscriptionStarted = 0;
   ws.onopen = () => {
     if (chatBusy() || epoch !== chatEpoch) { ws.close(); return; }
-    r.open = true; r.tries = 0;
+    r.open = true; r.tries = 0; subscriptionStarted = nowSec();
     ws.send(JSON.stringify(['REQ', 'gt', {kinds: [1059], '#p': [chat().pk], since: Math.max(0, chat().sync - 3 * 86400)}]));
     r.q.splice(0).forEach(m => ws.send(m));
     chatRefresh();
@@ -102,7 +198,9 @@ function relayConnect(url) {
     if (!Array.isArray(m)) return;
     if (m[0] === 'EVENT' && m[2]) chatReceive(m[2]).catch(() => {});
     else if (m[0] === 'OK') chatAcked(m[1], m[2], url);
-    else if (m[0] === 'EOSE') { chat().sync = nowSec(); save(); }
+    else if (m[0] === 'EOSE') Promise.allSettled([...chatOperations]).then(() => {
+      if (!chatBusy() && epoch === chatEpoch && r.ws === ws) { chat().sync = Math.max(chat().sync || 0, subscriptionStarted); save(); }
+    }).catch(chatFailure);
   };
   ws.onclose = ws.onerror = () => {
     if (r.ws !== ws || chatBusy() || epoch !== chatEpoch) return;
@@ -113,7 +211,7 @@ function relayConnect(url) {
   };
 }
 function chatConnect() {
-  if (chatBusy() || !chat().sk) return;
+  if (chatBusy()) return;
   chat().relays.forEach(relayConnect);
   Object.keys(relays).forEach(u => { if (!chat().relays.includes(u)) { try { relays[u].ws.close(); } catch (e) {} delete relays[u]; } });
 }
@@ -122,8 +220,8 @@ function relaySend(ev) {
   const m = JSON.stringify(['EVENT', ev]);
   chat().relays.forEach(u => { const r = relays[u]; if (!r) { relayConnect(u); relays[u].q.push(m); } else if (r.open) r.ws.send(m); else r.q.push(m); });
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && db.chat && db.chat.sk) chatConnect(); });
-window.addEventListener('online', () => { if (db.chat && db.chat.sk) chatConnect(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && db.chat && !chatBusy()) chatConnect(); });
+window.addEventListener('online', () => { if (db.chat && !chatBusy()) chatConnect(); });
 const pending = {};   // id del wrap → id del messaggio (per la spunta di consegna)
 function chatAcked(wrapId, ok, url) {
   if (chatBusy() || !CHAT_HEX.test(wrapId)) return;
@@ -152,15 +250,14 @@ async function chatSendImpl(pk, body) {
   const epoch = chatEpoch;
   body = chatBody(body);
   if (!body || !CHAT_HEX.test(pk)) throw new Error('Invalid chat message');
-  const nt = await nostrLoad(), c = await chatInit();
+  await nostrLoad(); await chatInit();
   if (chatBusy() || epoch !== chatEpoch) return null;
   if (body.k === 'img') {
     const image = await GymMedia.decodeInlineImage(body.d, CHAT_MEDIA_LIMITS);
     body = {...body, d: image.data, w: image.width, h: image.height};
   }
   if (chatBusy() || epoch !== chatEpoch) return null;
-  const rumor = nt.nip59.createRumor({kind: 14, content: JSON.stringify(body), tags: [['p', pk]], created_at: nowSec()}, skBytes());
-  const wrap = nt.nip59.createWrap(nt.nip59.createSeal(rumor, skBytes(), pk), pk);
+  const {rumor, wrap} = ChatVault.createMessage({kind: 14, content: JSON.stringify(body), tags: [['p', pk]], created_at: nowSec()}, pk);
   const m = {id: rumor.id, from: 'me', t: rumor.created_at, k: body.k, x: body.x, to: body.to, e: body.e, ex: body.ex, kg: body.kg, rp: body.rp, w: body.w, h: body.h, ok: 0};
   if (body.k === 'img') { await imgPut(rumor.id, body.d); m.d = 1; }
   if (chatBusy() || epoch !== chatEpoch) return null;
@@ -192,10 +289,10 @@ function chatRecipient(event) {
 }
 function chatOpen(wrap) {
   if (!chatEventShape(wrap, 1059, true) || !chatRecipient(wrap) || !NT.verifyEvent(wrap)) return null;
-  const sk = skBytes();
-  const seal = JSON.parse(NT.nip44.decrypt(wrap.content, NT.nip44.getConversationKey(sk, wrap.pubkey)));
+  if (chatBusy()) return null;
+  const seal = JSON.parse(ChatVault.decrypt(wrap.content, wrap.pubkey));
   if (!chatEventShape(seal, 13, true) || !NT.verifyEvent(seal)) return null;
-  const rumor = JSON.parse(NT.nip44.decrypt(seal.content, NT.nip44.getConversationKey(sk, seal.pubkey)));
+  const rumor = JSON.parse(ChatVault.decrypt(seal.content, seal.pubkey));
   // NIP-59 rumors are unsigned: authenticate the seal, then validate the canonical rumor hash.
   if (!chatEventShape(rumor, 14, false) || rumor.pubkey !== seal.pubkey || !chatRecipient(rumor) || NT.getEventHash(rumor) !== rumor.id) return null;
   return rumor;
@@ -247,14 +344,14 @@ async function imgPut(id, data) {
 }
 function imgDel(id) { if (!CHAT_HEX.test(id) || chatBusy()) return; delete imgCache[id]; photoTx('readwrite', st => st.delete('c:' + id)).catch(() => {}); }
 async function imgGet(id) {
-  if (!CHAT_HEX.test(id) || chatBusy()) return '';
+  if (!CHAT_HEX.test(id) || chatDataBusy()) return '';
   const epoch = chatEpoch;
   if (imgCache[id]) return imgCache[id];
   try {
     const r = await photoTx('readonly', st => st.get('c:' + id));
     if (r && r.data) {
       const image = await GymMedia.decodeInlineImage(r.data, CHAT_MEDIA_LIMITS);
-      if (!chatBusy() && epoch === chatEpoch) return imgCache[id] = image.data;
+      if (!chatDataBusy() && epoch === chatEpoch) return imgCache[id] = image.data;
     }
   } catch (e) {}
   return '';
@@ -290,27 +387,32 @@ function parseChatLink(text) {
   try { const o = b64d(m[1]); if (o.v !== 1 || !/^[0-9a-f]{64}$/.test(o.k || '') || typeof o.t !== 'string' || !/^[0-9a-f]{24}$/.test(o.t)) return null; return {pk: o.k, n: String(o.n || '?').slice(0, 30), tok: o.t.slice(0, 40)}; } catch (e) { return null; }
 }
 async function chatAccept(o) {
+  if (!await chatEnsureUnlocked()) return false;
+  const epoch = chatEpoch;
   if (!o || !CHAT_HEX.test(o.pk) || !/^[0-9a-f]{24}$/.test(o.tok || '')) return;
-  await chatInit(); const c = chat();
+  await chatInit(); if (chatBusy() || epoch !== chatEpoch) return false; const c = chat();
   if (o.pk === c.pk) { toast(t('ownChallenge')); return; }
   const had = !!c.friends[o.pk];
   c.friends[o.pk] = {...(c.friends[o.pk] || {}), pk: o.pk, n: o.n, added: nowSec(), unread: 0, hid: 0};
   c.blocked = c.blocked.filter(x => x !== o.pk); save();
-  await chatSend(o.pk, {k: 'hi', n: nick() || '🙂', tok: o.tok});
+  const sent = await chatSend(o.pk, {k: 'hi', n: nick() || '🙂', tok: o.tok});
+  if (!sent || epoch !== chatEpoch) return false;
   closeSheet(); go({name: 'chat', id: o.pk, from: 'chat'});
   toast(had ? t('chatReopened', esc(o.n)) : t('chatAdded', esc(o.n)));
+  return true;
 }
 // invito aperto da un link (come per sfide e schede)
 function chatLinkSheet(o, raw) {
-  const accept = () => needNick(() => chatAccept(o));
+  const accept = () => needNick(() => chatAccept(o).catch(chatFailure));
   if (standalone() || !isIOS) { accept(); return true; }
   shareText = INVITE_URL + '#chat=' + raw;
-  needNick(async () => { await chatAccept(o);
-    setTimeout(() => sheet(`<h2>${esc(t('chatAdded', o.n))}</h2><p class="sub" style="margin-bottom:14px">${t('chatInBrowserNote')}</p><button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`), 700); });
+  needNick(() => chatAccept(o).then(accepted => { if (!accepted) return;
+    setTimeout(() => sheet(`<h2>${esc(t('chatAdded', o.n))}</h2><p class="sub" style="margin-bottom:14px">${t('chatInBrowserNote')}</p><button class="btn p wide" data-act="copytext">${t('copyLink')}</button>`), 700); }).catch(chatFailure));
   return true;
 }
 function sheetChatInvite() {
-  needNick(async () => {
+  needNick(() => chatEnsureUnlocked().then(async ready => {
+    if (!ready) return;
     await chatInit(); chatConnect();
     const msg = t('chatInviteMsg', nick() || '🙂') + '\n' + chatLink();
     shareText = msg;
@@ -319,7 +421,7 @@ function sheetChatInvite() {
       <button class="btn s wide" data-act="copytext">${t('copyLink')}</button><div class="gap"></div>
       <button class="btn s wide" data-act="chatpaste" style="background:var(--fill)">${t('chatPasteBtn')}</button>
       <p class="note" style="padding:12px 2px 0">${t('chatPrivacy')}</p>`);
-  });
+  }).catch(chatFailure));
 }
 
 // ---------- schermate ----------
@@ -331,7 +433,7 @@ const chatTime = ts => { const d = new Date(ts * 1000), n = new Date();
 const prevText = m => !m ? t('chatNoMsg') : m.k === 'img' ? t('chatPhotoMsg') : m.k === 'sf' ? '🏁 ' + t('chatChallengeMsg') : m.k === 'sc' ? '📋 ' + t('chatPlanMsg') : m.k === 'pr' ? `🏆 ${m.ex}` : m.k === 'em' ? m.x : (m.from === 'me' ? t('chatYou') + ': ' : '') + m.x;
 function chatInbox() {
   const fr = chatFriends();
-  let html = `<button class="btn p wide" data-act="chatinvite" style="margin-bottom:8px">${icon('plus')} ${t('chatInviteBtn')}</button>
+  let html = chatVaultBanner() + `<button class="btn p wide" data-act="chatinvite" style="margin-bottom:8px">${icon('plus')} ${t('chatInviteBtn')}</button>
     <button class="btn s wide" data-act="chatpaste" style="margin-bottom:12px;background:var(--fill)">${t('chatPasteBtn')}</button>`;
   if (!fr.length) return html + `<div class="empty" style="padding:30px 14px">${t('chatEmpty')}</div><p class="note" style="padding:0 6px">${t('chatPrivacy')}</p>`;
   html += `<div class="list">${fr.map(f => { const m = lastMsg(f.pk);
@@ -340,7 +442,7 @@ function chatInbox() {
     <p class="note" style="margin-top:12px">${chatStatus()}</p>`;
   return html;
 }
-const chatStatus = () => t('chatConnected', chatOnline(), chat().relays.length);
+const chatStatus = () => chatBusy() ? t(chatVaultStatus() === 'setup' ? 'vaultSetupTitle' : 'vaultLocked') : t('chatConnected', chatOnline(), chat().relays.length);
 function bubbleHtml(pk, m, list) {
   if (!m || !CHAT_HEX.test(m.id)) return '';
   const rx = list.filter(x => x.k === 'rx' && x.to === m.id && CHAT_REACT.includes(x.e)), mine = m.from === 'me';
@@ -373,8 +475,8 @@ function chatView() {
       ${ava(f.n, 38)}<div class="t small"><h1>${esc(f.n)}</h1><p id="chat-status">${chatStatus()}</p></div>
       <button class="ib" data-act="chatmenu" data-pk="${esc(pk)}" aria-label="${t('chatSettings')}">${icon('more')}</button></header>
     <div class="clist" id="chat-list">${chatList(pk)}</div>
-    <div class="cbar" id="cbar"><div class="ctray" id="ctray" hidden>${CHAT_EMOJI.map(e => `<button data-act="chatemoji" data-e="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
-      <form data-form="chatsend" data-pk="${esc(pk)}"><button type="button" class="ib" data-act="chatpick" aria-label="${t('chatPhoto')}">${icon('camera')}</button>
+    <div class="cbar" id="cbar">${chatBusy() ? `<button class="btn s wide" data-act="chatvault" style="min-height:48px">${t(chatVaultStatus() === 'setup' ? 'vaultSetupTitle' : 'vaultUnlock')}</button>` : ''}<div class="ctray" id="ctray" hidden>${CHAT_EMOJI.map(e => `<button data-act="chatemoji" data-e="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
+      <form data-form="chatsend" data-pk="${esc(pk)}"${chatBusy() ? ' style="display:none"' : ''}><button type="button" class="ib" data-act="chatpick" aria-label="${t('chatPhoto')}">${icon('camera')}</button>
       <input name="x" id="cinput" placeholder="${esc(t('chatPh'))}" autocomplete="off" enterkeyhint="send" maxlength="1000">
       <button type="button" class="ib" data-act="chattray" aria-label="emoji">😀</button><button class="csend" aria-label="${t('chatSend')}">${icon('fwd')}</button></form>
       <input type="file" id="cfile" accept="image/*" hidden></div>`;
@@ -408,7 +510,7 @@ function chatRefresh(toBottom) {
 function chatImgs() {
   const epoch = chatEpoch;
   document.querySelectorAll('img[data-imgid]').forEach(i => { if (!i.dataset.ok) imgGet(i.dataset.imgid).then(d => {
-    if (d && epoch === chatEpoch && !chatBusy() && i.isConnected) { i.src = d; i.dataset.ok = '1'; }
+    if (d && epoch === chatEpoch && !chatDataBusy() && i.isConnected) { i.src = d; i.dataset.ok = '1'; }
   }); });
 }
 function chatEnter(pk) {
@@ -448,10 +550,11 @@ function chatBurst(e, anchor) {
 function chatMessageElement(mid, root = document) { return [...root.querySelectorAll('.cm[data-mid]')].find(el => el.dataset.mid === mid) || null; }
 function chatReact(mid, e) {
   if (!CHAT_HEX.test(mid) || !CHAT_REACT.includes(e)) return;
+  if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; }
   chatBurst(e, chatMessageElement(mid));
   const pk = view.id, l = chat().msgs[pk] || [], mine = l.find(x => x.k === 'rx' && x.to === mid && x.from === 'me' && x.e === e);
   if (mine) return;   // una sola reazione uguale per messaggio
-  chatSend(pk, {k: 'rx', to: mid, e}).then(chatRefresh);
+  chatSend(pk, {k: 'rx', to: mid, e}).then(chatRefresh).catch(chatFailure);
 }
 function chatPickReaction(mid, anchor) {
   document.querySelectorAll('.crxbar').forEach(x => x.remove());
@@ -469,7 +572,7 @@ document.addEventListener('click', ev => {
   else lastTap = {id: m.dataset.mid, t: now};
 });
 document.addEventListener('pointerdown', ev => {
-  const m = ev.target.closest && ev.target.closest('.cm'); if (!m || view.name !== 'chat') return;
+  const m = ev.target.closest && ev.target.closest('.cm'); if (!m || view.name !== 'chat' || chatBusy()) return;
   clearTimeout(pressT); pressT = setTimeout(() => chatPickReaction(m.dataset.mid, m), 480);
 });
 ['pointerup', 'pointermove', 'pointercancel', 'scroll'].forEach(e => document.addEventListener(e, () => clearTimeout(pressT), true));
@@ -477,7 +580,7 @@ document.addEventListener('pointerdown', ev => {
 // ---------- menu, impostazioni, condivisione di un record ----------
 function sheetChatMenu(pk) {
   const f = chat().friends[pk], tel = f.tel ? '+' + f.tel : '';
-  sheet(`<h2>${esc(f.n)}</h2>
+  sheet(`<h2>${esc(f.n)}</h2>${chatVaultBanner(true)}
     <a class="btn s wide" href="https://wa.me/${esc(f.tel || '')}?text=${encodeURIComponent(t('chatWaMsg', nick() || '🙂') + '\n' + INVITE_URL)}" target="_blank" rel="noopener">${t('chatWaNudge')}</a><div class="gap"></div>
     <form data-form="chatfriend" data-pk="${esc(pk)}"><label class="field">${t('name')}<input name="n" value="${esc(f.n)}" maxlength="30"></label>
     <label class="field">${t('friendTel')}<input name="p" value="${esc(tel)}" inputmode="tel" placeholder="+39 333 1234567"></label>
@@ -491,6 +594,7 @@ function sheetChatSettings() {
   sheet(`<h2>${t('chatSettings')}</h2>
     <div class="myav">${ava(nick() || '?', 72)}<div class="grow"><h3>${esc(nick() || '')}</h3></div></div>
     <p class="note" style="padding:0 2px 12px">${t('chatPrivacy')}</p>
+    ${chatVaultBanner(true)}
     <p class="glabel">${t('chatRelays')}</p><p class="sub" style="margin-bottom:8px">${t('chatRelaysText')} ${chatStatus()}</p>
     <div class="list">${list.map(u => `<div class="row"><div class="grow"><h3 style="font-size:15px">${esc(u.replace('wss://', ''))}</h3><div class="sub">${relays[u] && relays[u].open ? t('chatUp') : t('chatDown')}</div></div><button class="ib" data-act="chatrdel" data-u="${esc(u)}" aria-label="${t('delete')}">✕</button></div>`).join('')}</div>
     <form data-form="chatrelay" style="margin-top:10px"><label class="field">${t('chatRelayAdd')}<input name="u" placeholder="wss://…" inputmode="url" autocomplete="off"></label><button class="btn s wide" style="background:var(--fill)">${t('chatRelayBtn')}</button></form><div class="gap"></div>
@@ -508,6 +612,7 @@ function chatLinkTargets(msg) {
 // invia un'immagine (card dell'allenamento o dei progressi, foto del fisico) a un amico della chat
 let chatOutImg = null;
 function sheetChatPickImg(blob, warn) {
+  if (chatBusy()) { chatEnsureUnlocked().then(ok => { if (ok) sheetChatPickImg(blob, warn); }).catch(chatFailure); return; }
   const fr = chatFriends();
   if (!fr.length) { sheetChatInvite(); return; }
   chatOutImg = blob;
@@ -521,6 +626,7 @@ function sheetChatPickImg(blob, warn) {
 }
 // invia un record o un esercizio a un amico della chat
 function sheetChatPick(card) {
+  if (chatBusy()) { chatEnsureUnlocked().then(ok => { if (ok) sheetChatPick(card); }).catch(chatFailure); return; }
   const fr = chatFriends();
   if (!fr.length) { sheetChatInvite(); return; }
   sheet(`<h2>${t('chatShareHere')}</h2><div class="cpr" style="margin:0 0 12px"><b>🏆 ${t('record')}</b><span>${esc(card.ex)}</span><strong>${fmtKg(card.kg)} kg × ${esc(card.rp)}</strong></div>
@@ -529,9 +635,11 @@ function sheetChatPick(card) {
 
 Object.assign(acts, {
   chatinvite: sheetChatInvite,
+  chatvault: () => { chatEnsureUnlocked().catch(chatFailure); },
+  chatlock: () => { ChatVault.lock(); closeSheet(); },
   chatlinkto: b => {
     const pk = b.dataset.pk, x = chatOutLink; if (!x) return;
-    closeSheet(); chatSend(pk, {k: /scheda=/.test(x) ? 'sc' : 'sf', x}).then(() => go({name: 'chat', id: pk, from: 'chat'}), () => alert(t('chatSendFail')));
+    chatEnsureUnlocked().then(async ok => { if (!ok) return; closeSheet(); const sent = await chatSend(pk, {k: /scheda=/.test(x) ? 'sc' : 'sf', x}); if (sent) go({name: 'chat', id: pk, from: 'chat'}); }).catch(chatFailure);
   },
   chatlinkopen: b => {
     const m = (chat().msgs[view.id] || []).find(x => x.id === b.dataset.mid); if (!m) return;
@@ -539,9 +647,8 @@ Object.assign(acts, {
   },
   chatcardpick: b => sheetChatPick({ex: b.dataset.ex, kg: +b.dataset.kg, rp: +b.dataset.rp}),
   chatimgto: async b => {
-    const epoch = chatEpoch, pk = b.dataset.pk, x = chatOutImg; if (!x) return;
-    closeSheet();
-    try { const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy()) return; await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); chatOutImg = null; go({name: 'chat', id: pk, from: 'chat'}); }
+    const pk = b.dataset.pk, x = chatOutImg; if (!x) return;
+    try { if (!await chatEnsureUnlocked()) return; const epoch = chatEpoch; closeSheet(); const r = await chatShrink(x); if (epoch !== chatEpoch || chatBusy()) return; const sent = await chatSend(pk, {k: 'img', d: r.d, w: r.w, h: r.h}); if (!sent || epoch !== chatEpoch) return; chatOutImg = null; go({name: 'chat', id: pk, from: 'chat'}); }
     catch (e) { alert(t('chatPhotoFail')); }
   },
   chatopen: b => { go({name: 'chat', id: b.dataset.pk, from: 'chat'}); },
@@ -549,14 +656,15 @@ Object.assign(acts, {
   chatsettings: sheetChatSettings,
   chattray: () => { const t2 = document.getElementById('ctray'); if (t2) t2.hidden = !t2.hidden; },
   chatemoji: b => {
+    if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; }
     const i = document.getElementById('cinput'), v = i.value.trim();
     // emoji da sola con campo vuoto = emoji grande; altrimenti si aggiunge al testo
-    if (!v) chatSend(view.id, {k: 'em', x: b.dataset.e}).then(() => chatRefresh(true)); else { i.value += b.dataset.e; i.focus(); }
+    if (!v) chatSend(view.id, {k: 'em', x: b.dataset.e}).then(() => chatRefresh(true)).catch(chatFailure); else { i.value += b.dataset.e; i.focus(); }
   },
-  chatpick: () => document.getElementById('cfile').click(),
+  chatpick: () => { if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; } document.getElementById('cfile').click(); },
   chatimg: async b => {
     const epoch = chatEpoch, d = await imgGet(b.dataset.imgid);
-    if (!d || epoch !== chatEpoch || chatBusy()) return;
+    if (!d || epoch !== chatEpoch || chatDataBusy()) return;
     sheet('<div id="chat-image-view"></div>');
     const image = document.createElement('img'); image.className = 'big-img'; image.alt = ''; image.src = d;
     document.getElementById('chat-image-view').appendChild(image);
@@ -573,15 +681,17 @@ Object.assign(acts, {
   chatblock: b => { const pk = b.dataset.pk, c = chat(); closeSheet(); c.blocked.push(pk); delete c.friends[pk]; delete c.msgs[pk]; save(); go({name: 'home', tab: 'chat'}); toast(t('chatBlockedDone')); },
   chatrdel: b => { chat().relays = chat().relays.filter(u => u !== b.dataset.u); save(); chatConnect(); sheetChatSettings(); },
   chatreset: () => { chat().relays = CHAT_RELAYS.slice(); save(); chatConnect(); sheetChatSettings(); },
-  chatrotate: () => { chat().tok = toHex(NT.generateSecretKey()).slice(0, 24); save(); toast(t('chatRotated')); closeSheet(); },
-  chatcard: b => { const pk = b.dataset.pk; closeSheet(); chatSend(pk, {k: 'pr', ex: b.dataset.ex, kg: +b.dataset.kg, rp: +b.dataset.rp}).then(() => { go({name: 'chat', id: pk, from: 'chat'}); }); },
+  chatrotate: () => { if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; } chat().tok = toHex(NT.generateSecretKey()).slice(0, 24); save(); toast(t('chatRotated')); closeSheet(); },
+  chatcard: b => { const pk = b.dataset.pk, body = {k: 'pr', ex: b.dataset.ex, kg: +b.dataset.kg, rp: +b.dataset.rp}; chatEnsureUnlocked().then(async ok => { if (!ok) return; closeSheet(); const sent = await chatSend(pk, body); if (sent) go({name: 'chat', id: pk, from: 'chat'}); }).catch(chatFailure); },
 });
 Object.assign(forms, {
   chatsend: f => {
     const x = f.x.value.trim(), pk = f.dataset.pk; if (!x) return;
-    f.x.value = '';
+    if (chatBusy()) { chatEnsureUnlocked().catch(chatFailure); return; }
+    if (f.dataset.sending) return;
+    f.dataset.sending = '1';
     const only = /^(\p{Extended_Pictographic}|‍|️|\s){1,8}$/u.test(x) && [...x.matchAll(/\p{Extended_Pictographic}/gu)].length <= 3;
-    chatSend(pk, only ? {k: 'em', x} : {k: 't', x}).then(() => chatRefresh(true));
+    chatSend(pk, only ? {k: 'em', x} : {k: 't', x}).then(sent => { if (sent) { const input = document.getElementById('cinput'); if (view.id === pk && input && input.value.trim() === x) input.value = ''; chatRefresh(true); } }).catch(chatFailure).finally(() => delete f.dataset.sending);
     f.x.focus();
     const tr = document.getElementById('ctray'); if (tr) tr.hidden = true;
   },
@@ -598,8 +708,8 @@ Object.assign(forms, {
 // all'avvio, se la chat è già attiva, ci si collega in silenzio
 Promise.resolve(window.gymDataReady).then(() => {
   chatReady = true;
-  if (db.chat && db.chat.sk) return chatInit().then(chatConnect);
-}).catch(() => {});
+  if (db.chat && !chatBusy()) return chatInit().then(chatConnect);
+}).catch(chatFailure);
 
 // testi
 const CHAT_TXT = {
@@ -625,4 +735,4 @@ const CHAT_TXT = {
     chatAdded: n => `${n} zum Chat hinzugefügt`, chatReopened: n => `Chat mit ${n}`, chatLinkFrom: n => `${n} lädt dich zum Chat ein`, chatInviteMsg: n => `${n} lädt dich zum Chat auf Gym Tracker ein 💪 Tippe auf den Link und füge ihn zum Home-Bildschirm hinzu:`, chatShareHere: 'Im Chat senden', chatPhotoFail: 'Ich kann das Foto nicht senden.', delete: 'Löschen'},
 };
 Object.keys(CHAT_TXT).forEach(l => I18N[l] && Object.assign(I18N[l], CHAT_TXT[l]));
-Promise.resolve(window.gymDataReady).then(() => render()); // Include Chat after the authoritative database is ready.
+Promise.resolve(window.gymDataReady).then(() => render()).catch(chatFailure); // Include Chat after the authoritative database is ready.
