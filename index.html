@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="theme-color" content="#111214">
+<title>Gym Tracker</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--text:#111;--sub:#6b6b73;--line:#e3e3e8;--acc:#ff5a1f;--acc-t:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#111214;--card:#1b1c1f;--text:#f2f2f4;--sub:#8e8e96;--line:#2a2b30}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,system-ui,sans-serif;
+padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90px)}
+header{display:flex;align-items:center;gap:8px;padding:14px 0 10px;position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:22px;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--card);color:var(--text);cursor:pointer}
+button.p{background:var(--acc);color:var(--acc-t);font-weight:600}
+button.d{color:#e5484d}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:8px}
+.sub{color:var(--sub);font-size:14px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.set{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.set b{width:24px;color:var(--sub);font-weight:500}
+.set span.v{flex:1}
+input{font:inherit;color:var(--text);background:var(--bg);border:0;border-radius:10px;padding:10px;width:100%;min-width:0}
+input.n{width:84px;text-align:center}
+.fab{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 16px);padding:14px;font-size:17px}
+h2{font-size:17px;margin:0 0 4px}
+svg{width:100%;height:150px;display:block}
+.empty{text-align:center;color:var(--sub);padding:40px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const KEY = 'gym-tracker-v1';
+let db = load();
+let view = {name: 'home'};
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {sessions: []}; }
+  catch (e) { return {sessions: []}; }
+}
+// doppia copia: localStorage + IndexedDB, vince la più recente
+const IDB = 'gym-tracker', STORE = 'kv';
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(IDB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function idbGet() {
+  return idb().then(d => new Promise((res, rej) => {
+    const q = d.transaction(STORE).objectStore(STORE).get(KEY);
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+  }));
+}
+function idbPut(v) {
+  return idb().then(d => new Promise((res, rej) => {
+    const t = d.transaction(STORE, 'readwrite');
+    t.objectStore(STORE).put(v, KEY);
+    t.oncomplete = res; t.onerror = () => rej(t.error);
+  }));
+}
+function save() {
+  db.ts = Date.now();
+  const json = JSON.stringify(db);
+  let ok = false;
+  try { localStorage.setItem(KEY, json); ok = true; } catch (e) {}
+  idbPut(json).then(() => {}, () => { if (!ok) alert('Impossibile salvare i dati: controlla lo spazio o la navigazione privata.'); });
+}
+// all'avvio e al ritorno in primo piano riallinea le due copie
+function restore() {
+  idbGet().then(v => {
+    if (!v) { if (db.sessions.length) save(); return; }
+    const o = JSON.parse(v);
+    if ((o.ts || 0) > (db.ts || 0)) {
+      db = o;
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+      render();
+    } else if ((db.ts || 0) > (o.ts || 0)) idbPut(JSON.stringify(db)).catch(() => {});
+  }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') restore(); });
+// chiede al browser di non eliminare mai questi dati
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const fmtDate = d => new Date(d + 'T12:00').toLocaleDateString('it-IT', {weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'});
+const fmtKg = n => String(n).replace('.', ',');
+const key = n => n.trim().toLowerCase();
+
+const sess = id => db.sessions.find(s => s.id === id);
+const go = v => { view = v; render(); window.scrollTo(0, 0); };
+
+// storico di un esercizio (per nome) in tutte le sedute, dalla più vecchia
+function history(name, excludeSessionId) {
+  return db.sessions
+    .filter(s => s.id !== excludeSessionId)
+    .flatMap(s => s.exercises.filter(e => key(e.name) === key(name) && e.sets.length).map(e => ({date: s.date, sets: e.sets})))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+const best = sets => Math.max(...sets.map(s => s.kg));
+const setsTxt = sets => sets.map(s => `${s.reps}×${fmtKg(s.kg)}`).join('  ');
+
+function render() {
+  const app = document.getElementById('app');
+  if (view.name === 'home') app.innerHTML = home();
+  else if (view.name === 'session') app.innerHTML = sessionView();
+  else if (view.name === 'progress') app.innerHTML = progressView();
+}
+
+function home() {
+  const list = [...db.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  return `<header><h1>Sedute</h1></header>` +
+    (list.length ? list.map(s => `
+      <div class="card item" onclick="go({name:'session',id:'${s.id}'})">
+        <div><h2>${esc(s.name)}</h2><div class="sub">${fmtDate(s.date)} · ${s.exercises.length} esercizi</div></div>
+        <span class="sub">›</span>
+      </div>`).join('') : `<div class="empty">Nessuna seduta.<br>Crea la prima.</div>`) +
+    `<div class="card item"><span class="sub">Backup dati</span>
+      <div class="row"><button onclick="exportData()">Esporta</button>
+      <button onclick="document.getElementById('imp').click()">Importa</button>
+      <input type="file" id="imp" accept=".json,application/json" hidden onchange="importData(this)"></div></div>
+    <button class="p fab" onclick="newSession()">+ Nuova seduta</button>`;
+}
+
+function exportData() {
+  const name = `gym-backup-${today()}.json`;
+  const file = new File([JSON.stringify(db, null, 1)], name, {type: 'application/json'});
+  if (navigator.canShare && navigator.canShare({files: [file]})) {
+    navigator.share({files: [file], title: name}).catch(() => {});
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = name; a.click();
+  }
+}
+function importData(inp) {
+  const f = inp.files[0]; inp.value = '';
+  if (!f) return;
+  f.text().then(t => {
+    const o = JSON.parse(t);
+    if (!o || !Array.isArray(o.sessions)) throw 0;
+    if (!confirm(`Sostituire i dati attuali con il backup (${o.sessions.length} sedute)?`)) return;
+    db = o; save(); render();
+  }).catch(() => alert('File non valido.'));
+}
+
+function newSession() {
+  const name = prompt('Nome seduta (es. Petto e tricipiti)');
+  if (!name || !name.trim()) return;
+  const s = {id: uid(), name: name.trim(), date: today(), exercises: []};
+  db.sessions.push(s); save();
+  go({name: 'session', id: s.id});
+}
+
+function sessionView() {
+  const s = sess(view.id);
+  if (!s) return home();
+  return `<header>
+      <button onclick="go({name:'home'})">‹</button>
+      <h1>${esc(s.name)}</h1>
+      <button onclick="renameSession('${s.id}')">Modifica</button>
+    </header>
+    <div class="card row"><span class="sub">Data</span>
+      <input type="date" value="${s.date}" onchange="setDate('${s.id}',this.value)"></div>` +
+    s.exercises.map(e => exerciseCard(s, e)).join('') +
+    `<button class="p fab" onclick="addExercise('${s.id}')">+ Aggiungi esercizio</button>
+     <div style="text-align:center;margin-top:8px"><button class="d" onclick="delSession('${s.id}')">Elimina seduta</button></div>`;
+}
+
+function exerciseCard(s, e) {
+  const prev = history(e.name, s.id).pop();
+  const last = e.sets[e.sets.length - 1] || (prev && prev.sets[prev.sets.length - 1]) || {reps: '', kg: ''};
+  return `<div class="card">
+    <div class="item">
+      <div><h2>${esc(e.name)}</h2>
+        <div class="sub">${prev ? `Ultima volta (${fmtDate(prev.date)}): ${setsTxt(prev.sets)}` : 'Prima volta'}</div></div>
+      <div class="row"><button onclick="go({name:'progress',back:'${s.id}',eid:'${e.id}'})">📈</button>
+      <button class="d" onclick="delExercise('${s.id}','${e.id}')">✕</button></div>
+    </div>
+    ${e.sets.map((x, i) => `<div class="set"><b>${i + 1}</b><span class="v">${x.reps} rip × ${fmtKg(x.kg)} kg</span>
+      <button class="d" onclick="delSet('${s.id}','${e.id}',${i})">✕</button></div>`).join('')}
+    <div class="set">
+      <input class="n" id="r-${e.id}" type="number" inputmode="numeric" placeholder="rip" value="${last.reps}">
+      <input class="n" id="k-${e.id}" type="number" inputmode="decimal" step="0.25" placeholder="kg" value="${last.kg}">
+      <button class="p" onclick="addSet('${s.id}','${e.id}')">Aggiungi serie</button>
+    </div></div>`;
+}
+
+function renameSession(id) {
+  const s = sess(id), n = prompt('Nome seduta', s.name);
+  if (n && n.trim()) { s.name = n.trim(); save(); render(); }
+}
+function setDate(id, d) { if (d) { sess(id).date = d; save(); } }
+function delSession(id) {
+  if (!confirm('Eliminare la seduta e tutti i suoi dati?')) return;
+  db.sessions = db.sessions.filter(s => s.id !== id); save(); go({name: 'home'});
+}
+function addExercise(sid) {
+  const n = prompt('Nome esercizio (es. Panca piana)');
+  if (!n || !n.trim()) return;
+  sess(sid).exercises.push({id: uid(), name: n.trim(), sets: []}); save(); render();
+}
+function delExercise(sid, eid) {
+  const s = sess(sid);
+  if (!confirm('Eliminare l\'esercizio?')) return;
+  s.exercises = s.exercises.filter(e => e.id !== eid); save(); render();
+}
+function addSet(sid, eid) {
+  const reps = parseInt(document.getElementById('r-' + eid).value, 10);
+  const kg = parseFloat(String(document.getElementById('k-' + eid).value).replace(',', '.'));
+  if (!(reps > 0) || !(kg >= 0)) return;
+  sess(sid).exercises.find(e => e.id === eid).sets.push({reps, kg}); save(); render();
+}
+function delSet(sid, eid, i) {
+  sess(sid).exercises.find(e => e.id === eid).sets.splice(i, 1); save(); render();
+}
+
+function progressView() {
+  const ex = sess(view.back).exercises.find(e => e.id === view.eid);
+  const h = history(ex.name);
+  const pts = h.map(x => ({date: x.date, kg: best(x.sets)}));
+  return `<header><button onclick="go({name:'session',id:'${view.back}'})">‹</button><h1>${esc(ex.name)}</h1></header>` +
+    (pts.length ? `<div class="card"><h2>Carico massimo per seduta</h2>${chart(pts)}</div>` +
+      [...h].reverse().map(x => `<div class="card"><div class="item"><b>${fmtDate(x.date)}</b>
+        <span class="sub">max ${fmtKg(best(x.sets))} kg</span></div><div class="sub" style="margin-top:6px">${setsTxt(x.sets)}</div></div>`).join('')
+      : `<div class="empty">Ancora nessun dato per questo esercizio.</div>`);
+}
+
+function chart(pts) {
+  const W = 320, H = 150, p = 24;
+  const ks = pts.map(x => x.kg), lo = Math.min(...ks), hi = Math.max(...ks), span = hi - lo || 1;
+  const X = i => pts.length === 1 ? W / 2 : p + i * (W - 2 * p) / (pts.length - 1);
+  const Y = k => H - p - (k - lo) / span * (H - 2 * p);
+  const line = pts.map((x, i) => `${i ? 'L' : 'M'}${X(i)},${Y(x.kg)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}">
+    <path d="${line}" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${pts.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.kg)}" r="4" fill="var(--acc)"/>
+      <text x="${X(i)}" y="${Y(x.kg) - 9}" text-anchor="middle" font-size="11" fill="var(--sub)">${fmtKg(x.kg)}</text>`).join('')}
+  </svg>`;
+}
+
+render();
+restore();
+</script>
+</body>
+</html>
