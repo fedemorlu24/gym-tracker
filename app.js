@@ -1,4 +1,5 @@
 const KEY = 'gym-tracker-v1';
+const APP_VERSION = new URL(document.currentScript.src).searchParams.get('v') || '0';
 let db = load();
 let view = {name: 'home', tab: 'today'};
 
@@ -21,6 +22,13 @@ function clean(o) {
 }
 // doppia copia: localStorage + IndexedDB, vince la più recente
 const IDB = 'gym-tracker', STORE = 'kv', PHOTOS = 'photos';
+// Updates wait for durable writes, including photos which only live in IndexedDB.
+const pendingWrites = new Set();
+function trackWrite(promise) {
+  pendingWrites.add(promise);
+  promise.then(() => pendingWrites.delete(promise), () => pendingWrites.delete(promise));
+  return promise;
+}
 function idb() {
   return new Promise((res, rej) => {
     const r = indexedDB.open(IDB, 2);
@@ -40,11 +48,11 @@ function idbGet() {
   }));
 }
 function idbPut(v) {
-  return idb().then(d => new Promise((res, rej) => {
+  return trackWrite(idb().then(d => new Promise((res, rej) => {
     const t = d.transaction(STORE, 'readwrite');
     t.objectStore(STORE).put(v, KEY);
     t.oncomplete = res; t.onerror = () => rej(t.error);
-  }));
+  })));
 }
 let backupFile = null;
 function save() {
@@ -57,10 +65,11 @@ function save() {
 // foto del fisico: solo in IndexedDB (troppo grandi per localStorage)
 let photos = [];  // {id, date, pose, blob, url}
 function photoTx(mode, fn) {
-  return idb().then(d => new Promise((res, rej) => {
+  const promise = idb().then(d => new Promise((res, rej) => {
     const tx = d.transaction(PHOTOS, mode), st = tx.objectStore(PHOTOS), out = fn(st);
     tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error);
   }));
+  return mode === 'readwrite' ? trackWrite(promise) : promise;
 }
 function loadPhotos() {
   return photoTx('readonly', st => st.getAll()).then(list => {
@@ -150,6 +159,7 @@ const I = {
   body: '<circle cx="12" cy="5" r="2.2"/><path d="M5 9.5c2.3.9 4.6 1.3 7 1.3s4.7-.4 7-1.3"/><path d="M12 10.8V15m0 0l-3 6m3-6l3 6"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   share: '<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 002 2h10a2 2 0 002-2v-8"/>',
+  external: '<path d="M14 4h6v6M20 4l-9 9M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-4"/>',
   addsq: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   arrow: '<path d="M12 4v15M6 13l6 6 6-6"/>',
@@ -479,6 +489,8 @@ function todayView() {
     <div class="dstrip"><button class="ib" data-act="day" data-d="${addDays(mon, -7)}" aria-label="${t('prevWeekA')}">${icon('back')}</button>
       <div class="dstrip-days">${strip}</div>
       <button class="ib" data-act="day" data-d="${addDays(mon, 7)}" aria-label="${t('nextWeekA')}" ${addDays(mon, 7) > today() ? 'disabled' : ''}>${icon('fwd')}</button></div>`;
+
+  if (isToday) html += donationCard();
 
   // allenamento del giorno
   if (isToday) html += backupNudge();
@@ -925,6 +937,7 @@ function settingsView() {
   const p = profile(), ok = profileOk();
   return `<header><button class="ib" data-act="home" aria-label="${t('back')}">${icon('back')}</button>
       <div class="t small"><h1>${t('settings')}</h1></div></header>
+    ${donationCard()}
     <p class="glabel">${t('profile')}</p>
     <div class="group"><button class="row" data-act="profile"><div class="grow"><h3>${t('profile')}</h3>
       <div class="sub">${ok ? t('profileSummary', t(p.sex === 'm' ? 'male' : 'female'), p.age, fmtKg(bodyWeight())) : t('profileMissing')}</div></div><span class="chev">${icon('chev')}</span></button>
@@ -949,8 +962,8 @@ function settingsView() {
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
     <div class="group"><button class="row" data-act="tour"><div class="grow"><h3>${t('howItWorks')}</h3></div><span class="chev">${icon('chev')}</span></button>
-    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>
-    ${DONATE_URL ? `<p class="note" style="padding:16px 4px 8px">${t('donateText')}</p><a class="btn s wide" href="${DONATE_URL}" target="_blank" rel="noopener">☕ ${t('donateBtn')}</a>` : ''}`;
+    <button class="row" data-act="appupdate"><div class="grow"><h3>${t('appUpdate')}</h3><div class="sub">Gym-Tracker · v${APP_VERSION} · ${t('appUpdateHint')}</div></div><span class="chev">${icon('chev')}</span></button>
+    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>`;
 }
 function profileFields(p) {
   const w = bodyWeight();
@@ -975,7 +988,10 @@ function saveProfile(f) {
 }
 
 // ---------- fogli (bottom sheet) e avvisi ----------
+let sheetCloseT;
 function sheet(html) {
+  clearTimeout(sheetCloseT);
+  if (typeof guideStop === 'function') guideStop();
   const el = document.getElementById('sheet');
   el.innerHTML = `<div class="scrim" data-act="close"></div><div class="pane" role="dialog" aria-modal="true"><div class="grab"></div><button class="sheetx" data-act="close" aria-label="${t('close')}">✕</button>${html}</div>`;
   el.hidden = false;
@@ -987,6 +1003,7 @@ function sheet(html) {
 function dragDismiss(pane) {
   let y0 = null, dy = 0, fromGrab = false;
   pane.addEventListener('touchstart', e => {
+    if (e.target.closest('.gf')) { y0 = null; return; }
     fromGrab = !!e.target.closest('.grab') || e.touches[0].clientY - pane.getBoundingClientRect().top < 44;
     y0 = (fromGrab || pane.scrollTop <= 0) ? e.touches[0].clientY : null; dy = 0;
   }, {passive: true});
@@ -1005,8 +1022,9 @@ function dragDismiss(pane) {
 function closeSheet() {
   const el = document.getElementById('sheet');
   if (el.hidden) return;
+  if (typeof guideStop === 'function') guideStop();
   el.classList.remove('on');
-  setTimeout(() => { el.hidden = true; el.innerHTML = ''; }, 260);
+  sheetCloseT = setTimeout(() => { el.hidden = true; el.innerHTML = ''; }, 260);
 }
 let toastT;
 function toast(msg, action, fn) {
@@ -1774,6 +1792,13 @@ let shareText = '';
 // pagina Buy Me a Coffee (donazione volontaria): vuoto = il pulsante non compare
 const DONATE_URL = 'https://buymeacoffee.com/fedemorlu24';
 const INVITE_URL = 'https://fedemorlu24.github.io/gym-tracker/';
+function donationCard() {
+  if (!DONATE_URL) return '';
+  return `<aside class="donation-card" aria-label="${t('donateTitle')}">
+    <div class="donation-copy"><b>${t('donateTitle')}</b><span>${t('donateOptional')}</span><p>${t('donateFree')}</p></div>
+    <a class="donation-button" href="${DONATE_URL}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🍺</span> ${t('donateBtn')} ${icon('external')}</a>
+  </aside>`;
+}
 function sheetInvite() {
   const msg = t('inviteMsg', nick() || '🙂') + '\n' + INVITE_URL;
   shareText = msg;
@@ -1857,6 +1882,7 @@ function sheetFriend(id) {
 }
 // sfida aperta da un link: nell'app si aggiunge, in Safari si spiega come portarla nell'app
 function handleChallengeHash() {
+  if (typeof handleGuideHash === 'function' && handleGuideHash()) return true;
   const ch = typeof parseChatLink === 'function' && parseChatLink(location.hash);
   if (ch) {
     const raw = location.hash.split('chat=')[1];
@@ -2425,5 +2451,4 @@ addEventListener('DOMContentLoaded', () => {
   else if (!db.tourSeen) openTour();
 });
 window.addEventListener('hashchange', handleChallengeHash);
-// copia offline dell'app (sw.js)
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+// Offline installation and update checks are managed by update.js.

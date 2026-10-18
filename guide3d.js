@@ -46,21 +46,82 @@ window.G3D = (() => {
   // ---------- scena condivisa ----------
   let scene, cam, fig, bones = {}, rest = {}, meshes = [], shadow, canvas;
   const san = n => n.replace(/\./g, '');
+  // Dual-quaternion skinning preserves limb volume when the wrist/shoulder turns.
+  // Linear matrix blending collapsed the forearms in close-grip presses.
+  // Reference: Kavan et al., Geometric Skinning with Approximate Dual Quaternion Blending (2008).
+  function volumeSkinning(mesh) {
+    const glsl = `
+      vec4 dqMul(vec4 a, vec4 b) { return vec4(a.w*b.xyz+b.w*a.xyz+cross(a.xyz,b.xyz),a.w*b.w-dot(a.xyz,b.xyz)); }
+      vec3 dqRotate(vec4 q, vec3 p) { return p+2.0*cross(q.xyz,cross(q.xyz,p)+q.w*p); }
+      vec4 dqQuat(mat4 m) {
+        float tr=m[0][0]+m[1][1]+m[2][2]; vec4 q;
+        if(tr>0.0){float s=sqrt(tr+1.0)*2.0;q=vec4((m[1][2]-m[2][1])/s,(m[2][0]-m[0][2])/s,(m[0][1]-m[1][0])/s,s*.25);}
+        else if(m[0][0]>m[1][1]&&m[0][0]>m[2][2]){float s=sqrt(1.0+m[0][0]-m[1][1]-m[2][2])*2.0;q=vec4(s*.25,(m[1][0]+m[0][1])/s,(m[2][0]+m[0][2])/s,(m[1][2]-m[2][1])/s);}
+        else if(m[1][1]>m[2][2]){float s=sqrt(1.0+m[1][1]-m[0][0]-m[2][2])*2.0;q=vec4((m[1][0]+m[0][1])/s,s*.25,(m[2][1]+m[1][2])/s,(m[2][0]-m[0][2])/s);}
+        else{float s=sqrt(1.0+m[2][2]-m[0][0]-m[1][1])*2.0;q=vec4((m[2][0]+m[0][2])/s,(m[2][1]+m[1][2])/s,s*.25,(m[0][1]-m[1][0])/s);}
+        return normalize(q);
+      }
+      void dqAdd(mat4 m,float w,vec4 refq,inout vec4 qr,inout vec4 qd){vec4 q=dqQuat(m);float s=dot(q,refq)<0.0?-w:w;qr+=q*s;qd+=dqMul(vec4(m[3].xyz,0.0),q)*(.5*s);}
+    `;
+    mesh.material.onBeforeCompile = shader => {
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\n' + glsl)
+        .replace('#include <skinbase_vertex>', `#include <skinbase_vertex>
+          #ifdef USE_SKINNING
+          vec4 dqr=vec4(0.0),dqd=vec4(0.0),dqref=dqQuat(boneMatX);
+          dqAdd(boneMatX,skinWeight.x,dqref,dqr,dqd);dqAdd(boneMatY,skinWeight.y,dqref,dqr,dqd);
+          dqAdd(boneMatZ,skinWeight.z,dqref,dqr,dqd);dqAdd(boneMatW,skinWeight.w,dqref,dqr,dqd);
+          float dql=max(length(dqr),.00001);dqr/=dql;dqd/=dql;dqd-=dqr*dot(dqr,dqd);
+          vec3 dqt=2.0*dqMul(dqd,vec4(-dqr.xyz,dqr.w)).xyz;
+          #endif`)
+        .replace('#include <skinnormal_vertex>', `
+          #ifdef USE_SKINNING
+          objectNormal=(bindMatrixInverse*vec4(dqRotate(dqr,(bindMatrix*vec4(objectNormal,0.0)).xyz),0.0)).xyz;
+          #ifdef USE_TANGENT
+          objectTangent=(bindMatrixInverse*vec4(dqRotate(dqr,(bindMatrix*vec4(objectTangent,0.0)).xyz),0.0)).xyz;
+          #endif
+          #endif`)
+        .replace('#include <skinning_vertex>', `
+          #ifdef USE_SKINNING
+          transformed=(bindMatrixInverse*vec4(dqRotate(dqr,(bindMatrix*vec4(transformed,1.0)).xyz)+dqt,1.0)).xyz;
+          #endif`);
+    };
+    mesh.material.customProgramCacheKey = () => 'guide-dq-v1';
+    // Match the GPU deformation in raycasts/bounds, so collision checks see the rendered body.
+    const matrix = new T.Matrix4(), qr = new T.Vector4(), qd = new T.Vector4(), q = new T.Quaternion(), dq = new T.Quaternion(), ref = new T.Quaternion(), tr = new T.Quaternion(), inv = new T.Quaternion();
+    mesh.getVertexPosition = function(index, target) {
+      target.fromBufferAttribute(this.geometry.attributes.position, index).applyMatrix4(this.bindMatrix);
+      const ids = this.geometry.attributes.skinIndex, weights = this.geometry.attributes.skinWeight;
+      qr.set(0, 0, 0, 0); qd.set(0, 0, 0, 0);
+      for (let j = 0; j < 4; j++) {
+        matrix.fromArray(this.skeleton.boneMatrices, ids.getComponent(index, j) * 16); q.setFromRotationMatrix(matrix).normalize(); if (!j) ref.copy(q);
+        const w = weights.getComponent(index, j) * (ref.dot(q) < 0 ? -1 : 1), e = matrix.elements;
+        tr.set(e[12], e[13], e[14], 0); dq.copy(tr).multiply(q);
+        qr.x += q.x*w; qr.y += q.y*w; qr.z += q.z*w; qr.w += q.w*w;
+        qd.x += dq.x*w*.5; qd.y += dq.y*w*.5; qd.z += dq.z*w*.5; qd.w += dq.w*w*.5;
+      }
+      const len = Math.max(qr.length(), .00001); qr.divideScalar(len); qd.divideScalar(len); qd.addScaledVector(qr, -qr.dot(qd));
+      q.set(qr.x, qr.y, qr.z, qr.w); inv.copy(q).conjugate(); dq.set(qd.x, qd.y, qd.z, qd.w).multiply(inv);
+      target.applyQuaternion(q); target.x += 2*dq.x; target.y += 2*dq.y; target.z += 2*dq.z;
+      return target.applyMatrix4(this.bindMatrixInverse);
+    };
+  }
   function build(model) {
     canvas = document.createElement('canvas'); canvas.className = 'gf-3d';
     R = new T.WebGLRenderer({canvas, antialias: true, alpha: true, powerPreference: 'low-power'});
     R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); R.setClearColor(0x000000, 0);
-    R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+    R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = .92;
     scene = new T.Scene(); cam = new T.PerspectiveCamera(28, 1.2, .1, 40);
     const pm = new T.PMREMGenerator(R); scene.environment = pm.fromScene(new window.RoomEnvironment(), .03).texture; pm.dispose();
-    scene.add(new T.HemisphereLight(0xffffff, 0x8a8a96, .35));
-    const key = new T.DirectionalLight(0xffffff, 2.2); key.position.set(2.5, 4, 3.5); scene.add(key);
-    const rim = new T.DirectionalLight(0xdfe8ff, 1.2); rim.position.set(-2.5, 2.5, -3); scene.add(rim);
+    scene.add(new T.HemisphereLight(0xe6efff, 0x273747, .7));
+    const key = new T.DirectionalLight(0xfff1e3, 2.6); key.position.set(2.5, 4, 3.5); scene.add(key);
+    const rim = new T.DirectionalLight(0xb8d8ff, 2.1); rim.position.set(-2.5, 2.5, -3); scene.add(rim);
+    const fill = new T.DirectionalLight(0xffffff, .8); fill.position.set(-3, 1.5, 2); scene.add(fill);
     fig = model; scene.add(fig);
     fig.traverse(o => {
       if (o.isMesh) {
         o.frustumCulled = false;
-        o.material = new T.MeshStandardMaterial({color: {hair: 0x2d2723, eyed: 0x1d1916, eyew: 0xe9e6e1, shorts: 0x2b2e34}[o.name] || 0xffffff, roughness: o.name === 'hair' || o.name === 'shorts' ? .85 : o.name === 'skin' ? .58 : .3, metalness: 0, vertexColors: o.name === 'skin', envMapIntensity: .8, side: o.name === 'skin' || o.name === 'shorts' ? T.DoubleSide : T.FrontSide});
+        o.material = new T.MeshStandardMaterial({color: {hair: 0x292c32, eyed: 0x1d1916, eyew: 0xe9e6e1, shorts: 0x263549}[o.name] || 0xffffff, roughness: o.name === 'hair' || o.name === 'shorts' ? .85 : o.name === 'skin' ? .72 : .4, metalness: 0, vertexColors: o.name === 'skin', envMapIntensity: .45, side: o.name === 'skin' || o.name === 'shorts' ? T.DoubleSide : T.FrontSide});
+        if (o.isSkinnedMesh) volumeSkinning(o);
         if (o.name === 'skin') { const c = o.geometry.attributes.color, code = new Float32Array(c.count * 3); for (let i = 0; i < c.count; i++) { code[i * 3] = c.getX(i); code[i * 3 + 1] = c.getY(i); code[i * 3 + 2] = c.getZ(i); } o.userData.code = code; }
         meshes.push(o);
       }
@@ -79,6 +140,10 @@ window.G3D = (() => {
     const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, 'rgba(0,0,0,.28)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
     shadow = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({map: new T.CanvasTexture(c), transparent: true, depthWrite: false}));
     shadow.rotation.x = -Math.PI / 2; shadow.position.y = .002; scene.add(shadow);
+    const floor = new T.Mesh(new T.CircleGeometry(1.65, 80), new T.MeshBasicMaterial({color: 0x92adc5, transparent: true, opacity: .06, depthWrite: false}));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -.003; scene.add(floor);
+    const ring = new T.Mesh(new T.RingGeometry(1.64, 1.65, 80), new T.MeshBasicMaterial({color: 0x92adc5, transparent: true, opacity: .16, depthWrite: false, side: T.DoubleSide}));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = -.002; scene.add(ring);
   }
 
   // ---------- posa ----------
@@ -170,15 +235,18 @@ window.G3D = (() => {
   }
 
   // ---------- attrezzi ----------
-  const mat = (c, r = .5, mt = 0) => new T.MeshStandardMaterial({color: c, roughness: r, metalness: mt});
+  // Reuse GPU resources: moving equipment changes transforms, never geometry buffers or shaders.
+  const materials = new Map(), geometries = new Map();
+  const mat = (c, r = .5, mt = 0) => { const key = [c, r, mt].join(':'); if (!materials.has(key)) materials.set(key, Object.assign(new T.MeshStandardMaterial({color: c, roughness: r, metalness: mt}), {userData: {shared: true}})); return materials.get(key); };
+  const geo = (key, make) => { if (!geometries.has(key)) { const g = make(); g.userData.shared = true; geometries.set(key, g); } return geometries.get(key); };
   const mProp = () => mat(COL.prop, .35, .6), mPad = () => mat(COL.pad, .8), mPlate = () => mat(COL.plate, .5, .3);
   function seg(a, b, rad, m) {   // cilindro fra due punti 3D
     const d = b.clone().sub(a), len = d.length(); if (len < 1e-4) return null;
-    const o = new T.Mesh(new T.CylinderGeometry(rad, rad, len, 12), m);
+    const o = new T.Mesh(geo('cylinder', () => new T.CylinderGeometry(1, 1, 1, 24)), m); o.scale.set(rad, len, rad);
     o.position.copy(a.clone().add(b).multiplyScalar(.5)); o.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize()); return o;
   }
-  function box(w, h, d, m, p, q) { const o = new T.Mesh(new T.BoxGeometry(w, h, d), m); o.position.copy(p); if (q) o.quaternion.copy(q); return o; }
-  function disc(r, th, m, p, axis) { const o = new T.Mesh(new T.CylinderGeometry(r, r, th, 24), m); o.position.copy(p); o.quaternion.setFromUnitVectors(V3(0, 1, 0), axis || V3(1, 0, 0)); return o; }
+  function box(w, h, d, m, p, q) { const o = new T.Mesh(geo('box', () => new T.BoxGeometry(1, 1, 1)), m); o.scale.set(w, h, d); o.position.copy(p); if (q) o.quaternion.copy(q); return o; }
+  function disc(r, th, m, p, axis) { const o = new T.Mesh(geo('disc', () => new T.CylinderGeometry(1, 1, 1, 40)), m); o.scale.set(r, th, r); o.position.copy(p); o.quaternion.setFromUnitVectors(V3(0, 1, 0), axis || V3(1, 0, 0)); return o; }
   const rod = (a, b, w, M) => seg(a, b, Math.max(.005, w * U / 2), M);
   function placePad(g, p1, p2, thick, width) {   // pad inclinato fra due punti 2D
     const a = m3(p1), b = m3(p2), d = b.clone().sub(a), len = d.length();
@@ -221,8 +289,8 @@ window.G3D = (() => {
     else if (eq === 'band') { const l = seg(m3(pt, ctx.side(pt) * .2), m3(an), .006, mat(0xe0592b, .7)); l && g.add(l); }
     else if (eq === 'suspension') { [-1, 1].forEach(sg => { const l = seg(m3(pt, sg * .2), m3([pt[0], -14], sg * .2), .006, mat(0xe0592b, .7)); l && g.add(l); }); }
   }
-  const sph = (r, p, m) => { const o = new T.Mesh(new T.SphereGeometry(r, 16, 12), m); o.position.copy(p); return o; };
-  const rodX = (p, hl, rad) => { const o = new T.Mesh(new T.CylinderGeometry(rad, rad, hl * 2, 10), mProp()); o.position.copy(p); o.rotation.z = Math.PI / 2; return o; };
+  const sph = (r, p, m) => { const o = new T.Mesh(geo('sphere', () => new T.SphereGeometry(1, 24, 16)), m); o.scale.setScalar(r); o.position.copy(p); return o; };
+  const rodX = (p, hl, rad) => seg(p.clone().add(V3(-hl, 0, 0)), p.clone().add(V3(hl, 0, 0)), rad, mProp());
 
   // minuscolo lettore dei frammenti SVG rimasti dentro bg()/fg(): linee, cerchi, rettangoli, percorsi
   function parseSvg(str, g) {
@@ -248,7 +316,7 @@ window.G3D = (() => {
     try { G3C = []; const raw = fn() || ''; return {items: G3C, raw}; } finally { G3C = null; Object.assign(GL, save); }
   };
   let bgG = null, fgG = null, bgItems = [];
-  function clearGroup(g) { g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); g.clear(); }
+  function clearGroup(g) { g.traverse(o => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); if (o.material && !o.material.userData.shared) o.material.dispose(); }); g.clear(); }
   function buildBg(def, eq, opt) {
     clearGroup(bgG);
     const r = collect(() => def.bg ? def.bg(eq) : '');
@@ -279,7 +347,7 @@ window.G3D = (() => {
   // ---------- evidenziazione dei muscoli ----------
   // la pelle porta per ogni vertice: R = gruppo del muscolo sotto, G = quanto e' vicino, B = pantaloncini
   const GIDS = ["chest", "delt_front", "delt_side", "delt_rear", "biceps", "brachialis", "triceps", "forearm", "traps_up", "traps_mid", "lats", "rotator", "rhomboids", "erector", "serratus", "abs", "obliques", "glute_max", "glute_med", "quads", "adductors", "hams", "hip_other", "calves", "shin", "neck"];
-  const SKIN = [.80, .79, .775], SHORTS = [.16, .17, .19], HOT = {pri: [.88, .2, .12], sec: [.95, .58, .38]};
+  const SKIN = [.52, .57, .62], SHORTS = [.045, .075, .12], HOT = {pri: [1, .20, .045], sec: [.95, .52, .25]};
   function paint(b) {
     const hot = {};
     (BASE[b] ? BASE[b].pri : []).forEach(k => (GRP[k] || []).forEach(g => { hot[g] = 'pri'; }));
@@ -331,6 +399,9 @@ window.G3D = (() => {
     worldDelta('hand.' + s, new T.Quaternion().setFromAxisAngle(f, ang * .4));
   }
   function grip(s, amt) {          // dita chiuse attorno all'attrezzo, pollice che si chiude dall'altra parte
+    amt = Math.max(0, Math.min(1, amt));
+    ['fing1.', 'fing2.', 'thumb1.', 'thumb2.'].forEach(n => bones[n + s].quaternion.copy(rest[n + s].lq));
+    bones['hand.' + s].updateMatrixWorld(true);
     const ax = curDir('hand.' + s).cross(curPalm(s)).normalize();
     worldDelta('fing1.' + s, new T.Quaternion().setFromAxisAngle(ax, 72 * amt * RAD));
     worldDelta('fing2.' + s, new T.Quaternion().setFromAxisAngle(ax, 88 * amt * RAD));
@@ -365,23 +436,33 @@ window.G3D = (() => {
     worldDelta('clav.' + s, new T.Quaternion().setFromAxisAngle(fwdNow, (s === 'l' ? 1 : -1) * (lift - prev) * RAD));
     clavLift[s] = lift; return true;
   }
-  function arm(s, at, pole, palmN) {   // la mano afferra il punto at: l'attrezzo sta nel palmo, non nel polso
+  function arm(s, at, pole, palmN, wrist) {   // optional wrist extension for the front rack
     let sh = wp('uarm.' + s), tgt = at.clone();
+    const planted = at.y <= .065 && palmN.y < -.65;
     { const r0 = ik2(sh, tgt, LEN.ua, LEN.fa, pole); if (scapula(s, r0.mid.clone().sub(sh))) sh = wp('uarm.' + s); }
-    for (let it = 0; it < 3; it++) {
+    for (let it = 0; it < 6; it++) {
       const r = ik2(sh, tgt, LEN.ua, LEN.fa, pole);
       aim('uarm.' + s, r.mid.clone().sub(sh)); aim('farm.' + s, r.end.clone().sub(r.mid));
       const f = r.end.clone().sub(r.mid).normalize();
-      tgt = at.clone().sub(f.clone().multiplyScalar(.07)).sub(flat(palmN, f).multiplyScalar(.03));
+      if (planted || wrist) {
+        // A planted palm is horizontal. The old straight wrist pointed the fingers into the floor.
+        aim('hand.' + s, planted ? V3(0, 0, 1) : f.clone().lerp(wrist.dir, wrist.amount == null ? 1 : wrist.amount).normalize());
+        const d = curDir('hand.' + s), a = flat(curPalm(s), d), b = flat(palmN, d);
+        const angle = Math.atan2(d.dot(a.clone().cross(b)), a.dot(b));
+        worldDelta('hand.' + s, new T.Quaternion().setFromAxisAngle(d, angle));
+      } else { aim('hand.' + s, f); alignPalm(s, palmN); }
+      const actual = wp('hand.' + s).addScaledVector(curDir('hand.' + s), .065);
+      tgt.add(at.clone().sub(actual));
     }
-    alignPalm(s, palmN); grip(s, 1);
+    grip(s, planted ? 0 : 1);
   }
   // un punto del corpo a riposo (m) che segue l'osso indicato: dove sta ora
   const onBone = (n, p) => V3(...p).applyMatrix4(rest[n].mwi).applyMatrix4(bones[n].matrixWorld);
   const NIP = [0, 1.2806, .1294];          // linea dei capezzoli, sulla superficie del petto
   const headTo = d => { aim('neck', curDir('neck').lerp(d, .5)); aim('head', d); };
-  function barbell(g, c, half = .7, pr = .225) {
-    g.add(seg(V3(c.x - half - .1, c.y, c.z), V3(c.x + half + .1, c.y, c.z), .0145, mat(0x9aa0a8, .3, .7)));
+  function barbell(g, c, half = .7, pr = .225, ez = false) {
+    const shaft = ez ? [[-half - .1, 0], [-.32, 0], [-.25, -.025], [-.12, .025], [.12, .025], [.25, -.025], [.32, 0], [half + .1, 0]] : [[-half - .1, 0], [half + .1, 0]];
+    for (let i = 1; i < shaft.length; i++) g.add(seg(c.clone().add(V3(shaft[i - 1][0], shaft[i - 1][1], 0)), c.clone().add(V3(shaft[i][0], shaft[i][1], 0)), .0145, mat(0x9aa0a8, .3, .7)));
     [-1, 1].forEach(sg => {
       g.add(disc(pr, .055, mPlate(), V3(c.x + sg * (half - .03), c.y, c.z)));
       g.add(disc(pr * .97, .05, mPlate(), V3(c.x + sg * (half - .09), c.y, c.z)));
@@ -398,23 +479,40 @@ window.G3D = (() => {
   function kettlebell(g, p, down) {
     const d = down.clone().normalize(), c = p.clone().addScaledVector(d, .12);
     g.add(sph(.1, c, mPlate()));
-    const h = new T.Mesh(new T.TorusGeometry(.055, .012, 8, 20, Math.PI), mPlate()); h.position.copy(p.clone().addScaledVector(d, .045));
+    const h = new T.Mesh(geo('kb-handle', () => new T.TorusGeometry(.055, .012, 10, 24, Math.PI)), mPlate()); h.position.copy(p.clone().addScaledVector(d, .045));
     h.quaternion.setFromUnitVectors(V3(0, 1, 0), d.clone().negate()); g.add(h);
   }
-  function cableTo(g, handle, anchor, kind) {
+  function cableTo(g, handle, anchor, kind, grips) {
     const l = seg(handle, anchor, .004, mat(0x55595f, .5, .3)); l && g.add(l);
     g.add(sph(.035, anchor, mat(0x7c828a, .4, .5)));
-    if (kind === 'rope') [-1, 1].forEach(sg => { const o = seg(handle, handle.clone().add(V3(sg * .07, -.12, 0)), .012, mat(0x2b2b2b, .9)); o && g.add(o); });
+    if (grips && grips.length === 2) {
+      const [a, b] = grips;
+      if (kind === 'rope') grips.forEach(p => { g.add(seg(handle, p, .012, mat(0x30343b, .9)), sph(.023, p, mPlate())); });
+      else if (kind === 'd') { grips.forEach(p => { g.add(seg(handle, p.clone().add(V3(0, .05, 0)), .011, mProp()), seg(p.clone().add(V3(0, .05, 0)), p.clone().add(V3(0, -.05, 0)), .015, mPlate())); }); g.add(seg(a.clone().add(V3(0, -.05, 0)), b.clone().add(V3(0, -.05, 0)), .011, mProp())); }
+      else { const axis = a.clone().sub(b).normalize(); g.add(seg(a.clone().addScaledVector(axis, .07), b.clone().addScaledVector(axis, -.07), .014, mProp())); grips.forEach(p => g.add(seg(p.clone().addScaledVector(axis, -.055), p.clone().addScaledVector(axis, .055), .018, mPlate()))); }
+    }
+    else if (kind === 'rope') [-1, 1].forEach(sg => { const o = seg(handle, handle.clone().add(V3(sg * .07, -.12, 0)), .012, mat(0x2b2b2b, .9)); o && g.add(o); });
     else if (kind === 'bar') { const o = seg(handle.clone().add(V3(-.28, 0, 0)), handle.clone().add(V3(.28, 0, 0)), .013, mat(0x9aa0a8, .3, .7)); o && g.add(o); }
-    else g.add(sph(.02, handle, mat(0x2b2b2b, .9)));
+    else { const a = handle.clone().add(V3(-.06, 0, 0)), b = handle.clone().add(V3(.06, 0, 0)), tip = handle.clone().addScaledVector(anchor.clone().sub(handle).normalize(), .10); g.add(seg(a, b, .014, mPlate()), seg(a, tip, .009, mProp()), seg(b, tip, .009, mProp())); }
+  }
+  function trapbar(g, c) {
+    const points = [[-.42, -.26], [-.25, -.43], [.25, -.43], [.42, -.26], [.42, .26], [.25, .43], [-.25, .43], [-.42, .26]];
+    points.forEach(([x, z], i) => { const [xx, zz] = points[(i + 1) % points.length]; g.add(seg(c.clone().add(V3(x, 0, z)), c.clone().add(V3(xx, 0, zz)), .018, steel())); });
+    [-1, 1].forEach(sg => { const handle = c.clone().add(V3(sg * .28, 0, 0));
+      [-1, 1].forEach(end => g.add(seg(handle.clone().add(V3(0, 0, end * .10)), c.clone().add(V3(sg * .42, 0, end * .10)), .014, steel())));
+      g.add(seg(handle.clone().add(V3(0, 0, -.10)), handle.clone().add(V3(0, 0, .10)), .016, mProp()));
+      g.add(seg(c.clone().add(V3(sg * .42, 0, 0)), c.clone().add(V3(sg * .85, 0, 0)), .023, steel()));
+      [.64, .70].forEach(x => g.add(disc(.225, .05, mPlate(), c.clone().add(V3(sg * x, 0, 0)))));
+    });
   }
   function drawTools(g, tools) {
     for (const t of tools || []) {
-      if (t.t === 'bar') barbell(g, t.c, t.half, t.pr);
+      if (t.t === 'bar') barbell(g, t.c, t.half, t.pr, t.ez);
+      else if (t.t === 'trap') trapbar(g, t.c);
       else if (t.t === 'db') dumbbell(g, t.p, t.axis || V3(1, 0, 0));
       else if (t.t === 'kb') kettlebell(g, t.p, t.down || V3(0, -1, 0));
       else if (t.t === 'plate') g.add(disc(t.r || .2, .04, mPlate(), t.p, t.n || V3(0, 0, 1)));
-      else if (t.t === 'cable') cableTo(g, t.a, t.b, t.kind);
+      else if (t.t === 'cable') cableTo(g, t.a, t.b, t.kind, t.grips);
       else if (t.t === 'line') { const o = seg(t.a, t.b, t.r || .012, mat(t.c || 0x9aa0a8, .4, .5)); o && g.add(o); }
       else if (t.t === 'box') g.add(box(t.s[0], t.s[1], t.s[2], mat(t.c || 0x3a3d44, .7, .1), t.p, t.q));
     }
@@ -440,23 +538,27 @@ window.G3D = (() => {
     if (cus) {
       clearGroup(bgG); bgItems = [];
       const pts = [];
-      [0, .25, .5, .75, 1].forEach(u => { reset(); const r = cus.pose(kit, u) || {}; ['head', 'foot.l', 'foot.r', 'hand.l', 'hand.r', 'root', 'toe.l', 'toe.r'].forEach(n => pts.push(wp(n)));
-        (r.tools || []).forEach(t => { if (t.t === 'bar') pts.push(t.c.clone().setX(.8), t.c.clone().setX(-.8)); else if (t.p) pts.push(t.p); }); });
+      for (let i = 0; i <= 24; i++) { reset(); const r = cus.pose(kit, i / 24) || {}; ['head', 'foot.l', 'foot.r', 'hand.l', 'hand.r', 'root', 'toe.l', 'toe.r'].forEach(n => pts.push(wp(n)));
+        pts.push(wp('head').add(V3(.16, .18, .18)), wp('head').sub(V3(.16, .18, .18)));
+        (r.tools || []).forEach(t => { if (t.t === 'bar' || t.t === 'trap') { const half = (t.half || .7) + .15, rad = t.pr || .225; pts.push(t.c.clone().add(V3(half, rad, .15)), t.c.clone().add(V3(-half, -rad, -.15))); } else if (t.p) { const pad = t.s ? Math.max(...t.s) / 2 : t.r || .14; pts.push(t.p.clone().add(V3(pad, pad, pad)), t.p.clone().sub(V3(pad, pad, pad))); } if (t.a) pts.push(t.a); if (t.b) pts.push(t.b); }); }
       if (cus.build) { reset(); cus.build(kit, bgG); bgG.updateMatrixWorld(true); new T.Box3().setFromObject(bgG).isEmpty() || (b3 => pts.push(b3.min, b3.max))(new T.Box3().setFromObject(bgG)); }
       const bb = new T.Box3().setFromPoints(pts.concat([V3(0, 0, 0)].map(p => p.setY(0).setZ(pts[0].z)))), c = bb.getCenter(new T.Vector3()), sz = bb.getSize(new T.Vector3());
       fr = {c, sz, rad: Math.max(.75, Math.hypot(sz.y, Math.max(sz.x, sz.z)) / 2 + .08)};
     } else { fr = frame(def, eq, opt); buildBg(def, eq, opt); }
     stage.innerHTML = ''; stage.appendChild(canvas);
-    let az = (cus && cus.view ? cus.view[0] : 38) * RAD, el = (cus && cus.view ? cus.view[1] : 15) * RAD, drag = null;
-    const size = () => { const w = stage.clientWidth || 340, h = Math.round(w * .86); canvas.style.width = '100%'; canvas.style.height = h + 'px'; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+    const initial = cus && cus.view ? cus.view : [38, 15];
+    let az = initial[0] * RAD, el = initial[1] * RAD, drag = null;
+    const size = () => { const w = stage.clientWidth || 340, h = Math.min(420, Math.round(w * .94)); canvas.style.width = '100%'; canvas.style.height = h + 'px'; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
     size();
     canvas.onpointerdown = e => { drag = {x: e.clientX, az}; try { canvas.setPointerCapture(e.pointerId); } catch (_) {} };
-    canvas.onpointermove = e => { if (drag) az = drag.az - (e.clientX - drag.x) * .012; };
+    canvas.onpointermove = e => { if (drag) { az = drag.az - (e.clientX - drag.x) * .009; stage.closest('.gf').querySelectorAll('[data-act=gfview]').forEach(b => b.setAttribute('aria-pressed', 'false')); finish(); } };
     canvas.onpointerup = canvas.onpointercancel = () => { drag = null; };
+    const observer = new ResizeObserver(() => { if (stage.isConnected) { size(); finish(); } }); observer.observe(stage);
     const ctl = {
+      clock: ms => gtimeline(cus || def, ms),
       draw(ms) {
         if (cus) {
-          const sg = cus.seg || 1300, ph = (ms / sg) % 2, u = cus.cyc ? (ms / sg / 2) % 1 : gease(ph < 1 ? ph : 2 - ph);
+          const u = gtimeline(cus, ms).u;
           reset(); const r = cus.pose(kit, u) || {}; clearGroup(fgG); drawTools(fgG, r.tools);
           return finish();
         }
@@ -467,12 +569,19 @@ window.G3D = (() => {
         return finish();
       },
       resize: size,
-      view(a, e) { az = a * RAD; el = e * RAD; },
+      view(a = initial[0], e = initial[1]) { az = a * RAD; el = e * RAD; finish(); },
+      dispose() { observer.disconnect(); canvas.onpointerdown = canvas.onpointermove = canvas.onpointerup = canvas.onpointercancel = null; },
     };
     function finish() {
       // distanza che fa stare la scena in altezza e in larghezza (la scena puo' girare: larghezza = lato maggiore in pianta)
-      const tv = Math.tan(cam.fov * RAD / 2), th = tv * cam.aspect, W = Math.max(fr.sz.x, fr.sz.z);
-      const dist = Math.max((fr.sz.y / 2 + .1) / tv, (W / 2 + .1) / th) + W * .35;
+      const tv = Math.tan(cam.fov * RAD / 2), th = tv * cam.aspect;
+      const right = V3(Math.cos(az), 0, -Math.sin(az)), up = V3(-Math.sin(az) * Math.sin(el), Math.cos(el), -Math.cos(az) * Math.sin(el));
+      const toward = V3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+      let dist = 1;
+      for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
+        const p = V3(x * (fr.sz.x / 2 + .06), y * (fr.sz.y / 2 + .06), z * (fr.sz.z / 2 + .06));
+        dist = Math.max(dist, Math.abs(p.dot(right)) / th + p.dot(toward), Math.abs(p.dot(up)) / tv + p.dot(toward));
+      }
       cam.position.set(fr.c.x + Math.sin(az) * Math.cos(el) * dist, fr.c.y + Math.sin(el) * dist, fr.c.z + Math.cos(az) * Math.cos(el) * dist);
       cam.lookAt(fr.c);
       shadow.scale.set(2.4, 2.4, 1); shadow.position.set(fr.c.x, .002, fr.c.z);

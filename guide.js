@@ -48,15 +48,28 @@ const gmix = (a, b, t) => {
   });
   return o;
 };
-const gease = u => u < .12 ? 0 : u > .88 ? 1 : (x => x * x * (3 - 2 * x))((u - .12) / .76);
+// Quintic interpolation: both velocity and acceleration reach zero at each checkpoint.
+const gease = u => { const x = Math.max(0, Math.min(1, u)); return x * x * x * (x * (x * 6 - 15) + 10); };
+function gtimeline(def, ms) {
+  const cyclic = def.cyc || def.loop === 'cyc', n = def.poses ? def.poses.length : 2;
+  const duration = def.duration || (def.seg || 1300) * (cyclic ? n : 2 * Math.max(1, n - 1)) * 1.35;
+  const progress = ((ms % duration) + duration) % duration / duration;
+  if (def.hold || def.still) return {duration, progress, u: (1 - Math.cos(progress * Math.PI * 2)) / 2, phase: 'gfHold'};
+  if (cyclic) return {duration, progress, u: progress, phase: 'gfMotion'};
+  const returning = progress >= .5, half = returning ? (progress - .5) * 2 : progress * 2;
+  const u = gease((half - .08) / .84);
+  return {duration, progress, u: returning ? 1 - u : u,
+    phase: half < .08 ? (returning ? 'gfEnd' : 'gfStart') : half > .92 ? (returning ? 'gfStart' : 'gfEnd') : returning ? 'gfReturn' : 'gfOut'};
+}
 // posa nell'istante ms: avanti e indietro (pp) o ciclo continuo (cyc)
 function gpose(def, ms) {
-  const P = def.poses, n = P.length, seg = def.seg || 1100, st = def.still;
+  const P = def.poses, n = P.length, st = def.still;
   if (n === 1) return P[0];
-  if (st) { const w = Math.sin(ms / 260) * st, q = P[0]; return q.sho ? {...q, sho: [q.sho[0], q.sho[1] + w]} : {...q, hip: [q.hip[0], q.hip[1] + w]}; }
+  if (st) { const w = Math.sin(ms / 900) * st, q = P[0]; return q.sho ? {...q, sho: [q.sho[0], q.sho[1] + w]} : {...q, hip: [q.hip[0], q.hip[1] + w]}; }
   let ph;
-  if (def.loop === 'cyc') { ph = (ms / seg) % n; const i = Math.floor(ph); return gmix(P[i], P[(i + 1) % n], gease(ph - i)); }
-  ph = (ms / seg) % (2 * (n - 1)); if (ph > n - 1) ph = 2 * (n - 1) - ph;
+  const clock = gtimeline(def, ms);
+  if (def.loop === 'cyc') { ph = clock.u * n; const i = Math.floor(ph); return gmix(P[i], P[(i + 1) % n], gease(ph - i)); }
+  ph = clock.u * (n - 1);
   const i = Math.min(n - 2, Math.floor(ph));
   return gmix(P[i], P[i + 1], gease(ph - i));
 }
@@ -378,39 +391,70 @@ function gstill(baseId, eq, end, girl) {
 // ---------- finestra animata ----------
 const guideGirl = () => db.settings && db.settings.guideGirl != null ? !!db.settings.guideGirl : (db.profile && db.profile.sex === 'f');
 const guideOff = () => !!(db.guide && db.guide.off);
-let gfRaf = 0, gfPaused = false, gfMs = 0, gfLast = 0, gf3 = null;
+let gfRaf = 0, gfPaused = false, gfMs = 0, gfLast = 0, gf3 = null, gfSpeed = 1, gfDraw = null, gfClock = null, gfRun = 0;
+function guidePlayback(paused) {
+  gfPaused = paused; gfLast = 0;
+  const pb = document.getElementById('gf-play');
+  if (pb) { pb.innerHTML = icon(paused ? 'play' : 'pause'); pb.setAttribute('aria-label', t(paused ? 'gfPlay' : 'gfPause')); }
+}
+function guideStop() {
+  ++gfRun; cancelAnimationFrame(gfRaf); if (gf3) gf3.dispose();
+  gf3 = null; gfDraw = null; gfClock = null;
+}
 function guidePanel(baseId, eq) {
   if (!GMAP[baseId] || !BASE[baseId]) return '';
   const eqs = [...new Set(BASE[baseId].variants.map(v => v.eq))].filter(e => gdef(baseId, e));
   if (!eqs.includes(eq)) eq = eqs[0];
-  return `<div class="gf" id="gf" data-b="${baseId}" data-eq="${eq}"><div class="gf-stage" id="gf-stage" aria-hidden="true"></div>
-    <div class="gf-ctl"><button class="ib" data-act="gfplay" id="gf-play" aria-label="${t('gfPause')}">${icon('pause')}</button>
-      <div class="gf-eq">${eqs.length > 1 ? eqs.map(e => `<button class="chip" data-act="gfeq" data-eq="${e}" aria-pressed="${e === eq}">${LBL().eq[e] || e}</button>`).join('') : `<span class="sub">${LBL().eq[eq] || eq}</span>`}</div>
-      <button class="ib txt" data-act="gfgirl" id="gf-girl" aria-label="${t(guideGirl() ? 'gfBoy' : 'gfGirl')}">${guideGirl() ? '♀' : '♂'}</button></div></div>`;
+  return `<div class="gf" id="gf" data-b="${baseId}" data-eq="${eq}">
+    <div class="gf-studio"><div class="gf-heading"><span>${t('guide')}</span><span class="gf-phase" id="gf-phase">${t('gfStart')}</span></div>
+      <div class="gf-stage" id="gf-stage" role="img" aria-label="${esc(tx(BASE[baseId].name))}"></div>
+      <div class="gf-views" role="group" aria-label="${t('gfView')}">${[['auto', '3/4'], ['front', t('front')], ['side', t('gfSide')], ['back', t('backPose')]].map(([v, label]) => `<button data-act="gfview" data-view="${v}" aria-pressed="${v === 'auto'}">${label}</button>`).join('')}</div>
+      <div class="gf-hint">${t('gfRotate')}</div>
+    </div>
+    <div class="gf-player"><div class="gf-transport"><button class="ib gf-play" data-act="gfplay" id="gf-play" aria-label="${t('gfPause')}">${icon('pause')}</button>
+      <button class="ib" data-act="gfrestart" aria-label="${t('gfRestart')}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button>
+      <label class="gf-speed">${t('gfSpeed')}<select id="gf-speed" aria-label="${t('gfSpeed')}"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option></select></label>
+      <button class="ib txt" data-act="gfgirl" id="gf-girl" aria-label="${t(guideGirl() ? 'gfBoy' : 'gfGirl')}">${guideGirl() ? '♀' : '♂'}</button></div>
+      <input class="gf-seek" id="gf-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="${t('gfSeek')}">
+      <div class="gf-legend"><span><i></i>${t('primaryM')}</span><span><i></i>${t('secondaryM')}</span></div>
+    </div>
+    <div class="gf-eq">${eqs.length > 1 ? eqs.map(e => `<button class="chip" data-act="gfeq" data-eq="${e}" aria-pressed="${e === eq}">${LBL().eq[e] || e}</button>`).join('') : `<span class="sub">${LBL().eq[eq] || eq}</span>`}</div><div class="gf-share"><button class="btn s wide" data-act="gfshare">${icon('share')} ${t('gfShare')}</button></div></div>`;
 }
-function guideStart() {
-  cancelAnimationFrame(gfRaf);
+function guideStart(preserve = false) {
+  const previous = {paused: gfPaused, speed: gfSpeed}; guideStop(); const run = gfRun;
   const el = document.getElementById('gf'); if (!el) return;
   const eq = el.dataset.eq, def = gdef(el.dataset.b, eq), st = document.getElementById('gf-stage'); if (!def || !st) return;
-  const girl = guideGirl(); gf3 = null; el.classList.remove('gf3');
-  gfPaused = matchMedia('(prefers-reduced-motion: reduce)').matches; gfMs = 0; gfLast = 0;
-  const pb = document.getElementById('gf-play'); if (pb) { pb.innerHTML = icon(gfPaused ? 'play' : 'pause'); pb.setAttribute('aria-label', t(gfPaused ? 'gfPlay' : 'gfPause')); }
+  const girl = guideGirl(); el.classList.remove('gf3'); el.querySelector('.gf-cred')?.remove();
+  gfSpeed = preserve ? previous.speed : 1; gfMs = 0; gfLast = 0;
+  guidePlayback(preserve ? previous.paused : matchMedia('(prefers-reduced-motion: reduce)').matches);
+  gfClock = ms => gtimeline(def, ms);
   // con WebGL si aspetta il modello 3D (nessun omino stilizzato nel frattempo); senza, o se il 3D non si carica, resta l'SVG
   let wait3d = !!(window.G3D && G3D.supported());
-  const draw = ms => { if (gf3) gf3.draw(ms); else if (!wait3d) st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`; };
+  const seek = el.querySelector('#gf-seek'), phase = el.querySelector('#gf-phase'), speed = el.querySelector('#gf-speed');
+  speed.value = String(gfSpeed); speed.onchange = () => { gfSpeed = Number(speed.value); gfLast = 0; };
+  seek.oninput = () => { guidePlayback(true); gfMs = Number(seek.value) / 1000 * (gfClock(0).duration - .01); draw(gfMs); };
+  const draw = gfDraw = ms => {
+    if (gf3) gf3.draw(ms); else if (!wait3d) st.innerHTML = `<svg class="gf-svg" viewBox="${GBOX}" aria-hidden="true">${gfloor}${gsvg(def, gpose(def, ms), eq, girl)}</svg>`;
+    const clock = gfClock(ms), label = t(clock.phase);
+    if (phase.textContent !== label) phase.textContent = label;
+    seek.value = Math.round(clock.progress * 1000); seek.style.setProperty('--progress', (clock.progress * 100) + '%');
+    seek.setAttribute('aria-valuetext', label + ' · ' + Math.round(clock.progress * 100) + '%');
+  };
   if (wait3d) { st.innerHTML = '<div class="gf-load" aria-hidden="true"><i></i></div>'; el.classList.add('gf3'); }
   const tick = ts => {
-    if (!document.getElementById('gf-stage')) return;
-    if (!gfPaused) { gfMs += gfLast ? Math.min(60, ts - gfLast) : 0; draw(gfMs); }
-    gfLast = ts; gfRaf = requestAnimationFrame(tick);
+    if (run !== gfRun) return;
+    if (!st.isConnected) { guideStop(); return; }
+    if (!gfPaused && !document.hidden && !wait3d) { gfMs += gfLast ? Math.min(100, ts - gfLast) * gfSpeed : 0; draw(gfMs); }
+    gfLast = document.hidden ? 0 : ts; gfRaf = requestAnimationFrame(tick);
   };
   draw(0); gfRaf = requestAnimationFrame(tick);
   // modello anatomico 3D: si carica in un secondo momento e prende il posto dell'omino SVG
   if (wait3d) G3D.load().then(() => {
-    if (document.getElementById('gf-stage') !== st || el.dataset.eq !== eq) return;
-    gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); el.classList.add('gf3'); draw(gfMs);
+    if (run !== gfRun || !st.isConnected) return;
+    gf3 = G3D.mount(st, el.dataset.b, eq, G3D.def(el.dataset.b, eq)); gfClock = gf3.clock; wait3d = false; gfLast = 0; el.classList.add('gf3'); draw(gfMs);
+    el.querySelectorAll('[data-act=gfview]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === 'auto'));
     if (!el.querySelector('.gf-cred')) el.insertAdjacentHTML('beforeend', '<a class="gf-cred" href="3d/LICENSE.md" target="_blank" rel="noopener">3D: Z-Anatomy · CC BY-SA 4.0</a>');
-  }).catch(() => { if (document.getElementById('gf-stage') !== st) return; wait3d = false; el.classList.remove('gf3'); draw(gfMs); });
+  }).catch(() => { if (run !== gfRun || !st.isConnected) return; if (gf3) gf3.dispose(); gf3 = null; gfClock = ms => gtimeline(def, ms); wait3d = false; el.classList.remove('gf3'); draw(gfMs); });
 }
 // la prima volta che si aggiunge un movimento dalla libreria
 function guideFirst(varId) {
@@ -419,10 +463,33 @@ function guideFirst(varId) {
   if (g.seen[v.b.id]) return;
   g.seen[v.b.id] = 1; save(); sheetLibBase(v.b.id, varId, true);
 }
+// Public deep links contain only the exercise and equipment, never workout data.
+function guideLink(baseId, eq) {
+  return INVITE_URL + '#tutorial=' + encodeURIComponent(baseId) + '&eq=' + encodeURIComponent(eq);
+}
+function handleGuideHash() {
+  const params = new URLSearchParams(location.hash.slice(1)), id = params.get('tutorial');
+  if (!id || !Object.hasOwn(BASE, id) || !Object.hasOwn(GMAP, id)) return false;
+  const variant = BASE[id].variants.find(v => v.eq === params.get('eq')) || BASE[id].variants[0];
+  history.replaceState(null, '', location.pathname + location.search);
+  sheetLibBase(id, variant.id);
+  return true;
+}
 Object.assign(acts, {
-  gfplay: () => { gfPaused = !gfPaused; const pb = document.getElementById('gf-play'); if (pb) { pb.innerHTML = icon(gfPaused ? 'play' : 'pause'); pb.setAttribute('aria-label', t(gfPaused ? 'gfPlay' : 'gfPause')); } },
-  gfeq: b => { const el = document.getElementById('gf'); el.dataset.eq = b.dataset.eq; el.querySelectorAll('[data-act=gfeq]').forEach(x => x.setAttribute('aria-pressed', x === b)); const p = gfPaused; guideStart(); if (p) acts.gfplay(); },
-  gfgirl: () => { (db.settings = db.settings || {}).guideGirl = !guideGirl(); save(); const g = document.getElementById('gf-girl'); g.textContent = guideGirl() ? '♀' : '♂'; g.setAttribute('aria-label', t(guideGirl() ? 'gfBoy' : 'gfGirl')); guideStart(); },
+  gfshare: async () => {
+    const el = document.getElementById('gf'); if (!el) return;
+    const url = guideLink(el.dataset.b, el.dataset.eq);
+    if (navigator.share) {
+      try { await navigator.share({title: tx(BASE[el.dataset.b].name) + ' · Gym-Tracker', url}); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    shareText = url; acts.copytext();
+  },
+  gfplay: () => guidePlayback(!gfPaused),
+  gfrestart: () => { gfMs = 0; gfLast = 0; if (gfDraw) gfDraw(0); },
+  gfview: b => { if (!gf3) return; const views = {front: [0, 10], side: [90, 10], back: [180, 10]}; if (b.dataset.view === 'auto') gf3.view(); else gf3.view(...views[b.dataset.view]); document.querySelectorAll('[data-act=gfview]').forEach(x => x.setAttribute('aria-pressed', x === b)); },
+  gfeq: b => { const el = document.getElementById('gf'); el.dataset.eq = b.dataset.eq; el.querySelectorAll('[data-act=gfeq]').forEach(x => x.setAttribute('aria-pressed', x === b)); guideStart(true); },
+  gfgirl: () => { (db.settings = db.settings || {}).guideGirl = !guideGirl(); save(); const g = document.getElementById('gf-girl'); g.textContent = guideGirl() ? '♀' : '♂'; g.setAttribute('aria-label', t(guideGirl() ? 'gfBoy' : 'gfGirl')); guideStart(true); },
   gfskip: () => closeSheet(),
   gfnever: () => { (db.guide = db.guide || {seen: {}}).off = true; save(); closeSheet(); toast(t('guideOffDone')); },
   guideset: b => { (db.guide = db.guide || {seen: {}}).off = b.dataset.on !== '1'; save(); render(); },

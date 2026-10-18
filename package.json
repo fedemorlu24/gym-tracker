@@ -1,0 +1,10 @@
+{
+  "name": "gym-tracker",
+  "private": true,
+  "scripts": {
+    "test:guides": "node tests/guides.cjs",
+    "test:donation": "node tests/donation.cjs",
+    "test:update": "node tests/update.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}
