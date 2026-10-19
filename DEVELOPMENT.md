@@ -8,6 +8,8 @@ The v74 revision uses a browser-only welcome on Android, with “Continue in bro
 
 The v75 release makes the chat password optional. New users can continue without one, and the same identity remains available after reload; they can add a password later in Chat settings. Existing protected users can remove the chat password after unlocking, preserving their identity. The key then stays in local app data, so anyone with access to the device and app storage may be able to use it. Optional Settings → Proteggi dati encrypts the whole archive, including the chat key, and requires its separate app password to reopen the app. Exporting a backup while the chat key has no password requires a separate password for the backup file. v75 was published on 19 October 2026; GitHub Pages build, all 17 public file hashes and the live mobile smoke test passed. Receipts are in `artifacts/release-v75/`.
 
+The v76 recovery flow replaces the locked-chat unlock CTA with a clearly warned new-identity reset for users who forgot their password. It removes the old identity, contacts, saved messages and chat photos from the active archive while retaining workouts and other photos; the generated identity has no chat password. This cannot recover the old identity. v76 is a local candidate.
+
 On Android, open it in your browser and choose *Continue in browser*. On iOS, the *Add to Home Screen* guide remains available. There is no Gym Tracker account, subscription or advertising. Workout data is stored on your device; optional chat, sharing and external links use the services described below.
 
 ## What it does

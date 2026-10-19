@@ -273,6 +273,55 @@ async function unprotectChatIdentity(bytes, isCurrent = () => true) {
     resumeBackupExport(committed);
   }
 }
+async function resetLockedChatIdentity(isCurrent = () => true) {
+  if (storageBusy || archiveLocked || archiveResumePending || ChatVault.status() !== 'locked') throw vaultFailure('VAULT_STALE');
+  storageBusy = true; invalidateBackupData(); clearTimeout(planSaveT);
+  let committed = false;
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all([...pendingWrites]);
+    const before = await storageSnapshot(true), current = db.chat;
+    if (before.generation !== storageGeneration || !current || !current.vault || current.sk ||
+        ChatVault.status() !== 'locked') throw vaultFailure('VAULT_STALE');
+    const prior = before.json && JSON.parse(before.json);
+    if (!prior || !prior.chat || !prior.chat.vault || prior.chat.pk !== current.pk ||
+        ChatVault.validate(prior.chat.vault, prior.chat.pk).data !== current.vault.data) throw vaultFailure('VAULT_STALE');
+    const identity = await ChatVault.createUnprotected();
+    const candidate = JSON.parse(JSON.stringify(db)), oldChat = candidate.chat;
+    const chatPhotos = [...new Set(Object.values(oldChat.msgs || {}).flat().filter(m => m && m.k === 'img' && /^[0-9a-f]{64}$/.test(m.id)).map(m => 'c:' + m.id))];
+    candidate.chat = {
+      ...identity,
+      tok: Array.from(crypto.getRandomValues(new Uint8Array(12)), n => n.toString(16).padStart(2, '0')).join(''),
+      friends: {}, msgs: {}, relays: Array.isArray(oldChat.relays) && oldChat.relays.length ? oldChat.relays.slice() : ['wss://nos.lol', 'wss://relay.damus.io', 'wss://relay.primal.net', 'wss://offchain.pub'], sync: 0, seen: [], blocked: []
+    };
+    candidate.ts = Date.now();
+    const json = JSON.stringify(candidate), generation = crypto.randomUUID(), storedJson = await archiveJSON(json);
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    await storageWrite([STORE, PHOTOS], tx => {
+      const kv = tx.objectStore(STORE), previous = kv.get(KEY), oldRollback = kv.get(STORAGE_ROLLBACK);
+      oldRollback.onsuccess = () => {
+        if (!isCurrent() || previous.result !== before.rawJson || JSON.stringify(oldRollback.result) !== JSON.stringify(before.rawRollback)) { tx.abort(); return; }
+        kv.put(storedJson, KEY); kv.put(generation, STORAGE_META);
+        if (chatPhotos.length) {
+          const store = tx.objectStore(PHOTOS);
+          chatPhotos.forEach(id => store.delete(id));
+          kv.put(crypto.randomUUID(), PHOTO_REVISION);
+        }
+      };
+    });
+    committed = true; storageGeneration = generation; db = candidate;
+    if (!await cacheArchive(storedJson, generation) && archiveHeader) throw vaultFailure('VAULT_CLEANUP');
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    ChatVault.lock(); ChatVault.refresh();
+    replacePhotos(photoViews(await photoTx('readonly', s => s.getAll()) || []));
+    return db.chat;
+  } finally {
+    storageBusy = false;
+    if (window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+    resumeBackupExport(committed);
+  }
+}
 let backupFile = null;
 let backupRevision = 0, backupDialog = null;
 function save() {

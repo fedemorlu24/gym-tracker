@@ -15,7 +15,8 @@
     "test:archive-vault": "node tests/archive-vault.cjs",
     "test:outbound": "node tests/outbound.cjs",
     "test:chat-queue": "node tests/chat-queue.cjs",
-    "test:modal": "node tests/modal.cjs"
+    "test:modal": "node tests/modal.cjs",
+    "test:chat-reset": "node tests/chat-reset.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

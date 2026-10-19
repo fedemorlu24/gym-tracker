@@ -84,8 +84,10 @@ function chatFailure(error) {
 function chatVaultBanner(settings = false) {
   const state = chatVaultStatus();
   if (state === 'unlocked') return settings ? `<p class="sub">${t('vaultSession')}</p>${ChatVault.isProtected() ? `<button class="btn s wide" data-act="chatlock" style="margin:8px 0 8px">${t('vaultLock')}</button><button class="btn s wide" data-act="chatunprotect" style="margin:0 0 12px">${t('vaultRemovePassword')}</button>` : `<p class="note">${t('vaultOptionalOpen')}</p><button class="btn s wide" data-act="chatprotect" style="margin:8px 0 12px">${t('vaultProtectOptional')}</button>`}` : '';
-  const setup = state === 'setup', problem = state === 'cleanup' || state === 'error';
-  return `<div class="${problem ? 'warn' : 'note'}" style="padding:10px 2px"><p>${t(state === 'cleanup' ? 'vaultCleanup' : state === 'error' ? 'vaultInvalid' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>${state === 'error' ? '' : `<button class="btn s wide" data-act="chatvault" style="margin-top:8px">${t(setup ? 'vaultSetupTitle' : state === 'cleanup' ? 'vaultRetry' : 'vaultUnlock')}</button>`}</div>`;
+  const setup = state === 'setup', locked = state === 'locked', problem = state === 'cleanup' || state === 'error';
+  const message = state === 'cleanup' ? 'vaultCleanup' : state === 'error' ? 'vaultInvalid' : locked ? 'vaultForgotText' : setup ? 'vaultSetupText' : 'vaultLockedText';
+  const action = locked ? 'chatresetidentity' : 'chatvault', label = locked ? 'vaultForgotAction' : setup ? 'vaultSetupTitle' : 'vaultRetry';
+  return `<div class="${problem ? 'warn' : 'note'}" style="padding:10px 2px"><p>${t(message)}</p>${state === 'error' ? '' : `<button class="btn s wide" data-act="${action}" style="margin-top:8px">${t(label)}</button>`}</div>`;
 }
 let chatVaultPrompt = null;
 window.gymChatVaultCancelTarget = target => {
@@ -565,7 +567,7 @@ function chatView() {
       ${ava(f.n, 38)}<div class="t small"><h1>${esc(f.n)}</h1><p id="chat-status">${chatStatus()}</p></div>
       <button class="ib" data-act="chatmenu" data-pk="${esc(pk)}" aria-label="${t('chatSettings')}">${icon('more')}</button></header>
     <div class="clist" id="chat-list">${chatList(pk)}</div>
-    <div class="cbar" id="cbar">${chatBusy() ? `<button class="btn s wide" data-act="chatvault" style="min-height:48px">${t(chatVaultStatus() === 'setup' ? 'vaultSetupTitle' : 'vaultUnlock')}</button>` : ''}<div class="ctray" id="ctray" hidden>${CHAT_EMOJI.map(e => `<button data-act="chatemoji" data-e="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
+    <div class="cbar" id="cbar">${chatBusy() ? `<button class="btn s wide" data-act="${chatVaultStatus() === 'locked' ? 'chatresetidentity' : 'chatvault'}" style="min-height:48px">${t(chatVaultStatus() === 'locked' ? 'vaultForgotAction' : 'vaultSetupTitle')}</button>` : ''}<div class="ctray" id="ctray" hidden>${CHAT_EMOJI.map(e => `<button data-act="chatemoji" data-e="${e}" aria-label="${e}">${e}</button>`).join('')}</div>
       <form data-form="chatsend" data-pk="${esc(pk)}"${chatBusy() ? ' style="display:none"' : ''}><button type="button" class="ib" data-act="chatpick" aria-label="${t('chatPhoto')}">${icon('camera')}</button>
       <input name="x" id="cinput" placeholder="${esc(t('chatPh'))}" autocomplete="off" enterkeyhint="send" maxlength="1000">
       <button type="button" class="ib" data-act="chattray" aria-label="emoji">😀</button><button class="csend" aria-label="${t('chatSend')}">${icon('fwd')}</button></form>
@@ -737,6 +739,12 @@ Object.assign(acts, {
     if (!confirm(t('vaultRemoveConfirm'))) return;
     try { await ChatVault.removePassword(); toast(t('vaultRemoved')); }
     catch (error) { toast(t(error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : 'vaultFailed')); }
+  },
+  chatresetidentity: async () => {
+    if (chatVaultStatus() !== 'locked' || !confirm(t('vaultResetConfirm'))) return;
+    try {
+      await resetLockedChatIdentity(); closeSheet(); go({name: 'home', tab: 'chat'}); toast(t('vaultResetDone'));
+    } catch (error) { toast(t(error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : 'vaultResetFail')); }
   },
   chatlock: () => { ChatVault.lock(); closeSheet(); },
   chatlinkto: b => {
