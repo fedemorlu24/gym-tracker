@@ -4,9 +4,9 @@ A free, offline-first workout diary for the gym, built as a Progressive Web App.
 
 **Live app:** https://fedemorlu24.github.io/gym-tracker/
 
-The v73 revision sets the minimum chat password length to eight characters. `SECURITY_REMEDIATION.md` retains the v71 security evidence. This document does not attest publication; release and live verification receipts are stored separately when available in `artifacts/release-v73/`. Earlier release receipts remain in their respective artifact folders.
+The v74 revision uses a browser-only welcome on Android, with “Continue in browser” as its sole action. It removes Android installation prompts and the Settings installation entry, with browser-specific backup/update copy in all five languages. Release and live verification receipts are stored separately in `artifacts/release-v74/`. Earlier security evidence remains in `SECURITY_REMEDIATION.md` and previous release folders.
 
-Open it on your phone and use *Add to Home Screen*. There is no Gym Tracker account, subscription or advertising. Workout data is stored on your device; optional chat, sharing and external links use the services described below.
+On Android, open it in your browser and choose *Continue in browser*. On iOS, the *Add to Home Screen* guide remains available. There is no Gym Tracker account, subscription or advertising. Workout data is stored on your device; optional chat, sharing and external links use the services described below.
 
 ## What it does
 
@@ -89,6 +89,10 @@ Workout data lives in your browser (`localStorage` + `IndexedDB`; photos only in
 No build step for the app: plain HTML, CSS and JavaScript. The 3D files in `3d/` are prebuilt (see below).
 
 ## Development
+
+Android detection uses the user-agent string or `userAgentData.platform`. The `beforeinstallprompt` handler cancels and discards Android events, and the install action is guarded. The website cannot remove browser-owned menu entries; existing standalone installs retain normal startup. See [MDN beforeinstallprompt](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event) for browser event support.
+
+V74 Playwright checks: 15 groups cover emulated Samsung/Chrome Android in all five languages, a 320×568 viewport, Android desktop user-agent hints, existing standalone startup, desktop prompt behavior and iOS WebKit guidance. Console/pageerror/network diagnostics are captured and screenshots inspected. The update fixture checks 73 → 74 → 75 → 76, preserving localStorage, IndexedDB, photos and an open draft, including offline reopening. No physical Samsung or Google Play Protect installation test was performed.
 
 ```sh
 python3 -m http.server 8765      # then open http://localhost:8765

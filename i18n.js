@@ -1,6 +1,10 @@
 // Testi dell'app in 5 lingue. Le voci funzione ricevono i valori già formattati.
 window.I18N = {
   it: {
+    browserWelcomeH: "Benvenuto in Gym Tracker",
+    browserWelcomeP: "Usa Gym Tracker direttamente nel browser per registrare gli allenamenti e seguire i tuoi progressi.",
+    bkAndroid: "I tuoi dati sono salvati su questo dispositivo. Se cancelli i dati del browser, possono andare persi. Salva regolarmente un backup.",
+    browserUpdateHint: "Aggiornamenti automatici nel browser",
     donateTitle: "Sostieni Gym Tracker",
     donateOptional: "Donazione facoltativa",
     donateFree: "Allenamenti, tutorial e aggiornamenti gratuiti per tutti.",
@@ -125,6 +129,10 @@ window.I18N = {
     shareTitle: 'Gym Tracker',
   },
   en: {
+    browserWelcomeH: "Welcome to Gym Tracker",
+    browserWelcomeP: "Use Gym Tracker directly in your browser to log workouts and follow your progress.",
+    bkAndroid: "Your data is saved on this device. Clearing browser data can erase it. Save a backup regularly.",
+    browserUpdateHint: "Automatic updates in your browser",
     donateTitle: "Support Gym Tracker",
     donateOptional: "Optional donation",
     donateFree: "Workouts, tutorials and updates are free for everyone.",
@@ -249,6 +257,10 @@ window.I18N = {
     shareTitle: 'Gym Tracker',
   },
   es: {
+    browserWelcomeH: "Te damos la bienvenida a Gym Tracker",
+    browserWelcomeP: "Usa Gym Tracker directamente en el navegador para registrar tus entrenamientos y seguir tu progreso.",
+    bkAndroid: "Tus datos se guardan en este dispositivo. Si borras los datos del navegador, puedes perderlos. Guarda una copia de seguridad con regularidad.",
+    browserUpdateHint: "Actualizaciones automáticas en el navegador",
     donateTitle: "Apoya Gym Tracker",
     donateOptional: "Donación opcional",
     donateFree: "Entrenamientos, tutoriales y actualizaciones gratis para todos.",
@@ -373,6 +385,10 @@ window.I18N = {
     shareTitle: 'Gym Tracker',
   },
   fr: {
+    browserWelcomeH: "Bienvenue dans Gym Tracker",
+    browserWelcomeP: "Utilisez Gym Tracker directement dans le navigateur pour enregistrer vos séances et suivre vos progrès.",
+    bkAndroid: "Vos données sont enregistrées sur cet appareil. Effacer les données du navigateur peut les supprimer. Sauvegardez-les régulièrement.",
+    browserUpdateHint: "Mises à jour automatiques dans le navigateur",
     donateTitle: "Soutiens Gym Tracker",
     donateOptional: "Don facultatif",
     donateFree: "Entraînements, tutoriels et mises à jour gratuits pour tous.",
@@ -497,6 +513,10 @@ window.I18N = {
     shareTitle: 'Gym Tracker',
   },
   de: {
+    browserWelcomeH: "Willkommen bei Gym Tracker",
+    browserWelcomeP: "Nutze Gym Tracker direkt im Browser, um dein Training aufzuzeichnen und deine Fortschritte zu verfolgen.",
+    bkAndroid: "Deine Daten werden auf diesem Gerät gespeichert. Wenn du Browserdaten löschst, können sie verloren gehen. Speichere regelmäßig eine Sicherung.",
+    browserUpdateHint: "Automatische Updates im Browser",
     donateTitle: "Unterstütze Gym Tracker",
     donateOptional: "Freiwillige Spende",
     donateFree: "Trainings, Tutorials und Updates sind für alle kostenlos.",

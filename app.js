@@ -1532,8 +1532,8 @@ function settingsView() {
     <div class="group"><button class="row" data-act="backup"><div class="grow"><h3>${t('exportData')} · ${t('importData')}</h3><div class="sub">${t('backup')}</div></div><span class="chev">${icon('chev')}</span></button></div>
     <div class="gap"></div>
     <div class="group"><button class="row" data-act="tour"><div class="grow"><h3>${t('howItWorks')}</h3></div><span class="chev">${icon('chev')}</span></button>
-    <button class="row" data-act="appupdate"><div class="grow"><h3>${t('appUpdate')}</h3><div class="sub">Gym-Tracker · v${APP_VERSION} · ${t('appUpdateHint')}</div></div><span class="chev">${icon('chev')}</span></button>
-    ${!standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>
+    <button class="row" data-act="appupdate"><div class="grow"><h3>${t('appUpdate')}</h3><div class="sub">Gym-Tracker · v${APP_VERSION} · ${t(isAndroid && !standalone() ? 'browserUpdateHint' : 'appUpdateHint')}</div></div><span class="chev">${icon('chev')}</span></button>
+    ${!isAndroid && !standalone() && mobile() ? `<button class="row" data-act="install"><div class="grow"><h3>${t('installH')}</h3></div><span class="chev">${icon('chev')}</span></button>` : ''}</div>
     ${donationCard()}`;
 }
 function profileFields(p) {
@@ -2093,7 +2093,7 @@ function backupDue() {
 function backupNudge() {
   if (!backupDue()) return '';
   const d = backupDays();
-  return `<div class="nudge"><h3>${t('bkTitle')}</h3><p>${mobile() && !standalone() ? t('bkSafari') : t('bkHome')}</p>
+  return `<div class="nudge"><h3>${t('bkTitle')}</h3><p>${isAndroid ? t('bkAndroid') : mobile() && !standalone() ? t('bkSafari') : t('bkHome')}</p>
     <p class="sub">${d == null ? t('bkNever') : d === 0 ? t('bkToday') : t('bkLast', d)}</p>
     <div class="opts"><button class="chip" data-act="backup">${t('bkNow')}</button><button class="chip" data-act="bklater">${t('bkLater')}</button></div></div>`;
 }
@@ -2413,15 +2413,31 @@ function closeTour() {
   render();
 }
 
-// ---------- aggiungi alla schermata Home ----------
+// ---------- benvenuto nel browser / aggiungi alla schermata Home ----------
 const ua = navigator.userAgent;
+const isAndroid = /Android/i.test(ua) || navigator.userAgentData?.platform === 'Android';
 const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const standalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-const mobile = () => isIOS || /Android/.test(ua);
+const mobile = () => isIOS || isAndroid;
 let installEvt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!document.getElementById('install').hidden) openInstall(); });
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  // Android uses the browser only: never retain an install event for later use.
+  if (isAndroid) { installEvt = null; return; }
+  installEvt = e;
+  if (!document.getElementById('install').hidden) openInstall();
+});
 function openInstall() {
   const el = document.getElementById('install'), safari = isIOS && !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua);
+  if (isAndroid) {
+    el.innerHTML = `<img class="logo-big" src="icons/icon-512.png" alt="">
+      <h1>${t('browserWelcomeH')}</h1><p>${t('browserWelcomeP')}</p>
+      <div class="gap"></div>
+      <button class="btn p wide" data-act="installclose">${t('useInBrowser')}</button>`;
+    el.className = '';
+    el.hidden = false;
+    return;
+  }
   el.innerHTML = `<img class="logo-big" src="icons/icon-512.png" alt="">
     <h1>${t('installH')}</h1><p>${t('installP')}</p>
     ${isIOS ? `<p class="warn" style="margin-top:16px">${t('alreadyBrowser')}</p><ol class="steps hl2">${iosSteps(true, safari)}</ol>`
@@ -2443,7 +2459,7 @@ function iosSteps(withFirst, safari) {
 }
 // promemoria che resta sopra il browser dopo "Continua nel browser", finché non lo chiudi
 function showInstallTip() {
-  if (document.getElementById('install-tip') || !isIOS || standalone()) return;
+  if (isAndroid || document.getElementById('install-tip') || !isIOS || standalone()) return;
   const safari = !/CriOS|FxiOS|EdgiOS|GSA|OPiOS/.test(ua);
   const el = document.createElement('div');
   el.id = 'install-tip'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', t('tipTitle'));
@@ -3212,7 +3228,7 @@ const acts = {
   install: openInstall,
   installclose: closeInstall,
   tipclose: () => { const e = document.getElementById('install-tip'); if (e) e.remove(); },
-  installnow: () => { if (installEvt) installEvt.prompt(); },
+  installnow: () => { if (!isAndroid && installEvt) installEvt.prompt(); },
   share: b => openShare(b.dataset.k, b.dataset.a),
   sharechat: b => { if (shareFile) sheetChatPickImg(shareFile, !!b.dataset.w); },
   photochat: b => { const p = photos.find(x => x.id === b.dataset.id); if (p && p.blob) sheetChatPickImg(p.blob, true); },
