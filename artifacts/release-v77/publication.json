@@ -1,12 +1,13 @@
 {
   "commit": "542cb54a618444861dcacc15b7501c2d71097d29",
+  "buildCommit": "920d95d12fced7fc62a6de00490a4a40a4e50086",
   "version": 77,
   "url": "https://fedemorlu24.github.io/gym-tracker/",
   "build": {
-    "commit": "542cb54a618444861dcacc15b7501c2d71097d29",
+    "commit": "920d95d12fced7fc62a6de00490a4a40a4e50086",
     "status": "built",
-    "created_at": "2026-10-19T20:05:41Z",
-    "updated_at": "2026-10-19T20:06:17Z",
+    "created_at": "2026-10-19T20:07:19Z",
+    "updated_at": "2026-10-19T20:07:55Z",
     "error": {
       "message": null
     }
