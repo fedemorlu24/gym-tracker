@@ -1,0 +1,119 @@
+{
+  "commit": "8e9d195596afbca74b7f4493a7c7b843a473cc7e",
+  "version": 75,
+  "url": "https://fedemorlu24.github.io/gym-tracker/",
+  "build": {
+    "commit": "8e9d195596afbca74b7f4493a7c7b843a473cc7e",
+    "status": "built",
+    "created_at": "2026-10-19T19:48:27Z",
+    "updated_at": "2026-10-19T19:49:12Z",
+    "error": {
+      "message": null
+    }
+  },
+  "files": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "sha256": "d22586bdcee944a014c330af931a0e737467c490f9d1739cba7f3c138e8ba826",
+      "match": true
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "sha256": "fa9b7721141de676e614ff87d95186b01ce02bb05382443e70ee0f98849834f1",
+      "match": true
+    },
+    {
+      "file": "bootstrap.js",
+      "status": 200,
+      "sha256": "1ea81037737ff4e6a38f79e50aa3ce25d5d86daf1d328e9d2931ae1a27fee957",
+      "match": true
+    },
+    {
+      "file": "chat-vault.js",
+      "status": 200,
+      "sha256": "ae90610c11149a31afc82be160729d6b526dab3f71a0410ec5f2f6ec98e7daa7",
+      "match": true
+    },
+    {
+      "file": "app.js",
+      "status": 200,
+      "sha256": "19b2d3d970df6505412c77819506ba1bfb5188308f83d8126376c82f7a5c2169",
+      "match": true
+    },
+    {
+      "file": "chat.js",
+      "status": 200,
+      "sha256": "0359ea8cedcd119e8d00738e7b443a62dc49fbe220778592abf67466f4d6538c",
+      "match": true
+    },
+    {
+      "file": "security-data.js",
+      "status": 200,
+      "sha256": "4011aa3eedb62f146392b6180b2ffc135d550e18c7d5724096370d355973d850",
+      "match": true
+    },
+    {
+      "file": "secure-media.js",
+      "status": 200,
+      "sha256": "358c17b284f3358e35f0666a8a8779649a78c3e91dcb3447f873393295df4de7",
+      "match": true
+    },
+    {
+      "file": "i18n.js",
+      "status": 200,
+      "sha256": "8f84d51f5748fd6e94fc1a526672f43113592ef9231efc06efcb2eafce31bd06",
+      "match": true
+    },
+    {
+      "file": "import.js",
+      "status": 200,
+      "sha256": "d06fc9f07da21a2f5be389d54e296366855449462a56043be46f7069fc734ce9",
+      "match": true
+    },
+    {
+      "file": "update.js",
+      "status": 200,
+      "sha256": "57022e7583420b4d4934571e943d0caf888e0fafc36fdb42b374051479f7d798",
+      "match": true
+    },
+    {
+      "file": "style.css",
+      "status": 200,
+      "sha256": "e920f46cc857cd8ccd8b0a2894cd50cc65f0a01ec6087143a6ec830e4de1430e",
+      "match": true
+    },
+    {
+      "file": "nostr-tools.js",
+      "status": 200,
+      "sha256": "dd2acfb3214496e719aaa284bbf2c24866aee1856eb88e99b6eae533d4a38eeb",
+      "match": true
+    },
+    {
+      "file": "guide3d.js",
+      "status": 200,
+      "sha256": "378d4646ad91f481da2dcc4ed1346edc04e423167f94ade96cf80e3b0985bf35",
+      "match": true
+    },
+    {
+      "file": "3d/three.min.js",
+      "status": 200,
+      "sha256": "6685cc7c5a1fa3cfa6c663564345d7e53dc6a25ee1867141d2f7037ae63cc6c4",
+      "match": true
+    },
+    {
+      "file": "archive-vault.js",
+      "status": 200,
+      "sha256": "0ab65fd9385e7c0c6b6a2cf7122888365c4955fb8122229a3d3237a25137de3c",
+      "match": true
+    },
+    {
+      "file": "external-links.js",
+      "status": 200,
+      "sha256": "d88da7deb141cdd2016963a7fc22e7962ede9b454cd6d9f02c813b2f73457a70",
+      "match": true
+    }
+  ],
+  "pass": true
+}

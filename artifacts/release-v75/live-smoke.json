@@ -1,0 +1,27 @@
+{
+  "console": [],
+  "pageerror": [],
+  "failed": [],
+  "http": [],
+  "external": [],
+  "sockets": [
+    "wss://nos.lol/",
+    "wss://relay.damus.io/",
+    "wss://relay.primal.net/",
+    "wss://offchain.pub/",
+    "wss://nos.lol/",
+    "wss://relay.damus.io/",
+    "wss://relay.primal.net/",
+    "wss://offchain.pub/"
+  ],
+  "result": {
+    "version": "75",
+    "hasRawKey": true,
+    "hasVault": false,
+    "status": "unlocked",
+    "reloadPreservedIdentity": true,
+    "chatTab": "true",
+    "chatInviteReady": true
+  },
+  "socketNote": "Public Nostr relay sockets were intercepted and closed by the test; no real chat connection was made."
+}

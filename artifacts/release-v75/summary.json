@@ -1,0 +1,22 @@
+{
+  "version": 75,
+  "status": "published and verified",
+  "commit": "8e9d195596afbca74b7f4493a7c7b843a473cc7e",
+  "publicVersion": 75,
+  "checks": {
+    "pagesBuild": "built",
+    "publicFiles": "17/17 SHA-256 match; HTTP 200",
+    "livePlaywright": "PASS: optional no-password access, reload preserves identity, chat tab/invite available",
+    "console": "0 errors",
+    "pageerror": "0",
+    "failedRequests": "0",
+    "httpErrors": "0",
+    "externalHttp": "0",
+    "nostrSockets": "intercepted and closed by test"
+  },
+  "limits": [
+    "Mobile browser emulation; no physical Android/iPhone device test",
+    "No real relay connection or message"
+  ],
+  "receipts": "artifacts/release-v75/"
+}
