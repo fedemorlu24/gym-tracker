@@ -1,0 +1,27 @@
+{
+  "version": 76,
+  "status": "published and verified",
+  "applicationCommit": "1b591c2e794fde0832aa2df3d4ff877975dde483",
+  "buildCommit": "1b591c2e794fde0832aa2df3d4ff877975dde483",
+  "url": "https://fedemorlu24.github.io/gym-tracker/",
+  "checks": {
+    "pagesBuild": "built",
+    "publicAssets": "17/17 SHA-256 match; HTTP 200",
+    "localPlaywright": "PASS: ordinary and whole-archive-protected storage",
+    "livePlaywright": "PASS: locked chat displays reset, warning confirmation, new passwordless identity persists after reload",
+    "cancel": "PASS: cancel preserves old state",
+    "workoutsAndNonChatPhotos": "preserved",
+    "chatFriendsMessagesPhotos": "removed on confirmed reset",
+    "consoleErrors": 0,
+    "pageerrors": 0,
+    "failedRequests": 0,
+    "httpErrors": 0,
+    "externalHttp": 0,
+    "nostrSockets": "intercepted and closed by tests"
+  },
+  "limits": [
+    "Browser mobile emulation; no physical device tested",
+    "No real relay connection or messages sent",
+    "Forgotten old identity cannot be recovered"
+  ]
+}

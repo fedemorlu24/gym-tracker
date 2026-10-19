@@ -1,0 +1,24 @@
+{
+  "version": 76,
+  "status": "passed",
+  "tests": {
+    "chatReset": "PASS: unprotected archive",
+    "chatResetWithWholeArchiveProtection": "PASS",
+    "cancelConfirmationPreservesOldData": "PASS",
+    "newIdentityIsUnprotected": "PASS",
+    "workoutsPreserved": "PASS",
+    "nonChatPhotosPreserved": "PASS",
+    "oldChatMessagesAndPhotosRemoved": "PASS",
+    "reloadPreservesNewIdentity": "PASS"
+  },
+  "diagnostics": {
+    "consoleErrors": 0,
+    "pageerrors": 0,
+    "failedRequests": 0,
+    "httpErrors": 0,
+    "externalHttp": 0,
+    "nostrWebSockets": "intercepted and closed; no real messages sent"
+  },
+  "visual": "locked-chat-mobile.png",
+  "physicalDevices": "not tested"
+}
