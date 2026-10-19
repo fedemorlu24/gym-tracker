@@ -1,6 +1,6 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),origin='https://gym.test',releaseDir=path.join(root,'artifacts/release-v76');fs.mkdirSync(releaseDir,{recursive:true});
+const root=path.resolve(__dirname,'..'),origin='https://gym.test',releaseDir=path.join(root,'artifacts/release-v77');fs.mkdirSync(releaseDir,{recursive:true});
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.wasm':'application/wasm','.glb':'model/gltf-binary'};
 (async()=>{
  const browser=await chromium.launch(),context=await browser.newContext({locale:'it-IT',viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage();
@@ -20,7 +20,7 @@ const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jso
   if(process.env.PROTECT_ARCHIVE==='1')await page.evaluate(()=>protectWholeArchive('synthetic archive passphrase'));
   assert.equal(await page.evaluate(()=>ChatVault.status()),'locked');
   assert.equal(await page.locator('[data-act=chatvault]').count(),0);assert.equal((await page.locator('#app').innerText()).includes('Sblocca la chat'),false);
-  assert.equal(await page.locator('[data-act=chatresetidentity]').innerText(),'Crea una nuova chat senza password');
+  assert.equal(await page.locator('[data-act=chatresetidentity]').innerText(),'Crea una nuova chat');
   await page.locator('[data-act=chatresetidentity]').locator('xpath=..').screenshot({path:path.join(releaseDir,'locked-chat-mobile.png')});
   await page.locator('[data-act=chatresetidentity]').click();await page.waitForTimeout(30);assert.equal(await page.evaluate(()=>ChatVault.status()),'locked');assert.equal(await page.evaluate(()=>chat().pk),seed.pk);
   await page.evaluate(()=>window.__confirmAnswer=true);await page.locator('[data-act=chatresetidentity]').click();
