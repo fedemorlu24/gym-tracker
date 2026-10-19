@@ -10,6 +10,8 @@ The v75 release makes the chat password optional. New users can continue without
 
 The v76 recovery flow replaces the locked-chat unlock CTA with a clearly warned new-identity reset for users who forgot their password. It removes the old identity, contacts, saved messages and chat photos from the active archive while retaining workouts and other photos; the generated identity has no chat password. This cannot recover the old identity. v76 was published on 19 October 2026; Playwright passed on the live mobile site, and all 17 public assets match the release. Receipts are in `artifacts/release-v76/`.
 
+The v77 copy update shortens the locked-chat recovery button to “Crea una nuova chat” (with concise matching labels in English, Spanish, French and German). The confirmation still explains the reset consequences. v77 was published on 19 October 2026; local and live Playwright checks passed, and all 17 public assets match. Receipts are in `artifacts/release-v77/`.
+
 On Android, open it in your browser and choose *Continue in browser*. On iOS, the *Add to Home Screen* guide remains available. There is no Gym Tracker account, subscription or advertising. Workout data is stored on your device; optional chat, sharing and external links use the services described below.
 
 ## What it does

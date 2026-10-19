@@ -1,0 +1,23 @@
+{
+  "console": [],
+  "pageerror": [],
+  "failed": [],
+  "http": [],
+  "external": [],
+  "sockets": [
+    "wss://nos.lol/",
+    "wss://nos.lol/"
+  ],
+  "dialogs": [
+    "Non puoi recuperare la password. Creando una nuova identità perderai contatti, messaggi e foto della chat salvati su questo telefono. Allenamenti e altre foto resteranno. Continuare?"
+  ],
+  "result": {
+    "version": 77,
+    "lockedButtonRemoved": true,
+    "confirmedResetCreatedNewPasswordlessIdentity": true,
+    "workoutPreserved": true,
+    "chatPhotosRemoved": true,
+    "reloadPreservedNewIdentity": true
+  },
+  "socketNote": "Nostr WebSockets intercepted and closed; no real messages sent."
+}

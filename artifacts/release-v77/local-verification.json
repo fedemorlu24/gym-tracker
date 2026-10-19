@@ -1,0 +1,31 @@
+{
+  "normal": {
+    "pass": true,
+    "version": 77,
+    "confirmationCanCancelWithoutChanges": true,
+    "newIdentityWithoutPassword": true,
+    "workoutPreserved": true,
+    "chatMessagesAndPhotosCleared": true,
+    "reloadPreservedIdentity": true,
+    "console": [],
+    "pageerror": [],
+    "failed": [],
+    "http": [],
+    "external": []
+  },
+  "wholeArchiveProtected": {
+    "pass": true,
+    "version": 77,
+    "confirmationCanCancelWithoutChanges": true,
+    "newIdentityWithoutPassword": true,
+    "workoutPreserved": true,
+    "chatMessagesAndPhotosCleared": true,
+    "reloadPreservedIdentity": true,
+    "console": [],
+    "pageerror": [],
+    "failed": [],
+    "http": [],
+    "external": []
+  },
+  "note": "Playwright 390x844. Nostr WebSockets intercepted and closed."
+}
