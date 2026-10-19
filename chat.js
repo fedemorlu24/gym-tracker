@@ -1,5 +1,5 @@
 // Chat con gli amici, senza un nostro server: messaggi cifrati da un capo all'altro (NIP-17/44/59) su relay pubblici Nostr.
-// La chiave segreta è protetta dalla password della chat; solo il vault sbloccato può usarla.
+// La password della chat è facoltativa; i messaggi restano cifrati da un capo all’altro.
 const CHAT_RELAYS = ['wss://nos.lol', 'wss://relay.damus.io', 'wss://relay.primal.net', 'wss://offchain.pub'];
 const CHAT_EMOJI = ['💪', '🔥', '🏆', '👏', '🏋️', '❤️', '😂', '👍', '🥵', '💯', '🎉', '🙌', '😮', '🤝', '🥇', '⚡'];
 const CHAT_REACT = ['❤️', '💪', '🔥', '🏆', '👏', '😂'];
@@ -83,7 +83,7 @@ function chatFailure(error) {
 }
 function chatVaultBanner(settings = false) {
   const state = chatVaultStatus();
-  if (state === 'unlocked') return settings ? `<p class="sub">${t('vaultSession')}</p><button class="btn s wide" data-act="chatlock" style="margin:8px 0 12px">${t('vaultLock')}</button>` : '';
+  if (state === 'unlocked') return settings ? `<p class="sub">${t('vaultSession')}</p>${ChatVault.isProtected() ? `<button class="btn s wide" data-act="chatlock" style="margin:8px 0 8px">${t('vaultLock')}</button><button class="btn s wide" data-act="chatunprotect" style="margin:0 0 12px">${t('vaultRemovePassword')}</button>` : `<p class="note">${t('vaultOptionalOpen')}</p><button class="btn s wide" data-act="chatprotect" style="margin:8px 0 12px">${t('vaultProtectOptional')}</button>`}` : '';
   const setup = state === 'setup', problem = state === 'cleanup' || state === 'error';
   return `<div class="${problem ? 'warn' : 'note'}" style="padding:10px 2px"><p>${t(state === 'cleanup' ? 'vaultCleanup' : state === 'error' ? 'vaultInvalid' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>${state === 'error' ? '' : `<button class="btn s wide" data-act="chatvault" style="margin-top:8px">${t(setup ? 'vaultSetupTitle' : state === 'cleanup' ? 'vaultRetry' : 'vaultUnlock')}</button>`}</div>`;
 }
@@ -100,10 +100,11 @@ function chatPasswordSheet(mode) {
   const request = {promise, mode, settled: false}; chatVaultPrompt = request;
   const importing = mode === 'import' || mode === 'import-unlock', setup = mode !== 'unlock' && mode !== 'import-unlock';
   sheet(`<h2>${t(importing ? 'vaultImportTitle' : setup ? 'vaultSetupTitle' : 'vaultUnlock')}</h2>
-    <p class="sub" style="margin-bottom:12px">${t(mode === 'import-unlock' ? 'vaultImportUnlockText' : mode === 'import' ? 'vaultImportText' : mode === 'cleanup' ? 'vaultCleanup' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>
+    <p class="sub" style="margin-bottom:12px">${t(mode === 'import-unlock' ? 'vaultImportUnlockText' : mode === 'import' ? 'vaultImportText' : mode === 'cleanup' ? 'vaultCleanup' : mode === 'protect-current' ? 'vaultSetupText' : setup ? 'vaultSetupText' : 'vaultLockedText')}</p>
     <form id="chat-vault-form">
-      <label class="field">${t('vaultPassword')}<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" ${setup ? `minlength="${ChatVault.MIN_PASSWORD_LENGTH}"` : ''} maxlength="1024" required data-focus></label>
-      ${setup ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="${ChatVault.MIN_PASSWORD_LENGTH}" maxlength="1024" required></label><p class="note">${t('vaultPasswordHint')}</p><p class="warn" style="margin:12px 0">${t('vaultRecovery')}</p><p class="note" style="margin-bottom:12px">${t('vaultMigrationNote')}</p>` : ''}
+      ${mode === 'setup' || mode === 'import' ? `<button class="btn p wide" type="button" id="chat-vault-skip">${t('vaultContinueWithoutPassword')}</button><div class="gap"></div>` : ''}
+      <label class="field">${t('vaultPassword')}<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" ${setup ? `minlength="${ChatVault.MIN_PASSWORD_LENGTH}"` : ''} maxlength="1024" required ${mode === 'setup' ? '' : 'data-focus'}></label>
+      ${setup ? `<label class="field">${t('vaultConfirm')}<input name="confirm" type="password" autocomplete="new-password" minlength="${ChatVault.MIN_PASSWORD_LENGTH}" maxlength="1024" required></label><p class="note">${t('vaultPasswordHint')}</p><p class="warn" style="margin:12px 0">${t('vaultRecovery')}</p><p class="note" style="margin-bottom:12px">${t('vaultOptionalOpen')} ${t('vaultMigrationNote')}</p>` : ''}
       <p class="sub" id="chat-vault-error" role="alert" hidden></p>
       <button class="btn p wide" type="submit">${t(importing ? 'vaultContinue' : setup ? 'vaultProtect' : 'vaultUnlock')}</button><div class="gap"></div>
       <button class="btn s wide" type="button" id="chat-vault-cancel">${t('close')}</button>
@@ -129,6 +130,17 @@ function chatPasswordSheet(mode) {
     button.addEventListener('click', ev => {
       ev.preventDefault(); ev.stopPropagation(); done(null); closeSheet();
     });
+  });
+  const skip = document.getElementById('chat-vault-skip');
+  if (skip) skip.addEventListener('click', async () => {
+    if (form.dataset.busy || settled) return;
+    form.dataset.busy = '1'; skip.disabled = true;
+    try {
+      if (mode === 'import') { done(''); closeSheet(); return; }
+      await ChatVault.setup(null); if (!settled) { done(true); closeSheet(); }
+    }
+    catch (error) { if (!settled) { const el = form.querySelector('#chat-vault-error'); el.textContent = t(error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : 'vaultFailed'); el.hidden = false; } }
+    finally { delete form.dataset.busy; if (settled && chatVaultPrompt === request) chatVaultPrompt = null; }
   });
   form.addEventListener('submit', async ev => {
     ev.preventDefault(); ev.stopImmediatePropagation();
@@ -720,6 +732,12 @@ function sheetChatPick(card) {
 Object.assign(acts, {
   chatinvite: sheetChatInvite,
   chatvault: () => { chatEnsureUnlocked().catch(chatFailure); },
+  chatprotect: () => { chatPasswordSheet('protect-current').catch(chatFailure); },
+  chatunprotect: async () => {
+    if (!confirm(t('vaultRemoveConfirm'))) return;
+    try { await ChatVault.removePassword(); toast(t('vaultRemoved')); }
+    catch (error) { toast(t(error.code === 'VAULT_CLEANUP' ? 'vaultCleanup' : 'vaultFailed')); }
+  },
   chatlock: () => { ChatVault.lock(); closeSheet(); },
   chatlinkto: b => {
     const pk = b.dataset.pk, x = chatOutLink; if (!x) return;

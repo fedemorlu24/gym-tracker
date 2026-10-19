@@ -1,6 +1,6 @@
 // Service worker: tiene sul telefono una copia dell'app per usarla senza rete.
 // VERSION deve coincidere con il ?v= dei file in index.html: aggiornali insieme a ogni rilascio.
-const VERSION = '74';
+const VERSION = '75';
 const CACHE = 'gym-' + VERSION;
 const FILES = [
   './',

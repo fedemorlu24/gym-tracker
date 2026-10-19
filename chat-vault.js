@@ -1,5 +1,5 @@
-// Local protection of the existing Nostr identity. Passwords and unlocked
-// secret bytes never become archive fields; message crypto remains NIP-44/59.
+// Optional local protection for the Nostr identity. Without a chat password,
+// the private key remains in the archive; message crypto stays NIP-44/59.
 (function (root) {
   'use strict';
   const MIN_PASSWORD_LENGTH = 8;
@@ -79,6 +79,11 @@
     const nt = await nostr(), bytes = nt.generateSecretKey();
     try { return await seal(bytes, password); } finally { bytes.fill(0); }
   }
+  async function createUnprotected() {
+    const nt = await nostr(), bytes = nt.generateSecretKey();
+    try { return {pk: nt.getPublicKey(bytes), sk: Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('')}; }
+    finally { bytes.fill(0); }
+  }
   const record = () => config && config.record() || null;
   function notify() { document.dispatchEvent(new Event('gt:chat-vault-state')); }
   function lock() {
@@ -87,12 +92,24 @@
   }
   function isUnlocked() {
     const c = record();
-    try { return !!secret && !!c && !config.cleanupPending() && !c.sk && !c.vaultInvalid && !c.keyInvalid && unlockedFingerprint === fingerprint(validate(c.vault, c.pk)); }
+    try {
+      if (!c || config.cleanupPending() || c.vaultInvalid || c.keyInvalid) return false;
+      if (c.sk && !c.vault) {
+        if (secret) secret.fill(0);
+        secret = null; unlockedFingerprint = '';
+        return !!c.pk && scalar(c.sk).length === 32;
+      }
+      return !!secret && !c.sk && unlockedFingerprint === fingerprint(validate(c.vault, c.pk));
+    }
     catch (_) { return false; }
   }
+  function isProtected() { const c = record(); return !!(c && Object.hasOwn(c, 'vault')); }
   function status() {
     const c = record();
     if (c && (c.vaultInvalid || c.keyInvalid)) return 'error';
+    if (c && c.sk && !Object.hasOwn(c, 'vault')) {
+      try { const bytes = scalar(c.sk), nt = root.NostrTools; if (!c.pk || nt && nt.getPublicKey(bytes) !== c.pk) return 'error'; return config && config.cleanupPending() ? 'cleanup' : 'unlocked'; } catch (_) { return 'error'; }
+    }
     if (c && Object.prototype.hasOwnProperty.call(c, 'vault')) {
       try { validate(c.vault, c.pk); if (c.sk) return 'error'; } catch (_) { return 'error'; }
       if (config && config.cleanupPending()) return 'cleanup';
@@ -112,16 +129,26 @@
     if (secret) secret.fill(0);
     secret = bytes; unlockedFingerprint = expected; notify();
   }
+  async function removePassword() {
+    if (!isUnlocked() || !isProtected() || !secret) throw failure('VAULT_LOCKED');
+    const mine = ++epoch, bytes = secret.slice();
+    try {
+      await config.unprotect(bytes, () => mine === epoch);
+      if (secret) secret.fill(0);
+      secret = null; unlockedFingerprint = ''; notify();
+    } finally { bytes.fill(0); }
+  }
   function requireSecret() {
     if (!isUnlocked()) throw failure('VAULT_LOCKED');
+    if (!secret) return scalar(record().sk);
     return secret;
   }
   root.ChatVault = Object.freeze({
     configure(value) { if (config) throw failure('VAULT_CONFIGURED'); config = value; },
-    MIN_PASSWORD_LENGTH, validate, sealLegacy, create,
+    MIN_PASSWORD_LENGTH, validate, sealLegacy, create, createUnprotected,
     async verify(v, password, pk) { const bytes = await open(v, password, pk); bytes.fill(0); return v.pk; },
-    status, isUnlocked, publicKey: () => record() && record().pk || '',
-    setup(password) { const mine = ++epoch; return config.setup(password, () => mine === epoch); }, unlock, lock,
+    status, isUnlocked, refresh: notify, isProtected, publicKey: () => record() && record().pk || '',
+    setup(password) { const mine = ++epoch; return config.setup(password, () => mine === epoch); }, unlock, removePassword, lock,
     sync() { if (secret && !isUnlocked()) lock(); },
     createMessage(event, recipient) {
       const nt = root.NostrTools, sk = requireSecret();

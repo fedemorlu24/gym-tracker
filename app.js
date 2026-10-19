@@ -168,11 +168,18 @@ async function protectArchiveIdentity(source, password, allowCreate = false, pre
   if (Object.hasOwn(chat, 'vault')) {
     ChatVault.validate(chat.vault, chat.pk);
     if (chat.sk) throw vaultFailure('VAULT_INVALID');
-  } else if (chat.sk) chat.vault = await ChatVault.sealLegacy(chat.sk, password, chat.pk);
-  else if (allowCreate && !chat.pk && !Object.keys(chat.friends || {}).length && !Object.keys(chat.msgs || {}).length) chat.vault = await ChatVault.create(password);
+  } else if (chat.sk) {
+    const bytes = Uint8Array.from(chat.sk.match(/../g) || [], x => parseInt(x, 16));
+    try { const nt = await nostrLoad(); if (!chat.pk || nt.getPublicKey(bytes) !== chat.pk) throw vaultFailure('VAULT_INVALID'); }
+    finally { bytes.fill(0); }
+    if (password != null) chat.vault = await ChatVault.sealLegacy(chat.sk, password, chat.pk);
+  } else if (allowCreate && !chat.pk && !Object.keys(chat.friends || {}).length && !Object.keys(chat.msgs || {}).length) {
+    if (password == null) Object.assign(chat, await ChatVault.createUnprotected());
+    else chat.vault = await ChatVault.create(password);
+  }
   else if (chat.pk || Object.keys(chat.friends || {}).length || Object.keys(chat.msgs || {}).length) throw vaultFailure('VAULT_INVALID');
-  if (chat.vault) {
-    chat.pk = chat.vault.pk; delete chat.sk;
+  if (chat.vault || chat.sk) {
+    if (chat.vault) { chat.pk = chat.vault.pk; delete chat.sk; }
     if (typeof chat.tok !== 'string' || !/^[0-9a-f]{24}$/.test(chat.tok))
       chat.tok = Array.from(crypto.getRandomValues(new Uint8Array(12)), n => n.toString(16).padStart(2, '0')).join('');
   }
@@ -194,7 +201,7 @@ async function protectChatIdentity(password, isCurrent = () => true) {
           prior.chat.sk && db.chat.sk && prior.chat.sk !== db.chat.sk) throw vaultFailure('VAULT_STALE');
     }
     const candidate = await protectArchiveIdentity(db, password, true);
-    await ChatVault.verify(candidate.chat.vault, password, candidate.chat.pk);
+    if (password != null) await ChatVault.verify(candidate.chat.vault, password, candidate.chat.pk);
     let rollback = before.rollback;
     if (rollback && !rollback.opaqueArchive) {
       if (typeof rollback.json !== 'string') throw vaultFailure('VAULT_INVALID');
@@ -218,12 +225,49 @@ async function protectChatIdentity(password, isCurrent = () => true) {
       };
     });
     committed = true; storageGeneration = generation; db = candidate;
-    if (!await cacheArchive(storedJson, generation)) throw vaultFailure('VAULT_CLEANUP');
+    if (!await cacheArchive(storedJson, generation) && (password != null || archiveHeader)) throw vaultFailure('VAULT_CLEANUP');
     if (!isCurrent()) throw vaultFailure('VAULT_STALE');
-    await ChatVault.unlock(password);
+    if (password != null) await ChatVault.unlock(password); else ChatVault.refresh();
     return db.chat;
   } finally {
     password = ''; storageBusy = false;
+    if (window.gymChatResume) window.gymChatResume();
+    if (backupDialog) queueBackup(backupDialog);
+    resumeBackupExport(committed);
+  }
+}
+async function unprotectChatIdentity(bytes, isCurrent = () => true) {
+  if (storageBusy || !bytes || bytes.length !== 32) throw vaultFailure('VAULT_STALE');
+  storageBusy = true; invalidateBackupData(); clearTimeout(planSaveT);
+  let committed = false;
+  try {
+    if (window.gymChatPause) await window.gymChatPause();
+    await Promise.all([...pendingWrites]);
+    const before = await storageSnapshot(true);
+    if (before.generation !== storageGeneration || !db.chat || !db.chat.vault || db.chat.sk ||
+        (await nostrLoad()).getPublicKey(bytes) !== db.chat.pk) throw vaultFailure('VAULT_STALE');
+    const prior = before.json && JSON.parse(before.json);
+    if (!prior || !prior.chat || !prior.chat.vault || prior.chat.pk !== db.chat.pk ||
+        ChatVault.validate(prior.chat.vault, prior.chat.pk).data !== db.chat.vault.data) throw vaultFailure('VAULT_STALE');
+    const candidate = JSON.parse(JSON.stringify(db));
+    candidate.chat.sk = Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
+    delete candidate.chat.vault;
+    candidate.ts = Date.now();
+    const json = JSON.stringify(candidate), generation = crypto.randomUUID(), storedJson = await archiveJSON(json);
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    await storageWrite([STORE], tx => {
+      const kv = tx.objectStore(STORE), previous = kv.get(KEY), oldRollback = kv.get(STORAGE_ROLLBACK);
+      oldRollback.onsuccess = () => {
+        if (!isCurrent() || previous.result !== before.rawJson || JSON.stringify(oldRollback.result) !== JSON.stringify(before.rawRollback)) { tx.abort(); return; }
+        kv.put(storedJson, KEY); kv.put(generation, STORAGE_META);
+      };
+    });
+    committed = true; storageGeneration = generation; db = candidate;
+    if (!await cacheArchive(storedJson, generation) && archiveHeader) throw vaultFailure('VAULT_CLEANUP');
+    if (!isCurrent()) throw vaultFailure('VAULT_STALE');
+    return db.chat;
+  } finally {
+    storageBusy = false;
     if (window.gymChatResume) window.gymChatResume();
     if (backupDialog) queueBackup(backupDialog);
     resumeBackupExport(committed);
@@ -2101,8 +2145,8 @@ function sheetBackup() {
   sheet(`<h2>${t('backup')}</h2>
     <p class="sub" style="margin-bottom:6px">${t('backupText')}</p>
     <p class="note" style="padding:0 0 10px">${backupDays() == null ? t('bkNever') : backupDays() === 0 ? t('bkToday') : t('bkLast', backupDays())}</p>
-    <label class="field">${t(archiveHeader ? 'archiveBackupPassword' : 'bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" minlength="12" maxlength="1024" aria-describedby="bk-password-hint"></label>
-    <p class="note" id="bk-password-hint" style="padding:0 0 12px">${t('bkPwdHint')}</p><p class="note">${t('bkPrivateKey')}</p>
+    <label class="field">${t(archiveHeader ? 'archiveBackupPassword' : db.chat && db.chat.sk ? 'bkPwdChatRequired' : 'bkPwd')}<input id="bk-pwd" type="password" autocomplete="new-password" minlength="12" maxlength="1024" aria-describedby="bk-password-hint"></label>
+    <p class="note" id="bk-password-hint" style="padding:0 0 12px">${t('bkPwdHint')}</p><p class="note">${t(db.chat && db.chat.sk ? 'bkPrivateKeyUnprotected' : 'bkPrivateKey')}</p>
     <button class="btn p wide" data-act="export" id="exp-btn" disabled>${t('preparing')}</button>
     <p class="note" style="padding:8px 2px 12px">${t('bkHow')}</p>
     <button class="btn s wide" data-act="import">${t('importData')}</button><div class="gap"></div>
@@ -2174,8 +2218,11 @@ async function stageBackup(f, recovery = false) {
     vaultPassword = recovery ? await archiveRecoveryPassword(t(chat && chat.vault ? 'vaultImportUnlockText' : 'vaultImportText'), !(chat && chat.vault), true) :
       await window.gymRequestVaultPassword(chat && chat.vault ? 'import-unlock' : 'import');
     if (vaultPassword == null) return null;
-    if (chat && chat.vault) await ChatVault.verify(chat.vault, vaultPassword, chat.pk);
-    protectedCandidate = await protectArchiveIdentity(candidate, vaultPassword);
+    if (vaultPassword === '') { vaultPassword = null; protectedCandidate = await protectArchiveIdentity(candidate, null); }
+    else {
+      if (chat && chat.vault) await ChatVault.verify(chat.vault, vaultPassword, chat.pk);
+      protectedCandidate = await protectArchiveIdentity(candidate, vaultPassword);
+    }
   }
   return {candidate: protectedCandidate, records, hasChatPhotos, vaultPassword};
 }
@@ -2205,7 +2252,7 @@ async function commitBackup(staged) {
     const generation = crypto.randomUUID(), oldJson = JSON.stringify(db);
     const prior = before.json && JSON.parse(before.json);
     const rollbackSource = prior && (prior.ts || 0) > (db.ts || 0) ? prior : JSON.parse(oldJson);
-    const rollbackJson = JSON.stringify(await protectArchiveIdentity(rollbackSource, staged.vaultPassword, false, true));
+    const rollbackJson = JSON.stringify(staged.vaultPassword == null ? rollbackSource : await protectArchiveIdentity(rollbackSource, staged.vaultPassword, false, true));
     candidate.ts = Date.now(); const json = JSON.stringify(candidate);
     const storedJson = await archiveJSON(json), storedRecords = await archivePhotos(records);
     const storedRollback = await archiveRollback({json: rollbackJson, photos: before.photos, generation: storageGeneration});
@@ -3355,7 +3402,7 @@ document.addEventListener('input', ev => {
   if (el.dataset.f && drafts[el.dataset.eid]) { drafts[el.dataset.eid][el.dataset.f] = el.value; syncChips(el.dataset.eid); }
 });
 
-ChatVault.configure({record: () => db.chat, setup: protectChatIdentity, cleanupPending: () => vaultCachePending});
+ChatVault.configure({record: () => db.chat, setup: protectChatIdentity, unprotect: unprotectChatIdentity, cleanupPending: () => vaultCachePending});
 setLang();
 applyTheme();
 window.gymDataReady = restore(true).then(() => { if (rest) drawRest(); });
